@@ -23,45 +23,6 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate modules
 
-sub get_psn_nm_versions {
-### Purpose : Retrieve the NM versions specified to psn. (reads a pipe from "psn -nm_versions") 
-### Compat  : W+L+
-### Notes   : When the psn command is invoked but cannot be found, Pirana crashes
-  my @split;
-  our $max_psn_name;
-  my %psn_nm_versions; my %psn_nm_versions_vers;
-  if ($software{psn_dir} =~ m/perl/i) {  # use the PsN that is specified, not necisssarily the one in the system variables 
-    my $psn_dir = $software{psn_dir};
-    @split = split(/\\/,$psn_dir); 
-  }
-  my $command;
-  unless (($setting{use_cluster}==1)&&($gif{cluster_active}==1)) {
-    if (-e @split[0]."\\".@split[1]."\\bin\\psn") {
-      $command = @split[0]."\\".@split[1]."\\bin\\psn -nm_versions";
-    } else {$command = "psn -nm_versions";}
-  } else {  # on cluster using SSH
-      $command = $setting{ssh_login}.' '.$software{psn_on_cluster}.'"psn -nm_versions &"';
-  }
-  if ($stdout) {$stdout -> insert('end', "\n".$command);};
-  open (OUT, $command." |") or die "Could not open command: $!\nCheck installation of PsN.";
-  $flag = 0;
-  my %psn_nm_versions;
-  while (my $line = <OUT>) {
-     if ($line =~ m/will call/gi) {
-       my ($nm_name, $nm_loc) = split(/\(will call /,$line);
-       my ($nm_loc, $nm_ver) = split (/,/, $nm_loc);
-       $nm_name =~ s/\s//g;
-       chomp($nm_ver); $nm_ver =~ s/\)//;
-     #  $nm_name = substr($nm_name,0,9);
-       if(length($nm_name)>$max_psn_name) {$max_psn_name=length($nm_name)}
-       $psn_nm_versions{$nm_name} = $nm_loc;
-       $psn_nm_versions_vers{$nm_name} = $nm_ver;
-     }
-  }
-  if ($max_psn_name<9) {$max_psn_name=9};
-  return \%psn_nm_versions, \%psn_nm_versions_vers;  
-}
-
 sub check_out_dataset {
 ### Purpose : Create an HTML table from a CSV dataset. Color coded event types.
 ### Compat  : W+L+
@@ -2505,7 +2466,7 @@ sub exec_run_nmfe {
   @files = @ctl_show[@runs];
   $file_string = join (' ',@files);
   chdir($cwd);
-  if (($gif{cluster_active}==1)&&($setting{use_cluster}==1)) {
+  if (($cluster_active==1)&&($setting{use_cluster}==1)) {
     @cur_dir = split('/',unix_path($cwd));
     shift(@cur_dir);
     $cur_dir_unix = join('/',@cur_dir); 
@@ -3837,26 +3798,26 @@ sub frame_models_show {
   }
   $run_frame = $mw -> Frame(-width=>600, -background=>$bgcol)->grid(-row=>3,-column=>1,-sticky => 'wns');
   $enable_local_button   = $run_frame -> Button (-image=>$gif{local_active}, -border=>$bbw, -width=>56, -height=>24, , -background=>$bgcol,-activebackground=>$abutton,-command=>sub{
-     $gif{cluster_active} = 0;
+     $cluster_active = 0;
      $gif_shell=$gif{shell};
      $command_button -> configure(-image=>$gif_shell);
-     cluster_active($gif{cluster_active});
+     cluster_active($cluster_active);
      add_run_methods();      
      show_run_method($run_method);
   })->grid(-row=>1,-column=>0,-sticky => 'wens');
   $help -> attach($enable_local_button, -msg => "Run NONMEM locally");
   $enable_cluster_button = $run_frame -> Button (-image=>$gif{cluster_inactive}, -border=>$bbw, -width=>56, -height=>24, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
-     if (($gif{cluster_active} == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
-     $gif{cluster_active} = 1;
-     if (($gif{cluster_active}==1)&&($setting{use_cluster}==1)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
+     if (($cluster_active == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
+     $cluster_active = 1;
+     if (($cluster_active==1)&&($setting{use_cluster}==1)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
      $command_button -> configure(-image=>$gif_shell);
-     cluster_active($gif{cluster_active});
+     cluster_active($cluster_active);
      update_psn_zink ();
      add_run_methods(); 
      show_run_method($run_method);
   })->grid(-row=>2,-column=>0,-sticky => 'we');
-  $gif{cluster_active} = $setting{cluster_default};
-  cluster_active($gif{cluster_active});
+  $cluster_active = $setting{cluster_default};
+  cluster_active($cluster_active);
   $help -> attach($enable_cluster_button, -msg => "Run NONMEM on a cluster");
   
   our $run_in_nm_dir = "nmfe_";
@@ -4130,7 +4091,7 @@ sub exec_run_wfn {
           print BAT_RUN "CALL ".win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file."_bs".$_." ".$_." ".($_ + $per_run -1)."\n");
           print BAT_RUN "del ".win_path($cwd."\\".$file."_".$_.".".$setting{ext_ctl})."\n";
           close BAT_RUN;
-          if ($gif{cluster_active} == 1) {
+          if ($cluster_active == 1) {
             $count += generate_zink_file($setting{zink_host}, $setting{cluster_drive}, "Bootstrap ".$file, 3, win_path($cwd), win_path($cwd."\\".$rand_filename."_".$_).".bat\n", "");
           } else {
             open (BAT,">".$rand_filename.".bat");
@@ -4146,7 +4107,7 @@ sub exec_run_wfn {
         print BAT "CALL ".win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters)."\n";
         close BAT;
         db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{name_researcher} );    
-        if ($gif{cluster_active} == 1) {
+        if ($cluster_active == 1) {
           if (generate_zink_file($setting{zink_host}, $setting{cluster_drive},"Bootstrap ".$file, 3, win_path($cwd), "CALL ".win_path($cwd."\\".$rand_filename).".bat\n", "") == 1) {
             message ("WFN job scheduled.");
             db_log_execution ($file, @ctl_descr[$file], "WFN", "PCluster", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{name_researcher} );
@@ -4154,7 +4115,7 @@ sub exec_run_wfn {
         } 
       }
   status ();
-  unless ($gif{cluster_active} == 1) {
+  unless ($cluster_active == 1) {
     return $rand_filename.".bat";
   } else {
     return ();
@@ -4180,7 +4141,7 @@ sub exec_run_nmq {
       print BAT "SET LIBRARY_PATH=".$setting{nmq_env_libpath}.";%LIBRARY_PATH% \n";
       $nmq_name = get_nmq_name($nmq_path);
       foreach (@files) {
-        if ($gif{cluster_active}==0) {
+        if ($cluster_active==0) {
            print BAT win_path("perl -S ".$nmq_path."/test/".$nmq_name.".pl ".$_.".".$setting{ext_ctl}." ".$_.".".$setting{ext_res}." ".$nmq_parameters)."\n";
         } else {
            print BAT win_path("perl -S ".$nmq_path."/test/".$nmq_name."_compile.pl ".$_.".".$setting{ext_ctl}." ".$_.".".$setting{ext_res}." ".$nmq_parameters)."\n";
@@ -4232,6 +4193,7 @@ sub update_new_dir {
 sub show_run_method {
 ### Purpose : Show the buttons for running/executing runs. For nmfe-, PsN- or WFN-method specific buttons are created in "method_specific_options" 
 ### Compat  : W+L+ 
+  my $run_method = shift;
   if ($run_frame) {  
   unless ($nm_versions_menu) { # if not already exists, build optionmenu
     unless ($run_method eq "WFN") {
@@ -4258,14 +4220,15 @@ sub show_run_method {
     };
     if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [@nm_installations] )} ;
   } 
-  method_specific_options();
+  method_specific_options($run_method);
   }
 }
 
 sub method_specific_options {
 ### Purpose : Show the buttons for "NONMEM", "PsN" or "WFN" run methods 
 ### Compat  : W+L+
-  if ($run_method eq "") {$run_method = "PsN";};
+  my $run_method = shift;
+  if ($run_method eq "") {$run_method = "NONMEM";};
   if ($local_nm) {$local_nm-> gridForget()};
   if ($method_options) {$method_options-> gridForget()};
   if ($psn_methods) {$psn_methods-> gridForget()};
@@ -4289,7 +4252,7 @@ sub method_specific_options {
 
 if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
 #   if ($nm_version_chosen eq "") {$nm_version_chosen = @nm_installations[0]};
-   if (($gif{cluster_active}==1)&&($setting{use_cluster}==2)) {our @methods = ("Distribute", "Specify client")} else {our @methods = ("Run", "Test syntax (NM-TRAN)")};
+   if (($cluster_active==1)&&($setting{use_cluster}==2)) {our @methods = ("Distribute", "Specify client")} else {our @methods = ("Run", "Test syntax (NM-TRAN)")};
    our $method_options = $run_frame -> Optionmenu(-options => [@methods],-variable => \$method_chosen, -background=>$run_color,-activebackground=>$arun_color,
           -font=>$font_normal, -border=>$bbw, -height=>1, -width=>32
    )-> grid(-row=>1,-column=>2, -columnspan=>3,-sticky => 'wens', -ipady=>2);
@@ -4304,7 +4267,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
    })->grid(-column=>2,-row=>2, -sticky=>"e"); 
    our $run_local_button = $run_frame->Button(-image=>$gif{run}, -border=>$bbw,-width=>45, -background=>$button, -activebackground=>$abutton,-command=> sub{
       unless ($nm_version_chosen eq "") { #NM installed?
-        if ($gif{cluster_active}==1)  {
+        if ($cluster_active==1)  {
           if ($setting{use_cluster}==2) { # run on PCluster
             distribute ($nm_version_chosen, $method_chosen, "nmfe");
           }
@@ -4333,8 +4296,8 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
     our $nmq_method_options = $run_frame -> Optionmenu(-options => [@nm_installations], -variable => \$nmq_version_chosen, -background=>$run_color,-activebackground=>$arun_color,
           -font=>$font_normal, -border=>$bbw, -width=>32 
       )-> grid(-row=>1,-column=>3,-columnspan=>3,-sticky => 'wens'); 
-    if ($gif{cluster_active}==1) {our @methods = ("Distribute", "1 client")} else {our @methods = ("NMQual: run here", "NMQual: in new dir")};
-    if ($gif{cluster_active}==1) {
+    if ($cluster_active==1) {our @methods = ("Distribute", "1 client")} else {our @methods = ("NMQual: run here", "NMQual: in new dir")};
+    if ($cluster_active==1) {
       our $method_options = $run_frame -> Optionmenu(-options => [sort(@methods)],-variable => \$method_chosen, -background=>$run_color,-activebackground=>$arun_color,
         -font=>$font_normal, -border=>$bbw, -height=>1, -width=>32
       )-> grid(-row=>1,-column=>2,-columnspan=>3,-sticky => 'ewns', -ipady=>2); 
@@ -4350,7 +4313,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
         @files = @ctl_show[@runs];
         chdir($cwd);
         $nmq_params = $nmq_params_entry -> get();
-        if ($gif{cluster_active}==1){
+        if ($cluster_active==1){
             distribute ($nm_version_chosen, $method_chosen, "NMQual");
         } else {
             print "Run";
@@ -4378,8 +4341,9 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
     $help->attach($nmq_run_local_button, -msg => "Run model(s)");
   }
   if (($run_method eq "PsN")&&($setting{use_psn}==1)) {
-    my $psn_nm_versions_ref = get_psn_nm_versions();
-    %psn_nm_versions = %$psn_nm_versions_ref; 
+    my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software);
+    %psn_nm_versions = %$psn_nm_versions_ref;
+    #delete ($psn_nm_versions{"default"}); 
     #print $psn_nm_versions_ref;
     chdir($cwd); 
     if ($psn_option eq "") {$psn_option="execute";}
@@ -4393,7 +4357,14 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
     my $psn_text = get_psn_info($psn_option);
     $help->attach($psn_command_entry, -msg => $psn_text);
     
-    if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [sort(keys(%psn_nm_versions))] )}
+    # bit of a workaround to get "default" option as first option...
+    my %psn_nm_versions_copy = %psn_nm_versions;
+    delete ($psn_nm_versions_copy {"default"});
+    my @psn_nm_versions = keys(%psn_nm_versions_copy);
+    unshift (@psn_nm_versions, "default");
+    if ($nm_versions_menu) { 
+      $nm_versions_menu -> configure (-options => \@psn_nm_versions);
+    }
     our $psn_methods = $run_frame -> Optionmenu(-options => [sort(keys(%psn_commands))],-variable => \$psn_option, -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
           -font=>$font_normal, -width=>28,-command=> sub{
             $psn_text = get_psn_info($psn_option);
@@ -4418,7 +4389,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
       } else {
         foreach (@ctl_show[@runs]) {$files = $files." ".$_.".".$setting{ext_ctl}};
       }
-      if ($gif{cluster_active}==1) {
+      if ($cluster_active==1) {
         if (substr($cwd,0,1) eq substr($setting{cluster_drive},0,1)) {
           @cur_dir = split('/',unix_path($cwd));
           shift(@cur_dir);

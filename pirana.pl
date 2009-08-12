@@ -58,7 +58,7 @@ our $first_startup; our %vars; our %psn_commands; our %psn_commands_descr;
 our $dir_old, our $run_listbox, our $i, our $nm_reg_chosen; our $mw_width = 1016; our $mw_height = 600;
 our $method_chosen, our $local_method_chosen, our $psn_parameters;  our $cluster_active = 0;
 our @runs, our @ctl_files, our @res_files; our @res_files_loc; our @tabcsv_files; our @tabcsv_loc;
-our $models_hlist; our $tab_hlist; our $frame_links;
+our $models_hlist; our $tab_hlist; our $frame_links; our $cluster_active;
 
 if (-e $base_dir."/log/startup.log") {$first_startup=0} else {$first_startup=1};
 
@@ -69,7 +69,7 @@ use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model
 use pirana_modules::model     qw(change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML); 
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
 use pirana_modules::misc      qw(dir ascend log10 bin_mode rnd one_dir_up win_path unix_path tab2csv csv2tab center_window read_dirs_win win_start); 
-use pirana_modules::PsN       qw(get_psn_info get_psn_help);
+use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 
 #*** Initialization ************************************************************
