@@ -1205,7 +1205,7 @@ sub edit_sizes_window {
   ($nm_dirs_ref, $nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
   %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref; 
   # add Perl NM-versions
-  my ($psn_nm_versions_ref, $psn_nm_versions_vers_ref) = get_psn_nm_versions();
+  my ($psn_nm_versions_ref, $psn_nm_versions_vers_ref) = get_psn_nm_versions(\%setting, \%software);
   my %psn_nm_versions = %$psn_nm_versions_ref;
   my %psn_nm_versions_vers = %$psn_nm_versions_vers_ref;
   foreach(keys(%psn_nm_versions)) {
@@ -2474,7 +2474,7 @@ sub exec_run_nmfe {
     $nm_ver_cluster = $nm_vers_cluster{@nm_installations[$nm_inst_chosen]}; 
   }
   if ( $nm_dir_check==0 ) { # start NONMEM regular, in the current folder
-    if (($gif{cluster_active}==1)&&($setting{use_cluster}==1)) {
+    if (($cluster_active==1)&&($setting{use_cluster}==1)) {
       foreach $file (@files) {
         my $command = 'start '.$setting{ssh_login}.' "cd ~/'.$cur_dir_unix.'; '.$nm_dir_cluster."/nmfe".$nm_ver_cluster." ".$file.'.'.
           $setting{ext_ctl}.' '.$file.'.'.$setting{ext_res}.' &"';
@@ -2518,7 +2518,7 @@ sub exec_run_nmfe {
       if (-d $new_dir) {
         chdir ($new_dir);
         print_note($nm_inst);
-        if (($gif{cluster_active}==1)&&($setting{use_cluster}==1)) {
+        if (($cluster_active==1)&&($setting{use_cluster}==1)) {
            $command = 'start '.$setting{ssh_login}.' "cd ~/'.$cur_dir_unix.'/'.$new_dir.'; '.$nm_dir_cluster."/nmfe".$nm_ver_cluster." ".$file.'.'.
              $setting{ext_ctl}.' '.$file.'.'.$setting{ext_res}.' &"';
            if ($stdout) {$stdout -> insert('end', "\n".$command);}
@@ -3467,7 +3467,7 @@ sub show_links {
   #  ->grid(-row=>2,-column=>1,-sticky=>'nse');
   $command_entry = $frame_dir -> Entry(-textvariable=>\$run_command, -border=>2, -relief=>'groove',-font => $font_normal,-background=>'#FFFFEE')
    ->grid(-row=>1,-columnspan=>1,-column=>14,-sticky=>'we');  #i-3
-  if (($gif{cluster_active}==1)&&($setting{use_cluster}==1)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
+  if (($cluster_active==1)&&($setting{use_cluster}==1)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
   $command_button = $frame_dir -> Button(-image=> $gif_shell,-border=>$bbw,-background=>$button,-activebackground=>$abutton, -command=> sub{
         run_command($command_entry -> get())
   })->grid(-row=>1,-columnspan=>1,-column=>15,-sticky=>'w'); # i-1
@@ -3497,7 +3497,7 @@ sub run_command {
 ### Purpose : Run a command, either using CMD.exe in windows, or using ssh on the cluster (when using the linux-cluster functionality and when the cluster is enabled)
 ### Compat  : W+L? 
   my $com = shift;
-  unless (($setting{use_cluster}==1)&&($gif{cluster_active}==1)) {
+  unless (($setting{use_cluster}==1)&&($cluster_active==1)) {
     open (RUN, ">pirana_run_command.bat");
     print RUN $com."\n";
     close RUN;
@@ -4479,7 +4479,7 @@ sub update_psn_zink {
 ### Compat  : W+L? 
   if ($psn_command_entry) {
     my $psn_parameters = $psn_command_entry -> get();
-    if (($gif{cluster_active}==1)&&($setting{cluster_type}==2)) {
+    if (($cluster_active==1)&&($setting{cluster_type}==2)) {
       unless ($psn_parameters =~ m/-run_on_zink/i) {
         $psn_parameters .= " -run_on_zink";
         $psn_command_entry -> configure (-text=>$psn_parameters);
@@ -4698,23 +4698,23 @@ sub show_inter_window {
     
     our $grid = $inter_window_frame ->Scrolled('HList', -head => 1, 
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
-        -height     => 6, -border     => 0, 
+        -height     => 6, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 100, -background => 'white',
         -browsecmd => sub{
           @info = $grid->infoSelection();
           chdir (@info[0]);
-          get_run_progress();
+          my ($sub_iter, $sub_ofv, $descr) = get_run_progress();
           chdir ($cwd);
           inter_results ($cwd."/".@info[0]);
         }
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");   
     
     my @headers_inter = (" ","Theta", "Omega","Sigma", "Gradients", " ");
-    my @headers_inter_widths = (1, 54, , 54, 54, 100);
+    my @headers_inter_widths = (24, 54, , 54, 54, 100);
 
     our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1, 
         -columns    => 6, -scrollbars => 'e', -highlightthickness => 0,
-        -height     => 15, -border     => 0, 
+        -height     => 15, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 100, -background => 'white',
     )->grid(-column => 1, -columnspan=>7, -row => 1);   
     foreach my $x ( 0 .. $#headers ) {
@@ -4755,6 +4755,7 @@ sub inter_window_add_item {
 ### Compat  : W+L+
     $item = shift;
     my $dir1;
+    my $i=1;
     unless ($item =~ m/HASH/) {  # for some reason this sometimes is necessary.
         $grid->add($item);
         $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right);
@@ -4764,6 +4765,7 @@ sub inter_window_add_item {
         $res_dir{$item} = $dir1;
         $grid->itemCreate($item, 3, -text => $dir1, -style=>$align_left);
         $grid->itemCreate($item, 4, -text => $res_descr{$item}, -style=>$align_left);
+        $i++;
     }
     $grid -> update();
     push (@inter_dirs, $item)
@@ -4775,7 +4777,7 @@ sub get_runs_in_progress {
   $dir = fastgetcwd()."/";
   @dirs = read_dirs_win();
   %dir_results = new ;
-  %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
+  %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {}; 
   # First check main directory
   inter_status ("Searching / for active runs...");
     if ((-e "nonmem.exe")||(-e "nonmem")) {  # check for nmfe runs
@@ -4843,7 +4845,6 @@ sub get_run_progress {
 ### Purpose : Return the number of iterations and OFV of a currently running model
 ### Compat  : W+L+
   $output_file = shift;
-  undef @gradients;
   @l = dir (".", $setting{ext_res});
   if (int(@l)>0) {
     $output_file = @l[0];
@@ -4854,6 +4855,7 @@ sub get_run_progress {
   open (OUT,"<".$output_file);
   @lines = <OUT>;
   close OUT;
+  our @gradients; 
   foreach $line (@lines) {
      if($line =~ m/ITERATION/gi) {
        our $sub_iter = substr($line,15,9);
@@ -4864,10 +4866,10 @@ sub get_run_progress {
        our $sub_eval = substr($line,76,3);
        $sub_eval =~ s/\s//g;
      }
+     delete @gradients[0..@gradients];
      if ($line =~ m/GRADIENT/) {
        $line =~ s/GRADIENT:// ;
        my @gradients_line = split(" ",$line);
-       undef @gradients;
        foreach (@gradients_line) {
          if ($_ ne "") {
            chomp($_);
@@ -4910,7 +4912,7 @@ sub inter_results {
   $grid_inter -> update();
   foreach (@thetas) {
     $grid_inter->add($i);
-    $grid_inter->itemCreate($i, 0, -text => $i, -style=>$align_right);
+    $grid_inter->itemCreate($i, 0, -text => $i, -style=>$header_right);
     $grid_inter->itemCreate($i, 1, -text => $_, -style=>$align_right);
     $i++;
   }
@@ -4948,7 +4950,7 @@ sub extract_inter {
 ### Purpose : extract intermediate results from files in a folder
 ### Compat  : W+
   my $dir = shift;
-  if ((-e $dir."/INTER")&&(-s $dir."/INTER" > 0)) {
+  if ((-e $dir."/INTER")&&(-s $dir."/INTER" > 100)) { # test for minimum file size
     open (INTER,"<".$dir."/INTER");
     @inter = <INTER>;
     close INTER;
@@ -4959,6 +4961,7 @@ sub extract_inter {
       @inter = <INTER>;
       close INTER;
     }
+    return();
   }
 
   $no_lines = int(@inter);
@@ -4967,28 +4970,30 @@ sub extract_inter {
     while (($no_lines>0) && ($last_iter<2)) {  # get last iteration line no
       $no_lines = $no_lines-1;
       if (@inter[$no_lines] =~ m/ITERATION/) {$last_iter++;} 
-    }
-    ### Gather THETA's
-    my $theta_line_no = 3;
-    if (@inter[$no_lines+$theta_line_no+1]=~/TH/g) {$theta_line_no++};
-    $theta_line = @inter[$no_lines+$theta_line_no+2];
-    @theta_arr = split(/\s/,$theta_line);
-    @thetas = grep /\S/, @theta_arr;
-    foreach(@thetas) {$_ = rnd($_, 7)};
-    if($theta_line_no==4) { # 2 lines of THETAs
-    $theta_line = @inter[$no_lines+$theta_line_no+3];
-    @theta_arr = split(/\s/,$theta_line);
-    @theta_arr = grep /\S/, @theta_arr;
-    foreach(@theta_arr) {$_ = rnd($_, 6)};
-      push(@thetas,@theta_arr);
-    }
+    }  
 
+    ### Gather THETA's
+    my $theta_line_no = 4;
+    my $theta_line_extra = 0;
+    if (@inter[$no_lines+$theta_line_no+1] =~ m/TH/g) { $theta_line_extra=1};
+    my $theta_line = @inter[$no_lines+$theta_line_no+2+$theta_line_extra];
+    if($theta_line_extra == 1) { # 2 lines of THETAs
+      
+      $theta_line .= @inter[$no_lines+$theta_line_no+2+$theta_line_extra*2];
+    }
+    my @theta_arr = split(/\s/,$theta_line);
+    my @theta_arr = grep (/\S/, @theta_arr);
+    foreach(@theta_arr) {
+      $_ = rnd($_, 6)
+    };
+    my @thetas = @theta_arr;
+    
     ### Gather ETA's
-    my $eta_line = $theta_line_no+5;
-    if ($inter[$no_lines+$eta_line+1]=~/ET/g) {$eta_line++};
-    if ($inter[$no_lines+$eta_line+1]=~/ET/g) {$eta_line++};
-    if ($inter[$no_lines+$eta_line+1]=~/ET/g) {$eta_line++};
-    our $curr_lineno = $no_lines + $eta_line + 2;
+    my $eta_line_no = $theta_line_no+5;
+    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
+    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
+    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
+    my $curr_lineno = $no_lines + $eta_line_no + 2;
     my @etas = ();
     
     until ((@inter[$curr_lineno] =~ m/SIGMA/)||($curr_lineno>@inter)) {
@@ -5002,7 +5007,8 @@ sub extract_inter {
         };
         @eta_arr = split(/\s/,$eta_line);
         @eta_arr = grep /\S/, @eta_arr;
-        $eta = rnd(@eta_arr[@eta_arr-1],5);
+        my $eta;
+        if (@eta_arr>0) {$eta = rnd(@eta_arr[@eta_arr-1],5)} else {$eta = ""};
         push (@etas, $eta);        
       }
       $curr_lineno++;

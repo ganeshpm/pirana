@@ -45,7 +45,6 @@ sub create_plot_window {
   $plot_window -> resizable( 0, 0 );
   $plot_window -> Popup;
 
-  my $log_x; my $log_y;
   @plot_colors = qw/darkblue darkred darkgreen/;
   @pointstyles = qw/circle square triangle/;
   $plot_frame = $plot_window -> Frame (-relief=>'groove', -border=>2) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
