@@ -1,4 +1,4 @@
-# Subroutines that perform actions on NM modelfiles
+# Subroutines that perform actions on NM modelfiles or NM results files
 
 package pirana_modules::model;
 
@@ -308,7 +308,7 @@ sub get_cov_mat {
       }
     }
     } else {$skip=$skip-1;}
-    if ((substr($line,0,1) eq "1")||($line =~ m/Stop/)) {
+    if (((substr($line,0,1) eq "1")&!(@lst[$j+2] =~m/TH1/))||($line =~ m/Stop/)) {
       $area = 0;
       if ($cov_area == 1) {@cov_matrix = @cov ; $cov_area=0}
       if ($inv_cov_area == 1) {@inv_cov_matrix = @cov ; $inv_cov_area=0}

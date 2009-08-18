@@ -18,26 +18,24 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Piraña.  If not, see <http://www.gnu.org/licenses/>.
 #
-use strict;
-use Cwd;
-use Cwd qw(abs_path);
-use Tk;
-use Tk::Balloon;
-use Tk::HList;
-use Tk::ItemStyle;
-use Tk::HdrResizeButton;
-use Tk::Text;
-use Tk::PlotDataset;
-use Tk::LineGraphDataset;
-#use Tk::ProgressBar;
-use File::Copy;
-use File::stat;
-use File::Path;
-use HTTP::Date;
-use List::Util qw(max maxstr min minstr reduce);
-use POSIX qw(ceil floor);
-use DBI; # database connection to sqlite
-use Math::BigFloat; # used for rounding to significant digits
+use strict;                 # 
+use Cwd;                    # Basic functions
+use Tk;                     # Tk
+use Tk::Balloon;            # Help balloon widget
+use Tk::HList;              # HList widget
+use Tk::ItemStyle;          # ..
+use Tk::HdrResizeButton;    # Resizable headers in Tk::Hlist
+use Tk::Text;               # Textarea widget 
+use Tk::PlotDataset;        # For DataInspector
+use Tk::LineGraphDataset;   # ..
+use File::Copy;             # File info and operations
+use File::stat;             # ..
+use File::Path;             # ..
+use HTTP::Date;             # Date and time functions
+use List::Util qw(max maxstr min minstr reduce); # some basic functions
+use POSIX qw(ceil floor);   # some basic functions
+use DBI;                    # database connection to sqlite
+use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
 our $version="2.1b";
@@ -46,7 +44,7 @@ our $base = cwd();
 if ($os =~ m/MSWin/i) {
   require Win32::Process;
   Win32::SetChildShowWindow(0); # don't open new console windows
-  require Win32::DriveInfo; # needed for NM install
+  require Win32::DriveInfo;     # needed for NM install
 } 
 our $base_dir = $base;
 our %setting, our %setting_descr, our %nm_dirs, our %nm_vers;
