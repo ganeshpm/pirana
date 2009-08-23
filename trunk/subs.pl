@@ -2510,11 +2510,11 @@ sub exec_run_nmfe {
     }
     text_window($errors, "NM-TRAN messages");
   }
-  if ( $nm_dir_check==1) { # start NM run in a new folder
+  if ($nm_dir_check==1) { # start NM run in a new folder
     $new_dir = $run_in_nm_dir;
     foreach $file (@files) {
       my $command;
-      my $new_dir = move_nm_files($file, $run_in_nm_dir); # move NM files to new dir and return the dir
+      my $new_dir = move_nm_files ($file, $run_in_nm_dir); # move NM files to new dir and return the dir
       if (-d $new_dir) {
         chdir ($new_dir);
         print_note($nm_inst);
@@ -2526,10 +2526,10 @@ sub exec_run_nmfe {
            $command = "start /low ".win_path($nm_dirs{$nm_inst}."/util/pirana_runs".$nm_vers{$nm_inst}.".bat ".$file);
            if ($stdout) {$stdout -> insert('end', "\n".$command);}
         } 
+        system $command;
         chdir($cwd);
         rmdir ($new_dir); # only works if directory is empty... So is cleared if unsuccesful.
       }
-      system $command;
       db_log_execution ($file.".".$setting{ext_ctl}, @ctl_descr[$file], "nmfe", "local", $command, $setting{name_researcher});   
     }
   }
@@ -2697,11 +2697,17 @@ sub move_nm_files {
   @include_files = split(",", @include[1]);
   
   mkdir ($new_dir);
-
-  unless (copy($file.".".$setting{ext_ctl}, $new_dir."/".$file.".".$setting{ext_ctl})) {print OUT "Error: Unable to copy control stream.\n"; $error_flag=1;}
-  $datafile = unix_path(@data[1]);
-  #$datafile =~ s/\./\\\./g;
-  unless (copy($datafile, $new_dir."/".$datafile)) {print OUT "echo Error: Unable to copy dataset. \n"; $error_flag=1;}
+  my $new_file = $new_dir."/".$file.".".$setting{ext_ctl}; 
+  unless (copy($file.".".$setting{ext_ctl}, $new_file)) {print OUT "Error: Unable to copy control stream.\n"; $error_flag=1;}
+  my $up_one = one_dir_up($cwd);
+  my $data_file =~ s/\.\./$up_one/;
+  $data_file = unix_path(@data[1]);
+  my $csv_file = extract_file_name ($data_file);
+  unless (copy($data_file, $new_dir."/".$csv_file)) {print OUT "echo Error: Unable to copy dataset. \n"; $error_flag=1;}
+  @data[1] = $csv_file;
+  push (my @batch, $new_file);
+  replace_block (\@batch, '$DATA', join(" ",@data));
+  
   $for="FOR";
   if (@fortran3[1]=~$for) {
     copy (@fortran3[0].".for",$new_dir."/".@fortran3[0].".for");
@@ -3680,6 +3686,7 @@ sub frame_models_show {
  
   our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'#ffffe0', -font => $font_normal);
   our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'white', -font => $font_normal);
+  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'red', -font => $font_normal);
   our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);
   our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'w', -pady => 0, -padx => 2, -font => $font_normal );
   our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'e', -pady => 0, -padx => 2, -font => $font_normal );
@@ -4190,6 +4197,15 @@ sub update_new_dir {
    if ($nm_dir_entry) {$nm_dir_entry -> update()};
 }
 
+sub enable_run_new_dir_checkbox {
+  $checked = shift;
+  if ($checked==0) {
+    $nm_dir_entry -> configure(-state=>'disabled');
+  } else {
+    $nm_dir_entry -> configure(-state=>'normal');
+  }
+}
+
 sub show_run_method {
 ### Purpose : Show the buttons for running/executing runs. For nmfe-, PsN- or WFN-method specific buttons are created in "method_specific_options" 
 ### Compat  : W+L+ 
@@ -4260,11 +4276,9 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
    our $nm_dir_entry = $run_frame -> Entry (-textvariable=>\$run_in_nm_dir, -width=>16, -relief=>'sunken', -border=>1, -state=>'disabled'
    ) -> grid(-column=>3,-row=>2, -columnspan=>2, -sticky=>'nwes');
    our $nm_dir_checkbutton = $run_frame -> Checkbutton(-text=>"in new dir: ", -background=>$bgcol, -variable=>\$nm_dir_check, -command=>sub{
-     if ($nm_dir_check==0) {$nm_dir_entry -> configure(-state=>'disabled')} else {
-       update_new_dir();
-       $nm_dir_entry -> configure(-state=>'normal')
-     }
-   })->grid(-column=>2,-row=>2, -sticky=>"e"); 
+     enable_run_new_dir_checkbox ($nm_dir_check);
+   })->grid(-column=>2,-row=>2, -sticky=>"e");
+   enable_run_new_dir_checkbox($nm_dir_check);
    our $run_local_button = $run_frame->Button(-image=>$gif{run}, -border=>$bbw,-width=>45, -background=>$button, -activebackground=>$abutton,-command=> sub{
       unless ($nm_version_chosen eq "") { #NM installed?
         if ($cluster_active==1)  {
@@ -4316,8 +4330,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
         if ($cluster_active==1){
             distribute ($nm_version_chosen, $method_chosen, "NMQual");
         } else {
-            print "Run";
-            if($method_chosen =~ m/run here/i) {
+            unless($method_chosen =~ m/in new directory/i) {
               my $rand_filename = exec_run_nmq ($nm_dirs{$nm_version_chosen}, \@files, $nmq_params);
               my $nmq_command = "start /low ".$rand_filename;
               if($stdout) {$stdout -> insert('end', "\n".$nmq_command);}
@@ -4654,9 +4667,9 @@ sub show_inter_window {
       $inter_window -> iconimage($gif{network}); # doesn't work properly for some reaseon
       $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>0);
       our $inter_dirs;
-      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nwse");
-      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal,-width=>85, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"w");
-      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
+      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nws");
+      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -justify=>"l", -anchor=>"w", -font=>$font_normal,-width=>96, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"we");
+      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wnse");
       $inter_frame_buttons -> Button (-text=>'Rescan directories',  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
@@ -4683,40 +4696,35 @@ sub show_inter_window {
          $grid_inter -> delete("all");
          inter_results ($cwd."/".@info[0]);
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
-    
+      
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
-      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nwse");
-      $inter_intermed_frame -> Label (-text=>'Note: to get intermediate estimates from runs, MSF files are needed.', -foreground=>"#666666", -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
+      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nws");
+      $inter_intermed_frame -> Label (
+        -text=>"\nNote: to obtain intermediate estimates from runs, the specification\nof MSF files are needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the $EST block.", 
+        -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
       $inter_intermed_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>3, -sticky=>"w");
     } else {$inter_window -> focus};
     inter_status ("Searching sub-directories for active runs...");
     chdir ($cwd);
       
     my @headers = ( "MSF", "Iterations","OFV");
-    my @headers_widths = (60, 60, 60, 160,160);
+    my @headers_widths = (60, 60, 60, 160,240);
     
     our $grid = $inter_window_frame ->Scrolled('HList', -head => 1, 
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
         -height     => 6, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 100, -background => 'white',
-        -browsecmd => sub{
-          @info = $grid->infoSelection();
-          chdir (@info[0]);
-          my ($sub_iter, $sub_ofv, $descr) = get_run_progress();
-          chdir ($cwd);
-          inter_results ($cwd."/".@info[0]);
-        }
+        -width      => 110, -background => 'white'
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");   
     
     my @headers_inter = (" ","Theta", "Omega","Sigma", "Gradients", " ");
-    my @headers_inter_widths = (24, 54, , 54, 54, 100);
+    my @headers_inter_widths = (24, 54, 54, 54, 54);
 
     our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1, 
         -columns    => 6, -scrollbars => 'e', -highlightthickness => 0,
-        -height     => 15, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 100, -background => 'white',
-    )->grid(-column => 1, -columnspan=>7, -row => 1);   
+        -height     => 18, -border     => 0, -selectbackground => $pirana_orange,
+        -width      => 45, -background => 'white',
+    )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");   
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
         $grid -> columnWidth($x, @headers_widths[$x]);
@@ -4732,11 +4740,124 @@ sub show_inter_window {
       $grid_inter -> columnWidth($x, @headers_inter_widths[$x]);
       $x++;
     }
+    
+   # create the gradient plot
+   $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe'); 
+   my @plot_title = ("",20);
+   @border = (8,55,40,52); # top, right, bottom, lef
+   our $gradients_plot = $plot_frame -> PlotDataset
+    ( -width => 360, -height => 300,
+      -background => $bgcol, -border=> \@border,
+      -plotTitle => \@plot_title, 
+      -xlabel => "Iteration", -ylabel => "Gradient",
+      -y1label => 'OFV', -xType => 'linear', -yType => 'linear',
+      -y1TickFormat => "%d", -xTickFormat => "%g", -yTickFormat => "%d" 
+    ) -> grid(-column=>2, -row=>1);
+   $gradients_plot -> configure (-fonts =>
+     ['Arial 7',   # axes ticks
+      'Arial 8 italic', # axes labels
+      'Arial 9 bold',  # title
+      'Arial 7' # legend
+      ]);         
    $grid_inter -> update();
-   @n = get_runs_in_progress();
+   $grid -> configure(-browsecmd => sub{ # can only be implemented at the end of the subroutine
+          # this is a workaround to avoid difficulties induced by the Hlist widget (browsecmd is issued twice)
+          # still sometimes, an error occurs (may be a bug in Tk::PlotDataset)
+          $diff = str2time(localtime()) - $last_time;  
+          our $last_time = str2time(localtime());
+          my @info = $grid->infoSelection();
+          
+          if (($diff > 0)||($last_chosen ne @info[0])) {
+            our $last_chosen = @info[0];  
+            chdir ("./".@info[0]);
+            my ($sub_iter, $sub_ofv, $descr, $minimization_done) = get_run_progress();
+            chdir ($cwd);
+            inter_results ($cwd."/".@info[0]);
+            $gradients_plot -> clearDatasets;
+            my $lines_ref = update_gradient_plot($sub_iter);
+            my $gradient_info = $plot_frame -> Balloon();
+            unless ($lines_ref == 0) {
+              my @lines = @$lines_ref;
+              foreach my $line (@lines) {
+                if ($line =~ m/linegraph/i) { # test if correct Tk format
+                  $gradients_plot -> addDatasets($line);
+                }
+              }
+            }
+            my $ofv_line = update_ofv_plot($sub_iter);
+            unless ($ofv_line == 0) {    
+              if ($ofv_line =~ m/linegraph/i) { # test if correct Tk format
+                $gradients_plot -> addDatasets($ofv_line);
+              }
+            }
+            $gradients_plot -> plot;
+          }
+   });
+   our @n = get_runs_in_progress();
    if ( int(@n) == 1 ) {
          inter_status ("No active runs found");
   } else {inter_status()};
+}
+
+sub update_gradient_plot {
+  my $sub_iter = shift;
+  my @x_all; my @y_all;
+  for (my $n_iter=1; $n_iter <= $sub_iter; $n_iter++) {
+     for (my $n_grad=1; $n_grad <= @gradients; $n_grad++) {
+       my $gradient = shift (@all_gradients); 
+       if (!($gradient =~ m/na/i)) {
+         my $x_ref = @x_all[$n_grad];
+         my $y_ref = @y_all[$n_grad];
+         my @x = @$x_ref;
+         my @y = @$y_ref;
+         push (@x, $n_iter);
+         push (@y, $gradient);
+         @x_all[$n_grad] = \@x;
+         @y_all[$n_grad] = \@y;
+       };
+     }
+  } 
+  my @lines;
+  my $i=0;
+  foreach (@x_all) {
+    my $x_ref = @x_all[$i];
+    my $y_ref = @y_all[$i];
+    if (@$y_ref > 0) {
+      my $line = LineGraphDataset -> new (
+        -name => "Gradient ".($i+1),
+        -xData => $x_ref,
+        -yData => $y_ref,
+        -yAxis => 'Y',
+        -color => 'darkblue',
+        -lineStyle => 'normal',
+        -pointStyle => 'none'
+      );
+      push(@lines, $line);
+    }
+    $i++;
+  }
+  if(@lines>0) {
+    return(\@lines)
+  } else {return(0)};   
+}
+
+sub update_ofv_plot {
+  my $sub_iter = shift;
+  my @x = (1 .. $sub_iter);
+  my $line = LineGraphDataset -> new (
+        -name => "OFV",
+        -xData => \@x,
+        -yData => \@all_ofv,
+        -yAxis => 'Y1',
+        -color => 'red',
+        -lineStyle => 'normal',
+        -pointStyle => 'none'
+      );
+  if (@x>1) {
+    return($line);
+  } else {
+    return (0)
+  }
 }
 
 sub inter_status {
@@ -4753,18 +4874,24 @@ sub inter_status {
 sub inter_window_add_item {
 ### Purpose : Add item in the intermediate results window
 ### Compat  : W+L+
-    $item = shift;
+    my ($item, $minimization_done) = @_;
     my $dir1;
     my $i=1;
+    my $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'white', -font => $font_normal);
+    my $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);
+    if ($minimization_done == 1) { # make green, probably busy doing the covariance step
+      $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>$lightgreen, -font => $font_normal);
+      $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$lightgreen, -font => $font_normal);
+    } 
     unless ($item =~ m/HASH/) {  # for some reason this sometimes is necessary.
         $grid->add($item);
-        $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right);
-        $grid->itemCreate($item, 1, -text => $res_iter{$item}, -style=>$align_right );
-        $grid->itemCreate($item, 2, -text => $res_ofv{$item}, -style=>$align_right);
+        $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right_style);
+        $grid->itemCreate($item, 1, -text => $res_iter{$item}, -style=>$align_right_style );
+        $grid->itemCreate($item, 2, -text => $res_ofv{$item}, -style=>$align_right_style);
         if ($item eq "/") { $dir1 = $item} else { $dir1 = "/".$item }
         $res_dir{$item} = $dir1;
-        $grid->itemCreate($item, 3, -text => $dir1, -style=>$align_left);
-        $grid->itemCreate($item, 4, -text => $res_descr{$item}, -style=>$align_left);
+        $grid->itemCreate($item, 3, -text => $dir1, -style=>$align_left_style);
+        $grid->itemCreate($item, 4, -text => $res_descr{$item}, -style=>$align_left_style);
         $i++;
     }
     $grid -> update();
@@ -4784,9 +4911,9 @@ sub get_runs_in_progress {
       #unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
         if (-e "INTER") {
           if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
-            ($res_iter {"/"}, $res_ofv {"/"}, $res_descr{"/"}) = get_run_progress("OUTPUT");
+            ($res_iter {"/"}, $res_ofv {"/"}, $res_descr{"/"}, $minimization_done) = get_run_progress("OUTPUT");
           }
-          inter_window_add_item("/");
+          inter_window_add_item("/", $minimization_done);
         }
       #}
     }  
@@ -4801,12 +4928,12 @@ sub get_runs_in_progress {
       # unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
         if (-e "INTER") {
           if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
-            ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}) = get_run_progress("OUTPUT");
+            ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("OUTPUT");
           }
           @msf = glob("*MSF*");
           @msf[0] =~ s/MSF//ig;
           $res_runno{$sub} = @msf[0];
-          inter_window_add_item($sub);
+          inter_window_add_item($sub, $minimization_done);
         }
       #}
     }
@@ -4821,15 +4948,15 @@ sub get_runs_in_progress {
             $sub =~ s/$dir//; # relative dir
             inter_status ("Searching ".$sub." for active runs...");
             if (-e "OUTPUT") {
-              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}) = get_run_progress("psn.lst");
+              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
             }
             if (-e "psn.lst") {
-              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}) = get_run_progress("psn.lst");
+              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
             }
             @msf = glob("*MSF*");
             @msf[0] =~ s/MSF//ig;
             $res_runno{$sub} = @msf[0];
-            inter_window_add_item($sub);
+            inter_window_add_item($sub, $minimization_done);
           }
       }
       chdir ("..")
@@ -4844,18 +4971,22 @@ sub get_runs_in_progress {
 sub get_run_progress {
 ### Purpose : Return the number of iterations and OFV of a currently running model
 ### Compat  : W+L+
-  $output_file = shift;
+  my $output_file = shift;
   @l = dir (".", $setting{ext_res});
   if (int(@l)>0) {
     $output_file = @l[0];
   }
- # if (-e "psn.lst") {$output_file = "psn.lst"};
   if ((-e "OUTPUT")&&(-s "OUTPUT" >0)) {$output_file = "OUTPUT"};
   $sub_iter =""; $sub_ofv="";
   open (OUT,"<".$output_file);
   @lines = <OUT>;
   close OUT;
-  our @gradients; 
+  undef our @gradients;      # global variable, bad design, but for some reason local variables are not transferred correctly
+  undef our @all_gradients; 
+  undef our @all_ofv;
+  undef our $sub_iter;
+  undef our $sub_ofv;
+  my $minimization_done = 0;
   foreach $line (@lines) {
      if($line =~ m/ITERATION/gi) {
        our $sub_iter = substr($line,15,9);
@@ -4863,11 +4994,13 @@ sub get_run_progress {
        our $sub_ofv = substr($line,41,12);
        $sub_ofv =~ s/\s//g;
        $sub_ofv = rnd($sub_ofv, 7);
+       push (@all_ofv, $sub_ofv);
        our $sub_eval = substr($line,76,3);
        $sub_eval =~ s/\s//g;
      }
-     delete @gradients[0..@gradients];
      if ($line =~ m/GRADIENT/) {
+       push (@all_gradients, @gradients);
+       delete @gradients[0..@gradients];
        $line =~ s/GRADIENT:// ;
        my @gradients_line = split(" ",$line);
        foreach (@gradients_line) {
@@ -4878,13 +5011,9 @@ sub get_run_progress {
          }
        }  
      }
-     if ($_ =~ m/OBJECTIVE VALUE/) {
-      @ofv_line = split (/:/, $_);
-      $sub_ofv = @ofv_line[2];
-      $sub_ofv = substr($ofv,0,16);
-      $sub_ofv =~ s/\s//g;
-      $ofv_found = 1;
-    } 
+    if (($line =~ /MINIMIZATION/)||($line =~ m/OBJECTIVE FUNCTION IS TO BE EVALUATED/)) {
+      $minimization_done = 1;
+    }
   }
   # try to get a description of the model
   @m = dir (".", $setting{ext_ctl});
@@ -4894,8 +5023,8 @@ sub get_run_progress {
     my $modelno =~ s/\.$setting{ext_ctl}//;
     $mod_ref = extract_from_model (@m[0], $modelno,"")
   }
-  my %mod = %$mod_ref; 
-  return ($sub_iter, $sub_ofv, $mod{description});
+  my %mod = %$mod_ref;
+  return ($sub_iter, $sub_ofv, $mod{description}, $minimization_done);
 }
 
 sub inter_results {
@@ -4939,9 +5068,15 @@ sub inter_results {
   foreach (@gradients) {
     if ($i > $n) {
         $n = $i;
-        $grid_inter->add($i);
+        $grid_inter -> add($i);
     }
-    $grid_inter->itemCreate($i, 4, -text => $_, -style=>$align_right);
+    my $style;
+    if ($_ == 0) {
+      $style = $align_right_red
+    } else {
+      $style = $align_right;  
+    }
+    $grid_inter->itemCreate($i, 4, -text => $_, -style=>$style);
     $i++;
   }
 } 
@@ -5159,26 +5294,7 @@ sub batch_replace_block { # change block in models
     $replace_block_text -> configure(state=>'disabled'); 
     $replace_block_frame -> Button (-text=>"Do", -width=>10, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       my $replace_with = $block_replace -> get("0.0", "end");
-      my $no_changed = 0;
-      foreach my $mod (@batch) {
-        open (MOD, "<".$mod);
-        my @lines = <MOD>;
-        close MOD;
-        open (WMOD, ">".$mod);
-        my $bl_flag = 0;
-        foreach my $line (@lines) {
-          if (substr($line,0,1) eq "\$") {$bl_flag = 0}
-          if (substr($line,0,length($block)) eq $block) {
-            print WMOD $replace_with."\n";
-            $bl_flag = 1;
-          }
-          if ($bl_flag==0) {
-            print WMOD $line;          
-          }
-        }
-        close WMOD;
-        $no_changed++;
-      }
+      my $no_changed = replace_block(\@batch, $block, $replace_with);
       message($block." block changed in ".$no_changed." models.");
       $replace_block_window -> destroy;
       return();

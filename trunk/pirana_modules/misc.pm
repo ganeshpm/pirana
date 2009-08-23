@@ -5,7 +5,19 @@ package pirana_modules::misc;
 use strict;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(dir ascend log10 bin_mode rnd one_dir_up win_path unix_path tab2csv csv2tab center_window read_dirs_win win_start);
+our @EXPORT_OK = qw(replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+
+sub replace_string_in_file {
+  my ($filename, $string, $replace) = @_;
+  open (IN, "+<".$filename);
+  my @file = <IN>;
+  seek IN,0,0;
+  foreach (@file){
+    $_ =~ s/$string/$replace/g;
+    print IN $_;
+  } 
+  close IN;
+}
 
 sub dir {
 ### Purpose : Return files in a dir
@@ -88,6 +100,15 @@ sub unix_path {
   my $unix_dir = @_[0];
   $unix_dir =~ s/\\/\//g ;
   return $unix_dir;
+}
+
+sub extract_file_name {
+### Purpose : Return only the filename from a full given path
+### Compat  : W+L+
+  my $full = unix_path(shift);
+  my @parts = split ("/",$full);
+  my $file_name = @parts[int(@parts)-1];
+  return($file_name);
 }
 
 sub csv2tab {
