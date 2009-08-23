@@ -295,6 +295,8 @@ sub show_plot {
      -height => 460,
      -background => 'white',
      -plotTitle => \@title,
+     -autoScaleX=> "On",
+     -autoScaleY=> "On",
      -xlabel => $xlab,
      -ylabel => $ylab,
      -y1label => '',
@@ -325,7 +327,7 @@ sub show_plot {
      );
      $graph -> addDatasets($unity_line); 
     }
- # $graph -> plot;
+  $graph -> plot;
   #status ();
 }
 
