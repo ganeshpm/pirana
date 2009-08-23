@@ -289,7 +289,6 @@ sub show_plot {
     push(@xdata, 0); push(@ydata,0);  
     @title = ("Empty dataset",20);
   }
-  
    my $graph = $plot_frame -> PlotDataset
     (
      -width => 460,
@@ -326,7 +325,7 @@ sub show_plot {
      );
      $graph -> addDatasets($unity_line); 
     }
-  $graph -> plot;
+ # $graph -> plot;
   #status ();
 }
 

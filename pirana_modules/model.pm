@@ -8,7 +8,7 @@ use File::stat;
 use pirana_modules::misc  qw(rnd); 
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML);
+our @EXPORT_OK = qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML);
 
 sub change_seed {
 ### Purpose : Change the seed in SIM to a random number (invoke random_sim_block)
@@ -25,6 +25,33 @@ sub change_seed {
   open (WMOD, ">".$mod);
   print WMOD @lines;
   close WMOD;
+}
+
+sub replace_block {
+  my ($batch_ref, $block, $replace_with) = @_;
+  my @batch = @$batch_ref; 
+      
+  my $no_changed = 0;
+  foreach my $mod (@batch) {
+    open (MOD, "<".$mod);
+    my @lines = <MOD>;
+    close MOD;
+    open (WMOD, ">".$mod);
+    my $bl_flag = 0;
+    foreach my $line (@lines) {
+      if (substr($line,0,1) eq "\$") {$bl_flag = 0}
+      if (substr($line,0,length($block)) eq $block) {
+        print WMOD $replace_with."\n";
+        $bl_flag = 1;
+      }
+      if ($bl_flag==0) {
+        print WMOD $line;          
+      }
+    }
+    close WMOD;
+    $no_changed++;
+  }
+  return ($no_changed);
 }
 
 sub random_sim_block {
