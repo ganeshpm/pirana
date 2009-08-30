@@ -2068,7 +2068,7 @@ sub read_curr_dir {
       if ($file_type{$mod} == 2) {
         $mod =~ s/\.$setting{ext_ctl}//i;
         if (exists $models_dates_db{$mod}) { # if already exists in db-hash then do nothing
-            # check if newer model or results file. if so, update db
+          # check if newer model or results file. if so, update db
           if ($models_dates{$mod} != $models_dates_db{$mod}) {
             push(@sql_commands, update_model_descr ($mod));
           }
@@ -4669,7 +4669,7 @@ sub show_inter_window {
       our $inter_dirs;
       $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nws");
       $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -justify=>"l", -anchor=>"w", -font=>$font_normal,-width=>96, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"we");
-      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wnse");
+      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
       $inter_frame_buttons -> Button (-text=>'Rescan directories',  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
