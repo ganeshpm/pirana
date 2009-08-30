@@ -780,7 +780,7 @@ sub extract_from_model {
         my @data_arr = split (" ", $_);
         shift(@data_arr);
         my $dataset = "";
-        while ($dataset eq "") {$dataset = shift(@data_arr)};
+        while (($dataset eq "")&&(@data_arr>0)) {$dataset = shift(@data_arr)};
         $mod{dataset} = $dataset;
       }
       if ($theta_area+$omega_area+$sigma_area>0) {
