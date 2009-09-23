@@ -38,7 +38,7 @@ use DBI;                    # database connection to sqlite
 use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
-our $version="2.1b";
+our $version="2.1"; # version 2.1 "St.Petersburg"
 our $os = $^O;
 our $base = cwd();
 if ($os =~ m/MSWin/i) {

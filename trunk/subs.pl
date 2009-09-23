@@ -626,6 +626,7 @@ sub add_nm_inst {
   $nm_inst_frame -> Label (-text=>"NM version: ")->grid(-row=>4,-column=>1,-sticky=>"e");
   $nm_name="NM6";
   $nm_dir ="C:\\nmvi"; 
+  my $nm_type = "regular";
   $nm_inst_frame -> Entry (-textvariable=>\$nm_name,-border=>$bbw,-width=>16,-border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>2,-sticky=>"w");
   $nm_inst_frame -> Entry (-textvariable=>\$nm_dir,-border=>$bbw,-width=>40,-border=>2, -relief=>'groove')
@@ -642,7 +643,7 @@ sub add_nm_inst {
   $nm_inst_frame -> Optionmenu (-options=>["Local","Cluster"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
     -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue)
          ->grid(-column=>2,-row=>1,-sticky=>"w");   
-  $nm_inst_frame -> Optionmenu (-options=>["6","5"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal, 
+  $nm_inst_frame -> Optionmenu (-options=>["5","6","7"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal, 
     -background=>$lightblue, -activebackground=>$darkblue)
          ->grid(-column=>2,-row=>4,-sticky=>"w");       
   $nm_inst_frame -> Label (-text=>" ")->grid(-row=>5,-column=>1,-sticky=>"e");
@@ -661,7 +662,7 @@ sub add_nm_inst {
           $nm_type = "nmqual";
           $valid_nm = 1;
         }
-        if (-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat") {
+        if ((-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/run/nmfe".$nm_ver).".bat")) {
           $nm_type = "regular";
           $valid_nm = 1;
         }
@@ -1487,13 +1488,15 @@ sub nmfe_files {
     my $ver=$nm_vers{$_};
     my $dir=$nm_dirs{$_};
     my $type=$nm_types{$_};
+    my $nm_sub_dir = "util";
+    if (-e $dir."/run/nmfe".$ver.".bat") {$nm_sub_dir = "run"}; # for NM7, nmfe7.bat is located in /run
     unless ($dir eq "") {
     #unless (-e $dir."/util/pirana_runs".$ver.".bat") {
-      open (OUT,">".$dir."/util/pirana_runs".$ver.".bat");
+      open (OUT,">".$dir."/".$nm_sub_dir."/pirana_runs".$ver.".bat");
       print OUT ":loop\n";
       print OUT "IF '%1' == '' GOTO END\n";
       print OUT "COLOR 4F\n";
-      print OUT "CALL ".$dir."\\util\\nmfe".$ver.".bat %1.".$setting{ext_ctl}." %1.".$setting{ext_res}."_tmp\n";
+      print OUT "CALL ".$dir."\\".$nm_sub_dir."\\nmfe".$ver.".bat %1.".$setting{ext_ctl}." %1.".$setting{ext_res}."_tmp\n";
       print OUT "COLOR 07\n";
       print OUT "copy note.txt + %1.".$setting{ext_res}."_tmp %1.".$setting{ext_res}."\n";
       print OUT "del %1.".$setting{ext_res}."_tmp\n";
@@ -1503,11 +1506,11 @@ sub nmfe_files {
       if ($setting{quit_shell}==1) {print OUT "exit\n";}  
       close OUT;
     #}
-    unless ((-e $dir."/util/pirana_nmfe".$ver."_compile.bat")||(-d $dir."/test/")) {
-      unless (copy ($dir."/util/nmfe".$ver.".bat", $dir."/util/pirana_nmfe".$ver."_compile.bat")) {print LOG "Compile batch file could not be created.\n"; close LOG; intro_msg(1)};
-      open (COMP,"<".$dir."/util/pirana_nmfe".$ver."_compile.bat");
+    unless ((-e $dir."/".$nm_sub_dir."/pirana_nmfe".$ver."_compile.bat")||(-d $dir."/test/")) {
+      unless (copy ($dir."/".$nm_sub_dir."/nmfe".$ver.".bat", $dir."/".$nm_sub_dir."/pirana_nmfe".$ver."_compile.bat")) {print LOG "Compile batch file could not be created.\n"; close LOG; intro_msg(1)};
+      open (COMP,"<".$dir."/".$nm_sub_dir."/pirana_nmfe".$ver."_compile.bat");
       @lines=<COMP>; close COMP;
-      open (OUT,">".$dir."/util/pirana_nmfe".$ver."_compile.bat");
+      open (OUT,">".$dir."/".$nm_sub_dir."/pirana_nmfe".$ver."_compile.bat");
       $k=0; $flag=0;
       foreach(@lines) {
         if (@lines[$k] =~ m/Starting/ && $flag==0) {
@@ -2485,7 +2488,9 @@ sub exec_run_nmfe {
     } else {
       print_note($nm_inst);
       #print $ENV{'PATH'};
-      my $command = "start /low ".win_path($nm_dirs{$nm_inst}."/util/pirana_runs".$nm_vers{$nm_inst}.".bat ".$file_string);
+      my $nm_sub_dir = "util";
+      if (-e win_path($nm_dirs{$nm_inst}."/run/pirana_runs".$nm_vers{$nm_inst}.".bat")) {$nm_sub_dir = "run";}
+      my $command = "start /low ".win_path($nm_dirs{$nm_inst}."/".$nm_sub_dir."/pirana_runs".$nm_vers{$nm_inst}.".bat ".$file_string);
       if ($stdout) {$stdout -> insert('end', "\n".$command);}
       system $command;
       foreach my $model (@files) {
@@ -4360,15 +4365,9 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
     #print $psn_nm_versions_ref;
     chdir($cwd); 
     if ($psn_option eq "") {$psn_option="execute";}
-    $psn_parameters = $psn_commands{$psn_option};
+    our $psn_parameters = $psn_commands{$psn_option};
     update_psn_lst_param();
     update_psn_zink ();  
-   $psn_command_entry = $run_frame -> Entry(-textvariable=>\$psn_parameters, 
-      -width=>(36),-border=>2, -relief=>'groove',-font=>$font_small,-background=>"#FFFFFF")
-   ->grid(-sticky=>'wens',-row=>2,-column=>2,-columnspan=>3,-ipady=>4);
-    
-    my $psn_text = get_psn_info($psn_option);
-    $help->attach($psn_command_entry, -msg => $psn_text);
     
     # bit of a workaround to get "default" option as first option...
     my %psn_nm_versions_copy = %psn_nm_versions;
@@ -4437,6 +4436,13 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
       chdir ($cwd);
     })->grid(-row=>1,-column=>5,-columnspan=>1,-rowspan=>2,-sticky=>'wens');   
     $help->attach($run_psn_button, -msg => "Run model(s) using PsN");
+  
+    our $psn_command_entry = $run_frame -> Entry(-textvariable=>\$psn_parameters, 
+      -width=>36, -border=>2, -relief=>'groove', -font=>$font_small, -background=>"#FFFFFF"
+    ) -> grid(-sticky=>'wens',-row=>2,-column=>2,-columnspan=>3,-ipady=>4);
+    my $psn_text = get_psn_info($psn_option);
+    $help->attach($psn_command_entry, -msg => $psn_text);
+    
   }
   
   if ($run_method eq "WFN") {
