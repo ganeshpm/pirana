@@ -124,9 +124,12 @@ sub recalc_cov {
 ### Purpose : Does the actual calculation used in cov_calc_window
 ### Compat  : W+L+
   my ($var1,$var2,$covar) = @_;
+  my $neg_flag = 0;
   if ($var1!=0) {$var1_sd=rnd(sqrt($var1),3);}
   if ($var2!=0) {$var2_sd=rnd(sqrt($var2),3);}
+  if ($covar<0) {$covar = -$covar; $neg_flag = 1;}
   if ($covar!=0) {$covar_sd=rnd(sqrt($covar/($var1_sd*$var2_sd)),3)};
+  if ($neg_flag == 1 ) {$covar_sd = -$covar_sd};
   $var1_sd_entr -> update();
   $var2_sd_entr -> update();
   $covar_sd_entr -> update();
@@ -1644,10 +1647,14 @@ sub initialize {
 sub cluster_monitor {
 ### Purpose : Create a window showing the active nodes in the PCluster
 ### Compat  : 
-    our $cluster_view = $mw -> Toplevel(-title=>'Cluster monitor');
-    $cluster_view -> resizable( 0, 0 );
-    $cluster_view -> Popup;
-    $cluster_view -> iconimage($gif{network}); # doesn't work properly for some reaseon
+    unless ($cluster_view) {
+      our $cluster_view = $mw -> Toplevel(-title=>'Cluster monitor');
+      $cluster_view -> OnDestroy ( sub{
+        undef $cluster_view; undef $project_window_frame;
+      });
+      $cluster_view -> resizable( 0, 0 );
+      $cluster_view -> Popup;
+    }
     $cluster_view_frame = $cluster_view -> Frame()->grid(-ipadx=>5,-ipady=>5);
     populate_cluster_monitor();
     $cluster_view_frame -> Button (-text=>'Refresh',  -width=>10, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
@@ -1666,23 +1673,17 @@ sub populate_cluster_monitor {
     my $capacity = 0; my $in_use = 0;
    ($capacity += $_) for values (%total_cpus);
    ($in_use += $_) for values (%busy_cpus);
-    unless($cluster_monitor_grid) {
-      our $available_label = $cluster_view_frame -> Label (
-        -text=>"Total CPUs: ".$capacity."  In use: ".$in_use,
-        -font=>$font_bold
-      ) -> grid(-column =>1, -columnspan=>5, -row=>0, -sticky=>"w");
-      my @widths  = (25, 100, 30, 30,5);
-      my @headers = ( "Client", "Owner", "CPUs", "In use"," ");
-      our $cluster_monitor_grid = $cluster_view_frame ->Scrolled('HList',
-        -head       => 1,
-        -columns    => 5,
-        -scrollbars => 'e',
-        -width      => 32,
-        -height     => 16,
-        -border     => 0,
-        -background => 'white',
-      )->grid(-column => 1, -columnspan=>2,-row => 1);
-    }   
+    undef $cluster_monitor_grid;
+    our $available_label = $cluster_view_frame -> Label (
+      -text=>"Total CPUs: ".$capacity."  In use: ".$in_use,
+      -font=>$font_bold
+    ) -> grid(-column =>1, -columnspan=>5, -row=>0, -sticky=>"w");
+    my @widths  = (25, 100, 30, 30,5);
+    my @headers = ( "Client", "Owner", "CPUs", "In use"," ");
+    our $cluster_monitor_grid = $cluster_view_frame ->Scrolled('HList',
+      -head       => 1, -columns    => 5, -scrollbars => 'e',
+      -width      => 32, -height => 16, -border => 0, -background => 'white',
+    )->grid(-column => 1, -columnspan=>2,-row => 1);
     my $i=0;
     foreach my $x ( 0 .. $#headers ) {
         $cluster_monitor_grid -> header('create', $x, -text=> $headers[$x], -headerbackground => 'gray');
@@ -4226,8 +4227,10 @@ sub show_run_method {
         -activebackground=>"#a0a0a0", -command=> sub{ 
           if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
             $run_method_nm_type="NMQual";
-          } else {$run_method_nm_type="nmfe"}
-          method_specific_options();
+          } else {$run_method_nm_type=$run_method};
+          unless ($run_method_nm_type eq "PsN") {
+            method_specific_options($run_method_nm_type);
+          }
         })-> grid(-row=>2,-column=>1,-columnspan=>2,-sticky => 'wns');
       $help->attach($nm_versions_menu, -msg => "Choose NM installation to use");
     }
@@ -4292,7 +4295,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
           }
           if ($setting{use_cluster}==1) { # run on regular cluster
             $cwd = $dir_entry -> get();
-            if ($cwd =~ m/$setting{cluster_drive}/i) {
+            if (lcase(substr($cwd,0,1)) eq lcase(substr($setting{cluster_drive},0,1))) {
               exec_run_nmfe ($nm_version_chosen, $method_chosen);
               chdir($cwd);
             } else {
@@ -4358,7 +4361,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
       })->grid(-row=>1,-column=>5, -columnspan=>1, -rowspan=>2,-sticky=>'wens');
     $help->attach($nmq_run_local_button, -msg => "Run model(s)");
   }
-  if (($run_method eq "PsN")&&($setting{use_psn}==1)) {
+  if ($run_method eq "PsN") {
     my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software);
     %psn_nm_versions = %$psn_nm_versions_ref;
     #delete ($psn_nm_versions{"default"}); 
@@ -4402,7 +4405,7 @@ if (($run_method eq "NONMEM")&&($run_method_nm_type ne "NMQual")) {
         foreach (@ctl_show[@runs]) {$files = $files." ".$_.".".$setting{ext_ctl}};
       }
       if ($cluster_active==1) {
-        if (substr($cwd,0,1) eq substr($setting{cluster_drive},0,1)) {
+        if (lcase(substr($cwd,0,1)) eq lcase(substr($setting{cluster_drive},0,1))) {
           @cur_dir = split('/',unix_path($cwd));
           shift(@cur_dir);
           $cur_dir_unix = join('/',@cur_dir); 

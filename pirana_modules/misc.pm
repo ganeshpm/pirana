@@ -5,8 +5,13 @@ package pirana_modules::misc;
 use strict;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+our @EXPORT_OK = qw(lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
 
+sub lcase {
+  my $string = shift;
+  my $string =~ tr/A-Z/a-z/;
+  return($string);
+}
 sub replace_string_in_file {
   my ($filename, $string, $replace) = @_;
   open (IN, "+<".$filename);

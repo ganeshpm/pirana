@@ -38,7 +38,7 @@ use DBI;                    # database connection to sqlite
 use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
-our $version="2.1"; # version 2.1 "St.Petersburg"
+our $version="2.1.1"; # version 2.1 "Waimea Bay"
 our $os = $^O;
 our $base = cwd();
 if ($os =~ m/MSWin/i) {
@@ -66,7 +66,7 @@ use pirana_modules::db        qw(db_create_tables db_log_execution db_read_exec_
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::model     qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML); 
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start); 
+use pirana_modules::misc      qw(lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start); 
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 
@@ -236,7 +236,7 @@ $mbar_view -> checkbutton (-label => "Console output", -variable=> \$process_mon
   });
 
 our $mbar_help = $mbar -> cascade(-label =>"Help", -background=>$bgcol,-underline=>0, -tearoff => 0);
-$mbar_help -> command(-label => "Piraña manual", -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\Manual.pdf'))});
+$mbar_help -> command(-label => "Piraña manual", -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
 $mbar_help -> command(-label => "Piraña website", -background=>$bgcol,-underline=>0,-command=>sub {win_start($software{browser},"http://pirana.sf.net")});
 my @nm = values(%nm_dirs);
 our @nm_keys = keys(%nm_dirs);
