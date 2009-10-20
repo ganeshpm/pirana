@@ -3,6 +3,7 @@
 package pirana_modules::PsN;
 
 use strict;
+use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(get_psn_info get_psn_help get_psn_nm_versions);
@@ -10,8 +11,9 @@ our @EXPORT_OK = qw(get_psn_info get_psn_help get_psn_nm_versions);
 sub get_psn_info {
 ### Purpose : Get the info on a PsN command, by invoking the -h switch and capturing the output 
 ### Compat  : W+L? 
-  my $psn_command = shift;
-  open (OUT, $psn_command." -h |") or die "Could not open command: $!\n";
+  my ($psn_command, $psn_dir)  = @_;
+  print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
+  open (OUT, unix_path($psn_dir."/bin/".$psn_command)." -h |") or die "Could not open command: $!\n";
   my $psn_text = "";
   my $flag = 0;
   while (my $line = <OUT>) {
@@ -24,17 +26,17 @@ sub get_psn_info {
 sub get_psn_help {
 ### Purpose : Get the full help on a PsN command, by invoking the -help swith and capturing the output 
 ### Compat  : W+L?
-  my ($psn_command, $psn_dir) = shift;
+  my ($psn_command, $psn_dir) = @_;
   my $psn_text;
   if (-e $psn_dir."/bin/".$psn_command) {
-    open (OUT, $psn_command." --help |") or die "Could not open command: $!\n";
+    open (OUT, $psn_dir."/bin/".$psn_command." --help |") or die "Could not open command: $!\n";
     while (my $line = <OUT>) {
       $psn_text .= $line;
     }
     close OUT;
     return $psn_text;
   } else {
-    message ("PsN help file for command ".$psn_command." not found");
+    return ("PsN help file for command ".$psn_command." not found. Check PsN installation.");
   }
 }
 

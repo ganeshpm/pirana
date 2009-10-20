@@ -5,7 +5,18 @@ package pirana_modules::misc;
 use strict;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+our @EXPORT_OK = qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+
+sub generate_random_string {
+### Purpose : Generate a random string of n length
+### Compat  : W+L? 
+	my $length_of_randomstring=shift;
+	my @chars=('a'..'z','A'..'Z','0'..'9','_');
+	my $random_string;
+	foreach (1..$length_of_randomstring) 
+	{$random_string.=$chars[rand @chars];}
+	return $random_string;
+}
 
 sub lcase {
   my $string = shift;

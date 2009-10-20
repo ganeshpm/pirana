@@ -5,7 +5,7 @@ package pirana_modules::model;
 use strict;
 require Exporter;
 use File::stat;
-use pirana_modules::misc  qw(rnd); 
+use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start); 
 
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML);
@@ -637,10 +637,12 @@ sub output_results_HTML {
     unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,3)) };
     if (@theta_se[$i] ne "") {print HTML "<TD width=80 align=RIGHT>".rnd(@theta_se[$i],4)."</TD><TD width=80 align=RIGHT bgcolor='#EAEAEA'>".$rse."%</TD>"} 
       else {print HTML "<TD width=80>&nbsp;</TD><TD width=80 bgcolor='#EAEAEA'>&nbsp;</TD>"};
-    my $low = rnd($theta_bnd_low[$i],3);
-    my $up = rnd($theta_bnd_up[$i],3);
-    if ($low <= -100000) {$low = "-Inf"};
-    if ($up >= 100000) {$up = "+Inf"};
+    my $low = $theta_bnd_low[$i];
+    my $up = $theta_bnd_up[$i];
+    
+    if ($low <= -10000) {$low = "-Inf"} else {$low = rnd($theta_bnd_low[$i],3)};
+    if ($up >= 10000) {$up = "+Inf"} else {$up = rnd($theta_bnd_up[$i],3)};
+    
     print HTML "<TD align='right'>".$low."</TD><TD align='right' bgcolor='#EAEAEA'>".rnd(@theta_init[$i],3)."</TD><TD align='right'>".$up."</TD>";
     print HTML "</TR>\n";
     $i++;  
