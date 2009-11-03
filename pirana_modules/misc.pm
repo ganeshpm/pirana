@@ -3,9 +3,10 @@
 package pirana_modules::misc;
 
 use strict;
+use Cwd;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+our @EXPORT_OK = qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
 
 sub generate_random_string {
 ### Purpose : Generate a random string of n length
@@ -117,7 +118,15 @@ sub unix_path {
   $unix_dir =~ s/\\/\//g ;
   return $unix_dir;
 }
-
+sub os_specific_path {
+  my $str = shift;
+  if ($^O =~ m/MSWin/i) {
+    $str = win_path($str);
+  } else {
+    $str = unix_path($str);
+  }
+  return $str;
+}
 sub extract_file_name {
 ### Purpose : Return only the filename from a full given path
 ### Compat  : W+L+
@@ -230,6 +239,7 @@ sub read_dirs_win {
   }
   return @dirs;
 }
+
 sub win_start {
 ### Purpose : Start a program on Windows (with arguments)
 ### Compat  : W+L-
@@ -241,11 +251,29 @@ sub win_start {
   my $priority = "LOW_PRIORITY_CLASS";
   if (-e @_[0]) {
     Win32::Process::Create(my $Process, @_[0], $cmd_line, 0, $priority,".") || die "Failed to start @_[0]!";
+    return("");
   } else {
     my @file = split ('/',unix_path(@_[0]));
-    status("Cannot find ".$program.". Please check software settings.");
-    sleep 2;
-    status();
+    return("Cannot find ".$program.". Please check software settings.");
   }
 }
+sub linux_start {
+  my $curr_dir = cwd();
+  if (@_[1] ne "") {chdir (@_[1]); }
+  system (@_[0]." ".@_[1]." &");
+  chdir ($curr_dir);
+}
+
+sub start_command {
+  my $os = "$^O"; 
+  if ($os =~ m/MSWin/i) {
+    win_start (@_);
+  }
+  if ($os =~ m/linux/) {
+    linux_start(@_);
+  }
+  if ($os =~ m/linux/) {
+  }
+}
+
 1;

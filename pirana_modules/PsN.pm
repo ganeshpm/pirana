@@ -12,8 +12,8 @@ sub get_psn_info {
 ### Purpose : Get the info on a PsN command, by invoking the -h switch and capturing the output 
 ### Compat  : W+L? 
   my ($psn_command, $psn_dir)  = @_;
-  print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
-  open (OUT, unix_path($psn_dir."/bin/".$psn_command)." -h |") or die "Could not open command: $!\n";
+  #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
+  eval (open (OUT, unix_path($psn_dir."/".$psn_command)." -h |"));
   my $psn_text = "";
   my $flag = 0;
   while (my $line = <OUT>) {
@@ -26,18 +26,17 @@ sub get_psn_info {
 sub get_psn_help {
 ### Purpose : Get the full help on a PsN command, by invoking the -help swith and capturing the output 
 ### Compat  : W+L?
-  my ($psn_command, $psn_dir) = @_;
-  my $psn_text;
-  if (-e $psn_dir."/bin/".$psn_command) {
-    open (OUT, $psn_dir."/bin/".$psn_command." --help |") or die "Could not open command: $!\n";
-    while (my $line = <OUT>) {
-      $psn_text .= $line;
-    }
-    close OUT;
-    return $psn_text;
-  } else {
-    return ("PsN help file for command ".$psn_command." not found. Check PsN installation.");
+  my ($psn_command, $psn_dir)  = @_;
+  #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
+  eval (open (OUT, unix_path($psn_dir."/".$psn_command)." -help |"));
+  my $psn_text = "";
+  my $flag = 0;
+  while (my $line = <OUT>) {
+    $psn_text .= $line;
+    $flag = $flag + 0.5;
+    if (($psn_command =~ m/execute/gi)&&($flag = int($flag))) {chomp ($psn_text); $psn_text .= "\t"}
   }
+  return ($psn_text);
 }
 
 sub get_psn_nm_versions {
@@ -63,7 +62,7 @@ sub get_psn_nm_versions {
       $command = $setting{ssh_login}.' '.$software{psn_on_cluster}.'"psn -nm_versions &"';
   }
   if (my $stdout) {my $stdout -> insert('end', "\n".$command);};
-  open (OUT, $command." |") or die "Could not open command: $!\nCheck installation of PsN.";
+  eval (open (OUT, $command." |")); # or die "Could not open command: $!\nCheck installation of PsN.";
   my $flag = 0;
   my %psn_nm_versions;
   while (my $line = <OUT>) {
