@@ -19,14 +19,14 @@ sub db_create_tables {
       "model_id VARCHAR(20), date_mod INTEGER, date_res INTEGER, ref_mod VARCHAR(20), ".
       "descr VARCHAR(80), method VARCHAR(12), ofv DOUBLE, suc VARCHAR(2), cov VARCHAR(2), bnd VARCHAR(2), sig VARCHAR(4), ".
       "note TEXT, note_small VARCHAR(80), note_color VARCHAR(9)) ",
-    "ALTER TABLE model_db ADD COLUMN dataset VARCHAR(60)",
+   # "ALTER TABLE model_db ADD COLUMN dataset VARCHAR(60)",
     "CREATE TABLE IF NOT EXISTS table_db (".
       "table_id VARCHAR(50), date_mod INTEGER, ref_table VARCHAR(50), descr VARCHAR(160), ".
       "creator VARCHAR(40), link_to_script VARCHAR(80), note TEXT, table_color VARCHAR(9)) ",
     "CREATE TABLE IF NOT EXISTS executed_runs (".
       "model_id VARCHAR(20), descr VARCHAR(80), date_executed INTEGER, name_modeler VARCHAR(30), nm_version VARCHAR(20), ".
       "method VARCHAR(12), exec_where VARCHAR(16), command VARCHAR(120))"]; 
-  db_execute_multiple(@tables);
+  if (-w "./") {db_execute_multiple(@tables);}
 }
 
 sub db_log_execution {
@@ -50,27 +50,32 @@ sub delete_run_results {
 sub db_add_note {
 ### Purpose : Add a note for a model to the sqlite database (pirana.dir) 
 ### Compat  : W+L+
-    my ($model, $note) = @_;
+  my ($model, $note) = @_;
+  if (-w "./") {
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
     $db -> do("UPDATE model_db SET note='".$note."' WHERE model_id='".$model."'");
     $db -> commit();
     $db -> disconnect ();
+  }
 }
 
 sub db_execute {
 ### Purpose : Execute an SQL command on the database 
 ### Compat  : W+L+
-    my $db_command = shift;
+  my $db_command = shift;
+  if (-w "./") {
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
     $db -> do($db_command);
     $db -> commit();
     $db -> disconnect ();
+  }
 }
 sub db_execute_multiple {
 ### Purpose : Execute several SQL command on the database and commit afterwards (to save speed) 
 ### Compat  : W+L+
-    my $db_commands_ref = shift;
-    my @db_commands = @$db_commands_ref;
+  my $db_commands_ref = shift;
+  my @db_commands = @$db_commands_ref;
+  if (-w "./") {
     our $dbargs = {AutoCommit => 0, PrintError => 0};
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
     foreach(@db_commands) {
@@ -78,6 +83,7 @@ sub db_execute_multiple {
     }
     $db -> commit();
     $db -> disconnect ();
+  }
 }
 sub db_insert_table_info {
 ### Purpose : Inserts table information into db (notes/creator etc) 
@@ -99,47 +105,56 @@ sub db_insert_model_info {
 sub db_add_color {
 ### Purpose : Add the color that is chosen for a model/results to the database 
 ### Compat  : W+L+
-  my ($model, $color) = @_;
-  if ($color eq "#ffffff") {$color = ""};
-  my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-  $db -> do("UPDATE model_db SET note_color='".$color."' WHERE model_id='".$model."'");
-  $db -> commit();
-  $db -> disconnect ();
+  if (-w "./") {
+    my ($model, $color) = @_;
+    if ($color eq "#ffffff") {$color = ""};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    $db -> do("UPDATE model_db SET note_color='".$color."' WHERE model_id='".$model."'");
+    $db -> commit();
+    $db -> disconnect ();
+  }
 }
 
 sub db_read_exec_runs {
 ### Purpose : Read executed run list from DB and return array-ref
 ### Compat  : W+L+
-  my $dbargs = {AutoCommit => 0, PrintError => 1};
-  my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-  my $db_results = $db -> selectall_arrayref("SELECT model_id, descr, date_executed, name_modeler, nm_version, ".
+  if (-e $db_name) {
+    my $dbargs = {AutoCommit => 0, PrintError => 1};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    my $db_results = $db -> selectall_arrayref("SELECT model_id, descr, date_executed, name_modeler, nm_version, ".
        "method, exec_where, command FROM executed_runs ORDER BY date_executed DESC" );
-  $db -> disconnect ();
-  return($db_results)
+    $db -> disconnect ();
+    return($db_results);
+  }
 }
 sub db_read_table_info {
 ### Purpose : Read table info (notes / creator / etc.)
 ### Compat  : W+L+
-  my $dbargs = {AutoCommit => 0, PrintError => 1};
-  my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-  my $db_results = $db -> selectall_arrayref("SELECT table_id, descr, note, creator FROM table_db" );
-  $db -> disconnect ();
-  return($db_results)
+  if (-e $db_name) {
+    my $dbargs = {AutoCommit => 0, PrintError => 1};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    my $db_results = $db -> selectall_arrayref("SELECT table_id, descr, note, creator FROM table_db" );
+    $db -> disconnect ();
+    return($db_results)
+  }
 }
 sub db_read_model_info {
 ### Purpose : Read table info (notes / creator / etc.) of one specific model
 ### Compat  : W+L+
-  my $model = shift;
-  my $dbargs = {AutoCommit => 0, PrintError => 1};
-  my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-  my $db_results = $db -> selectall_arrayref("SELECT model_id, ref_mod, descr, note_small, note FROM model_db WHERE model_id='$model'" );
-  $db -> disconnect ();
-  return($db_results);
+  if (-e $db_name) {  
+    my $model = shift;
+    my $dbargs = {AutoCommit => 0, PrintError => 1};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    my $db_results = $db -> selectall_arrayref("SELECT model_id, ref_mod, descr, note_small, note FROM model_db WHERE model_id='$model'" );
+    $db -> disconnect ();
+    return($db_results);
+  }
 }
 
 sub db_read_all_model_data {
 ### Purpose : Read model info from the sqlite database (pirana.dir)
 ### Compat  : W+L+
+  if (-e $db_name) {
     our %models_db = {}; our %models_notes = {}; our %models_colors = {};
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
     my $all = $db -> selectall_arrayref(
@@ -173,5 +188,6 @@ sub db_read_all_model_data {
     return ( \%models_dates_db, \%models_resdates_db,  \%models_refmod, \%models_descr, 
        \%models_method, \%models_ofv, \%models_suc, \%models_bnd, \%models_cov, 
        \%models_sig, \%models_notes, \%models_colors, \%models_dataset)
+  }
 }
 1;

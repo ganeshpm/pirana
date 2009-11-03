@@ -31,6 +31,7 @@ use Tk::LineGraphDataset;   # ..
 use File::Copy;             # File info and operations
 use File::stat;             # ..
 use File::Path;             # ..
+use Time::HiRes;
 use HTTP::Date;             # Date and time functions
 use List::Util qw(max maxstr min minstr reduce); # some basic functions
 use POSIX qw(ceil floor);   # some basic functions
@@ -66,7 +67,7 @@ use pirana_modules::db        qw(db_create_tables db_log_execution db_read_exec_
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::model     qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML); 
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start); 
+use pirana_modules::misc      qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win start_command); 
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 
@@ -101,11 +102,7 @@ our $abutton    = "#cecbba";
 our $status_col = "#fffdec"; 
 our $mw = MainWindow -> new (-title => "Piraña", -background=>$bgcol);
 our $nrows = 27;
-if ($os =~ m/MSWin/i) {
-  our $models_hlist_width=112; 
-} else {
-  our $models_hlist_width=104; 
-}
+our $models_hlist_width=112; 
 our $help = $mw->Balloon();
 
 #*** Load Icons (from http://sourceforge.net/projects/icon-collection **********
@@ -126,18 +123,15 @@ foreach my $file (@images) {
 create_menu_bar();
 
 #*** Main Loop ***********************************************************
-$mw->update();
 if ($init_message ne "") {message ($init_message)};
-if ($os =~ m/MSWin/i) {
-  $mw -> optionAdd('*BorderWidth' => 0);
-  $mw-> resizable( 0, 0);
-} else {
-  $mw-> resizable( 1, 1);
-  $mw -> update();
-  $mw->geometry("1200x700"); #more space is needed in *nix due to the differences in Tk
-}
+$mw -> optionAdd('*BorderWidth' => 1);
+$mw -> resizable( 0, 0);
+$mw -> update();
 
 renew_pirana();
+
+our $pirana_normal_width = $mw->width;
+our $pirana_normal_height = $mw->height;
 
 MainLoop;
 #***********************************************************************

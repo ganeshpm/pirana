@@ -5,7 +5,7 @@ package pirana_modules::data_inspector;
 use strict;
 use Tk::Balloon;
 use List::Util qw(max min);
-use pirana_modules::misc  qw(win_path unix_path win_start); 
+use pirana_modules::misc  qw(win_path unix_path win_start center_window); 
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -28,6 +28,7 @@ our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
 our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
+our $font_normal = 'Verdana 8';       
 our $bbw = 0;
 our (@filter_match, @filter_type, @filter_var, @filter_entry, @border,
      @xdata, @ydata, @colname, @x_sel, @y_sel, @plot_colors, @pointstyles,
@@ -41,31 +42,30 @@ sub create_plot_window {
 ### Purpose : Create the dataInspector window
 ### Compat  : W+L?
   ($main_window, $plot_table, $table_type, $r_dir, $r_in_gif_ref, $r_delete_ref) = @_;
-  our $plot_window = $main_window -> Toplevel(-title=>"Piraña Data Inspector (".$plot_table.")"); 
+  our $plot_window = $main_window -> Toplevel(-title=>"Piraña Data Inspector (".$plot_table.")", -background=>$bgcol); 
   $plot_window -> resizable( 0, 0 );
-  $plot_window -> Popup;
 
   @plot_colors = qw/darkblue darkred darkgreen/;
   @pointstyles = qw/circle square triangle/;
-  $plot_frame = $plot_window -> Frame (-relief=>'groove', -border=>2) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
+  $plot_frame = $plot_window -> Frame (-relief=>'groove', -border=>2, -background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
   our $r_in_gif  = $$r_in_gif_ref;
   our $delete_gif = $$r_delete_ref;
 
-  my $var_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7) -> grid(-column=>1, -rowspan=>1,-row=>1,-sticky=>'nw');
-  my $add_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7) -> grid(-column=>1, -rowspan=>1,-row=>2,-sticky=>'nwe');
-  my $r_frame = $plot_window -> Frame (-width=>510, -relief=>'groove', -border=>0, -pady=>7) -> grid(-column=>2, -row=>2,-sticky=>'nw');
-  $var_frame -> Label (-text=>"X-axis") -> grid(-column=>1, -row=>1, -sticky=>'nwe');
-  $var_frame -> Label (-text=>"Y-axis") -> grid(-column=>2, -row=>1, -sticky=>'nwe');
-  $add_frame -> Label (-text=>"Additional graphic parameters:      ")-> grid(-column=>1, -row=>3, -columnspan=>2, -sticky=>'nw');
-  $add_frame -> Checkbutton(-text=>"Show unity line", -variable=>\$show_unity, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>4, -sticky=>"w");
-  $add_frame -> Checkbutton(-text=>"Log X-axis", -variable=>\$log_x, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>6, -sticky=>"w");
-  $add_frame -> Checkbutton(-text=>"Log Y-axis", -variable=>\$log_y, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>7, -sticky=>"w");
-  $add_frame -> Label (-text=>"   ")-> grid(-column=>1, -row=>8, -sticky=>'nw');
+  my $var_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7, -background=>$bgcol) -> grid(-column=>1, -rowspan=>1,-row=>1,-sticky=>'nw');
+  my $add_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7, -background=>$bgcol) -> grid(-column=>1, -rowspan=>1,-row=>2,-sticky=>'nwe');
+  my $r_frame = $plot_window -> Frame (-width=>510, -relief=>'groove', -border=>0, -pady=>7, -background=>$bgcol) -> grid(-column=>2, -row=>2,-sticky=>'nw');
+  $var_frame -> Label (-text=>"X-axis", -background=>$bgcol) -> grid(-column=>1, -row=>1, -sticky=>'nwe');
+  $var_frame -> Label (-text=>"Y-axis", -background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
+  $add_frame -> Label (-text=>"Additional graphic parameters:      ", -background=>$bgcol)-> grid(-column=>1, -row=>3, -columnspan=>2, -sticky=>'nw');
+  $add_frame -> Checkbutton(-text=>"Show unity line", -background=>$bgcol, -variable=>\$show_unity, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>4, -sticky=>"w");
+  $add_frame -> Checkbutton(-text=>"Log X-axis", -background=>$bgcol, -variable=>\$log_x, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>6, -sticky=>"w");
+  $add_frame -> Checkbutton(-text=>"Log Y-axis", -background=>$bgcol, -variable=>\$log_y, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>7, -sticky=>"w");
+  $add_frame -> Label (-text=>"   ", -background=>$bgcol)-> grid(-column=>1, -row=>8, -sticky=>'nw');
 
   $x_var_list = $var_frame -> Listbox (-width=>10, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-    -selectbackground=>'#606060',-highlightthickness =>0, -background=>'#fffeee') -> grid(-column=>1,-row=>2, -sticky=>'nwe');
+    -selectbackground=>'#606060',-highlightthickness =>0, -background=>'#fffeee', -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
   $y_var_list = $var_frame -> Listbox (-width=>10, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-    -selectbackground=>'#606060',-selectmode=>'extended', -highlightthickness =>0, -background=>'#fffeee') -> grid(-column=>2,-row=>2, -sticky=>'nwe');
+    -selectbackground=>'#606060',-selectmode=>'extended', -highlightthickness =>0, -background=>'#fffeee',-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
   $help_box = $plot_window -> Balloon();
   $help_box -> attach($y_var_list, -msg => "Multiple columns for Y can be selected by holding control-key.");
   $var_frame -> Label (-text=>" ") -> grid(-column=>1,-row=>3, -columnspan=>2, -sticky=>'nwe');
@@ -129,7 +129,7 @@ sub create_plot_window {
     refresh_plot();
   });
 
-  $r_frame -> Label(-text=>"R command to generate this plot:") -> grid(-column=>2, -row=>0, -sticky=>'nw');
+  $r_frame -> Label(-text=>"R command to generate this plot:", -background=>$bgcol) -> grid(-column=>2, -row=>0, -sticky=>'nw');
   $r_text = $r_frame -> Scrolled("Text", -scrollbars=>"e", -width=>60, -height=>5, -background=>"#fffeee",-exportselection => 0, -relief=>'groove', -border=>2,
     -selectbackground=>'#606060',-highlightthickness =>0) -> grid(-column=>2, -row=>2, -sticky=>'nwes');
   my $r_button_plot = $r_frame -> Button(-image=>$r_in_gif, -width=>26,-height=>26, -border=>$bbw, 
@@ -146,6 +146,7 @@ sub create_plot_window {
    })->grid(-row=>2,-column=>3,-sticky=>'nw');
   $help_box -> attach($r_button_plot, -msg => "Send script to Rgui");
   refresh_plot();
+  center_window ($plot_window);
 }
 
 sub refresh_plot {
