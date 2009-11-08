@@ -8,7 +8,7 @@ use File::stat;
 use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start); 
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML);
+our @EXPORT_OK = qw(replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX );
 
 sub change_seed {
 ### Purpose : Change the seed in SIM to a random number (invoke random_sim_block)
@@ -846,3 +846,140 @@ sub extract_from_model {
   $mod{refmod} = $refmod;
   return (\%mod);
 }
+
+sub output_results_LaTeX {
+### Purpose : Create LaTeX code that presents some run info and parameter estimates 
+### Compat  : W+
+  my ($file, $setting_ref) = @_;
+  my %setting = %$setting_ref;
+  my $run = $file;
+  $run =~ s/\.$setting{ext_res}//;
+
+# get information from NM output file 
+  my $res_ref = extract_from_lst ($file);
+  my %res = %$res_ref;
+    
+# and get information from NM model file
+
+  my $mod_ref = extract_from_model ($run.".".$setting{ext_ctl}, $run, "all");
+  my %mod = %$mod_ref;
+  my $etabar_ref = $res{etabar};  my @etabar = @$etabar_ref;
+  my $etabar_se_ref = $res{etabar_se};  my @etabar_se = @$etabar_se_ref;
+  my $etabar_p_ref = $res{etabar_p};  my @etabar_p = @$etabar_p_ref;
+ 
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($res{resdat});   
+  # Start LaTeX output  my $latex = "\\begin{table}[H]\n";
+  my $latex .= "\\begin{tabular}{l l c c c c}\n";
+  # Parameter estimates  $latex .= "\\hline\n";
+  $latex .= "Theta & Parameter & Estimate & & SE & RSE \\tabularnewline\n";
+  $latex .= "\\hline\n";
+  
+  my $theta_ref = $res{theta};  my @theta = @$theta_ref;
+  my $theta_init_ref = $res{theta_init};  my @theta_init = @$theta_init_ref;
+  my $theta_bnd_low_ref = $res{theta_bnd_low};  my @theta_bnd_low = @$theta_bnd_low_ref;
+  my $theta_bnd_up_ref = $res{theta_bnd_up};  my @theta_bnd_up = @$theta_bnd_up_ref;
+    
+  my $theta_se_ref = $res{theta_se};  my @theta_se = @$theta_se_ref;
+  my $theta_names_ref = $mod{th_descr}; my @theta_names = @$theta_names_ref;
+  my $theta_fix_ref = $mod{th_fix}; my @theta_fix = @$theta_fix_ref;
+  my $omega_ref = $res{omega};  my @omega = @$omega_ref;
+  my $omega_se_ref = $res{omega_se};  my @omega_se = @$omega_se_ref;
+  my $omega_names_ref = $mod{om_descr}; my @omega_names = @$omega_names_ref;
+  my $sigma_ref = $res{sigma};  my @sigma = @$sigma_ref;
+  my $sigma_se_ref = $res{sigma_se};  my @sigma_se = @$sigma_se_ref;
+  my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
+
+  my $col='black'; my $text="";
+  my $i=0;
+  foreach (@theta) {
+
+    if (@theta[$i] ne "") {$latex .= "".($i+1)." & ".
+       "".@theta_names[$i]." & ".rnd(@theta[$i],5)." & "};
+    $latex .= "".@theta_fix[$i]." & ";
+    my $rse = "";
+    unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,3)) };
+    if (@theta_se[$i] ne "") {$latex .= "".rnd(@theta_se[$i],4)."&".$rse.""} 
+      else {$latex .= ""};
+    my $low = $theta_bnd_low[$i];
+    my $up = $theta_bnd_up[$i];
+    
+    if ($low <= -10000) {$low = "-Inf"} else {$low = rnd($theta_bnd_low[$i],3)};
+    if ($up >= 10000) {$up = "+Inf"} else {$up = rnd($theta_bnd_up[$i],3)};
+        
+    $latex .= "\\tabularnewline\n";
+    $i++;  
+  }
+  $latex .= "\\hline\n";
+  $latex .= "\\end{tabular}\n";
+  $latex .= "\\end{table}\n";
+
+  $latex .= "\\begin{table}[H]\n";
+  $latex .= "\\begin{tabular}{l l c c c}\n";
+  $latex .= "\\hline\n";
+  $latex .= "Omega & Description ";
+  $i=1;
+  foreach my $om (@omega) {$latex .= "&".$i."" ; $i++};
+  $latex .= "\\tabularnewline\n";
+  $latex .= "\\hline\n";
+  $i=0; my $om_se_x; my @om_cov_se;
+  foreach my $om (@omega) {
+      my @om_x = @$om; my $j = 1;
+      $latex .= "".($i+1)." & ";
+      $latex .= "".@omega_names[$i]." & ";
+      my $bg = "";
+      foreach my $om_cov (@om_x) {
+        if (@omega_se>0) {$om_se_x = @omega_se[$i]; @om_cov_se = @$om_se_x;};
+        $latex .= "".rnd($om_cov,4); 
+        if (($om_cov!=0)&&(@om_cov_se[$i]!=0)) {
+          $latex .= "(".rnd((@om_cov_se[$i]/$om_cov*100),3).")  ";
+        } else {
+          $latex .= " & ";
+        }
+        $latex .= "  ";
+        $j++;
+      }
+      
+      $latex .= "\\tabularnewline\n";
+      $i++;
+  }
+  $latex .= "\\hline\n";
+  $latex .= "\\end{tabular}\n";
+  $latex .= "\\end{table}\n";
+  
+  $latex .= "\\begin{table}[H]\n";
+  $latex .= "\\begin{tabular}{l l c}\n";
+  $latex .= "\\hline\n";
+  $latex .= "Sigma & Description & ";
+  $i=1; 
+  foreach my $si (@sigma) {$latex .= "".$i." \\tabularnewline\n" ; $i++};
+  $latex .= "\\hline\n";
+  $i=0; my $si_se_x; my @si_cov_se; my $bg;
+  foreach my $si (@sigma) {
+      my @si_x = @$si; my $j = 1;
+      $latex .= "".($i+1)." & ";
+      $latex .= "".@sigma_names[$i]." & ";
+      foreach my $si_cov (@si_x) {
+        if (@omega_se>0) {
+           $om_se_x = @omega_se[$i]; 
+           #@om_cov_se = @$om_se_x;
+        };
+        $latex .= "".rnd($si_cov,4); 
+        if (($si_cov!=0)&&(@si_cov_se[$i]!=0)) {
+          $latex .= "(".rnd((@si_cov_se[$i]/$si_cov*100),3)."%) & ";
+        } else {
+          $latex .= "";
+        }
+        $latex .= " ";
+        $j++;
+      }
+      $latex .= "\\tabularnewline\n";
+      $i++;
+  }
+  $latex .= "\\hline\n";
+  $latex .= "\\end{tabular}\n";
+  $latex .= "\\end{table}\n";
+  
+  return ($latex);
+}
+
+1;
