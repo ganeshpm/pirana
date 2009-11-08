@@ -28,7 +28,8 @@ our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
 our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
-our $font_normal = 'Verdana 8';       
+our $font_normal = 'Verdana 8';
+       
 our $bbw = 0;
 our (@filter_match, @filter_type, @filter_var, @filter_entry, @border,
      @xdata, @ydata, @colname, @x_sel, @y_sel, @plot_colors, @pointstyles,
@@ -132,19 +133,22 @@ sub create_plot_window {
   $r_frame -> Label(-text=>"R command to generate this plot:", -background=>$bgcol) -> grid(-column=>2, -row=>0, -sticky=>'nw');
   $r_text = $r_frame -> Scrolled("Text", -scrollbars=>"e", -width=>60, -height=>5, -background=>"#fffeee",-exportselection => 0, -relief=>'groove', -border=>2,
     -selectbackground=>'#606060',-highlightthickness =>0) -> grid(-column=>2, -row=>2, -sticky=>'nwes');
-  my $r_button_plot = $r_frame -> Button(-image=>$r_in_gif, -width=>26,-height=>26, -border=>$bbw, 
-     -background=>$button,-activebackground=>$abutton,-command=> sub {
-      my $r_code = $r_text -> get("0.0", "end");
-      open (OUT, ">.Rprofile");
-      print OUT "library(graphics)\n";
-      print OUT "library(utils)\n";
-      $r_code =~ s/\'/\"/g;
-      print OUT "cat ('".$r_code."\n')\n";
-      print OUT $r_code;
-      close OUT;
-      win_start($r_dir."/bin/rgui.exe");
-   })->grid(-row=>2,-column=>3,-sticky=>'nw');
-  $help_box -> attach($r_button_plot, -msg => "Send script to Rgui");
+  if ($^O =~ m/MSWin/i) {
+    my $r_button_plot = $r_frame -> Button(-image=>$r_in_gif, -width=>26,-height=>26, -border=>$bbw, 
+       -background=>$button,-activebackground=>$abutton,-command=> sub {
+        my $r_code = $r_text -> get("0.0", "end");
+        open (OUT, ">.Rprofile");
+        print OUT "library(graphics)\n";
+        print OUT "library(utils)\n";
+        $r_code =~ s/\'/\"/g;
+        print OUT "cat ('".$r_code."\n')\n";
+        print OUT $r_code;
+        close OUT;
+        win_start($r_dir."/bin/rgui.exe");
+      }
+    )->grid(-row=>2,-column=>3,-sticky=>'nw');
+    $help_box -> attach($r_button_plot, -msg => "Send script to Rgui");
+  }
   refresh_plot();
   center_window ($plot_window);
 }

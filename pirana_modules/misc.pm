@@ -44,7 +44,7 @@ sub dir {
   opendir ( DIR, $dir) || die "Error in opening dir $dir\n";
   while( (my $filename = readdir(DIR))){
     my $l = length($filename);
-    if (substr($filename,$l-3,$l) =~ m/$filter/i) {
+    if ($filename =~ m/$filter/i) {
       push (@dirfiles, $filename);
     }
   }
@@ -89,7 +89,7 @@ sub rnd {
   my ($n, $rnd) = @_;
   my $x = Math::BigFloat->new($n);
   $x -> bround($rnd);
-  $x =~ s/0+$//; #remove trailing zeroes
+  # $x =~ s/0+$//; #remove trailing zeroes
   if ($x == int($n)) {return int($n)} else {return ($x)};  # return 1 FIX and not 1.0000
 }   
 

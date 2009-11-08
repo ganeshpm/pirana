@@ -42,7 +42,7 @@ sub create_nm_start_script {
   }
   unless (-d $base_dir."/temp") {mkdir $base_dir."/temp"};
   my $nm_start_script = os_specific_path ($nm_dirs{$nm_version}."/util/".$nmfe_file);
-  my $script_file = $base_dir."/temp/nm_start_".generate_random_string(4).".".$ext;
+  my $script_file = "pirana_start_".generate_random_string(4).".".$ext;
   open (SCR,">".$script_file);
   print SCR $drive;
   print SCR "cd ".$run_dir."\n";
@@ -73,12 +73,14 @@ sub redraw_screen {
   my ($full_scr, $show_tabs) = @_;
   my $scr_mode;
   if ($full_scr==1) {
-     my $height = ($mw->screenheight)-70;
      my $width = ($mw->screenwidth)-5;
-     if ($os =~ m/MSWin/i) {       
+     my $height;
+     if ($os =~ m/MSWin/i) {  
+       $height = ($mw->screenheight)-70;     
        our $entry_width = int((($mw->screenwidth)-750)/5.7);   
        our $nrows = int((($mw->screenheight)-240)/14.5);
      } else {
+       $height = ($mw->screenheight)-100;
        our $entry_width = int((($mw->screenwidth)-750)/6.2);   
        our $nrows = int((($mw->screenheight)-250)/17.8);
      }     
@@ -169,7 +171,7 @@ sub duplicate_msf_command {
 sub delete_models_command {
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model."); return(); }
-  delete_ctl(\@sel);
+  delete_models_window(\@sel);
 }
 sub generate_report_command {
   @run = @ctl_show[$models_hlist -> selectionGet];
@@ -177,6 +179,17 @@ sub generate_report_command {
   foreach (@run) {$_ .= ".".$setting{ext_res}};
   output_results_HTML(@run[0], \%setting);
   start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum.html"');
+}
+sub generate_LaTeX_command {
+  my @run;
+  @run[0] = shift; 
+  if (@run[0] = "") {
+    @run = @ctl_show[$models_hlist -> selectionGet];
+    if (@run == 0) { message("First select a model."); return(); }
+  }
+  foreach (@run) {$_ .= ".".$setting{ext_res}};
+  my $latex = output_results_LaTeX(@run[0], \%setting);
+  text_window ($latex, "Parameters for model ".@run[0]);
 }
 sub view_outputfile_command {
   my @sel = $models_hlist -> selectionGet ();
@@ -204,6 +217,15 @@ sub create_menu_bar {
   $mbar_file -> command(-label => "Exit", -underline=>0,-background=>$bgcol, 
 		  -command=>sub { quit(); } );
   
+  our $mbar_NM = $mbar -> cascade(-label =>"NONMEM", -background=>$bgcol,-underline=>1, -tearoff => 0);
+  $mbar_NM -> command(-label => "Manage installations", -background=>$bgcol,-underline=>1,
+		  -command=> sub { edit_sizes_window();
+     });
+  $mbar_NM -> command(-label => "Install NM6/7 using NMQual", -background=>$bgcol,-underline=>1,
+		  -command=> sub { install_nonmem_nmq_window() });
+  $mbar_NM -> command(-label => "Install NM6/7 from CD", -background=>$bgcol,-underline=>0,
+		  -command=> sub { install_nonmem_window() });
+    
   our $mbar_model = $mbar -> cascade(-label =>"Model", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_model -> command(-label => "Run (nmfe)", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
 		  -command=> sub { nmfe_command() }); 
@@ -260,6 +282,11 @@ sub create_menu_bar {
              start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum.html"');
            } else {message("Please select model first!")};
       }); 
+  $mbar_results -> command(-label => "LaTeX tables of parameter estimates", -background=>$bgcol,-underline=>0,  -image=>$gif{latex}, -compound=>'left',
+		  -command=> sub { 
+           generate_LaTeX_command();
+      });   
+      
   $mbar_results -> command(-label => "View NM output file", -background=>$bgcol,-underline=>0,-image=>$gif{notepad}, -compound=>'left',
 		  -command=> sub {
 		     @run = @ctl_show[$models_hlist -> selectionGet];
@@ -269,18 +296,9 @@ sub create_menu_bar {
            edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_res}));
          } else {message("Please select model first!")};
        }); 
-
   
   our $mbar_tools = $mbar -> cascade(-label =>"Tools", -background=>$bgcol,-underline=>0, -tearoff => 0);
-    our $mbar_tools_NM = $mbar_tools -> cascade(-label =>"NONMEM", -background=>$bgcol,-underline=>1, -tearoff => 0);
-    $mbar_tools_NM -> command(-label => "Manage installations", -background=>$bgcol,-underline=>1,
-		  -command=> sub { edit_sizes_window();
-     });
-    $mbar_tools_NM -> command(-label => "Install NM6 using NMQual", -background=>$bgcol,-underline=>1,
-		  -command=> sub { install_nonmem_nmq_window() });
-    $mbar_tools_NM -> command(-label => "Install NM6 from CD", -background=>$bgcol,-underline=>0,
-		  -command=> sub { install_nonmem_window() });
-    
+
   if ($setting{use_psn}==1) {
     our $mbar_psn = $mbar_tools -> cascade (-label => "PsN", -background=>$bgcol, -underlin=>0, -tearoff => 0);  
     if (-e unix_path($software{psn_dir})."/psn.conf") {
@@ -819,6 +837,20 @@ sub project_info_window {
 ### Purpose : Create a dialog shown info for the current project
 ### Compat  : W+L+
 ### Note    : save functionality not implemented yet
+  
+  # Get project info from database
+  my %proj_record;
+  my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date"); 
+  my $db_results = db_get_project_info();
+  my $row = @{$db_results}[0];
+  my @values = @$row;
+  my $i=0;
+  foreach (@sql_fields) {
+    $proj_record{@sql_fields[$i]} = @values[$i];
+    $i++;  
+  }
+  $proj_record{"notes"} = @values[$i];
+  # Build window
   unless ($project_window) {
     our $project_window = $mw -> Toplevel(-title=>'Project Information');
     $project_window -> OnDestroy ( sub{
@@ -828,13 +860,11 @@ sub project_info_window {
   }
   our $project_window_frame = $project_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
   my @labels  = ("Project name: ","Description: ","Modeler: ","Collaborators: ","Start date: ","End date: ");
-  my @entries = ($active_project," ",$setting{name_researcher},"","","");
   my @widths  = (20, 40, 20, 40, 20, 20);
-  my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date"); 
-  my %proj_record; my %proj_rec_entry;
+  my %proj_rec_entry;
   for ($i=0; $i<@labels; $i++) {
     $project_window_frame -> Label(-text=> @labels[$i], -font=>$font_normal) ->grid(-row=>($i*2)+1,-column=>1,-sticky=>'e');
-    $proj_rec_entry{@sql_fields[$i]} = $project_window_frame -> Entry(-text=> @entries[$i], -font=>$font_normal, -relief=>'sunken',-border=>$bbw, -width=>@widths[$i]) -> grid(-row=>($i*2)+1,-column=>2,-sticky=>'w');
+    $proj_rec_entry{@sql_fields[$i]} = $project_window_frame -> Entry(-text=> $proj_record{@sql_fields[$i]}, -font=>$font_normal, -relief=>'sunken',-border=>$bbw, -width=>@widths[$i]) -> grid(-row=>($i*2)+1,-column=>2,-sticky=>'w');
     $project_window_frame -> Label(-text=> " ", -font=>$font_normal) ->grid(-row=>($i*2)+2,-column=>1);
   }
   $i++;
@@ -845,13 +875,15 @@ sub project_info_window {
       -font=>$font_normal, -background=>'white', 
       -state=>'normal',-scrollbars=>'e'
   )->grid(-column=>2, -row=>($i*2)+1,-rowspan=>10,-sticky=>'nw');
+  $proj_notes_text -> insert("0.0", $proj_record{"notes"});
   $project_window_frame -> Label (-text=>'  ')->grid(-column=>2, -row=>30,-rowspan=>1);
   $project_window_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{  
-    $sql = "UPDATE project_info SET ";
     foreach (keys(%proj_rec_entry)) {
       $proj_record{$_} = $proj_rec_entry{$_} -> get();
-      print $_.": ".$proj_record{$_}."\n";
     }
+    $proj_record{"notes"} = $proj_notes_text -> get("0.0", "end");
+    db_insert_project_info (\%proj_record);
+    $project_window -> destroy();
   })->grid(-column=>2, -row=>31,-rowspan=>1, -sticky=>"w");
   $project_window_frame -> Button (-text=>'Cancel', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{  
     $project_window -> destroy();
@@ -890,13 +922,14 @@ sub show_estim_window {
       $estim_window -> resizable( 0, 0 );
     }
     our $estim_window_frame = $estim_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
+
     @estim_grid_headers = ("Parameter", "Description", "Value", "RSE(%)");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1, 
         -columns    => $cols+2, -scrollbars => 'se',-highlightthickness => 0,
         -height     => 25, -width      => 60,
         -border     => 0, -indicator=>0,
         -background => 'white',
-      )->grid(-column => 0, -columnspan=>7,-row => 0,-sticky=>'nwse');   
+      )->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');   
     $estim_grid -> columnWidth(1, 120);
   
     my $headerstyle = $models_hlist->ItemStyle('window', -padx => 0, -pady=>0);
@@ -1773,8 +1806,9 @@ sub renew_pirana {
   frame_statusbar(1);
   project_buttons_show();
   frame_tab_show(1);
-  project_optionmenu ();
+  my $project_optionmenu = project_optionmenu ();
   refresh_pirana ($cwd, $filter, 1);
+  $project_optionmenu -> configure(-state=>'normal');
   status();
   if ($first_time_flag==1) {message("Welcome to Piraña!\n\nSince this is the first time you start Piraña, please check the preferences and software\nsettings under 'File' in the menu.\n\nNONMEM installations may be added under 'Tools' -> 'NONMEM' -> 'Manage Installations'\n\n")};
 
@@ -1810,8 +1844,7 @@ sub show_console_output {
 sub message { 
 ### Purpose : Show a small window with a text and an OK button
 ### Compat  : W+L+
- $mw -> messageBox(-type=>'ok', -font=> $font_normal, -background=>$bgcol, 
-          	-message=>@_[0]);
+ $mw -> messageBox(-type=>'ok', -font=> $font_normal, -message=>@_[0]);
 }
  
 sub intro_msg {
@@ -1917,19 +1950,14 @@ sub initialize {
   our $models_view = $setting{models_view};
     
   if ($setting{font_size}==2) {
-    if ($os =~ m/MSWin/) {
-       our $font_normal = 'Verdana 8';
-       our $font_small = 'Verdana 7';
-    } else {
-       our $font_normal = 'Verdana 9';
-       our $font_small = 'Verdana 8';
-    }
+    our $font_normal = 'Verdana 8';
+    our $font_small = 'Verdana 7';
     our $font_fixed = "Courier 9 bold";
     our $font_fixed2 = "Courier 10";
     our $font_bold = 'Verdana 8 bold';
   } else {
     our $font_normal = 'Verdana 7';
-    our $font_small = 'Verdana 7';
+    our $font_small = 'Verdana 6';
     our $font_fixed = "Courier 8 bold";
     our $font_bold = 'Verdana 8 bold'; 
   }
@@ -2152,46 +2180,121 @@ sub niy {
     	-message=>"Sorry, not implemented yet!");
 }
 
-sub delete_ctl {
-### Purpose : Delete a NM results file
+sub populate_delete_models {
+### Purpose : insert models and files to be deleted into window's listboxes 
+### Compat  : W+L+
+  my ($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, $delete_models_listbox_ref, $delete_files_listbox_ref, $runs_ref, $folders_ref) = @_;
+  my @runs = @$runs_ref;
+  my @folders = @$folders_ref;
+  my @mod_files;
+  my @lst_files;
+  my @tab_files;
+  foreach my $run (@runs) {
+    if (-d $run.".".$setting{ext_res}) { push (@lst_files, $run.".".$setting{ext_res}); };
+    if (-e $run.".".$setting{ext_res}) { push (@lst_files, $run.".".$setting{ext_res}); };
+    if (-e $run.".".$setting{ext_ctl}) { push (@mod_files, $run.".".$setting{ext_ctl}); };
+    if ($del_tables_check==1) { 
+      my $mod_ref = extract_from_model ($run.".".$setting{ext_ctl}, $run, "all");
+      my $tables_ref = $$mod_ref{tab_files};
+      #print join(",", @tables);
+      push (@tab_files, @$tables_ref);
+    }
+  }
+  my @files = ();
+  
+  if ($del_models_check == 1) {push (@files, @mod_files); }; 
+  if ($del_results_check == 1) {push (@files, @lst_files); };
+  if ($del_tables_check == 1) {push (@files, @tab_files); };
+  $$delete_models_listbox_ref -> configure (-state=>'normal');
+  $$delete_files_listbox_ref -> configure (-state=>'normal');
+  $$delete_models_listbox_ref -> delete("0", "end");
+  $$delete_files_listbox_ref -> delete("0", "end");
+  
+  $$delete_models_listbox_ref -> insert(0, @runs);
+  foreach my $folder (@folders) {$folder .= "/ (entire folder!)"};
+  if ($del_folders_check == 1) {$$delete_files_listbox_ref -> insert(0, @folders);};
+  $$delete_files_listbox_ref -> insert("end", @files);
+  $$delete_models_listbox_ref -> configure (-state=>'disabled');
+  $$delete_files_listbox_ref -> configure (-state=>'disabled');
+  return(\@files);
+}
+
+sub delete_models_window {
+### Purpose : Create dialog for deleting NM models/results
 ### Compat  : W+L+
   $sel_ref = shift;
-  @runs = @$sel_ref;
-  $del_dialog = $mw -> Toplevel( -title=>"Delete model/folder(s)");
+  my @del_files = @ctl_show; # make copy, since @ctl_file can change during delete process!
+  my @runs = @del_files[@$sel_ref];
+  my $del_dialog = $mw -> Toplevel( -title=>"Delete model, results and/or tables");
   $del_dialog -> resizable( 0, 0 );
   center_window($del_dialog);
-  $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-  $type = @file_type_copy[@sel];
-  @del_files = @ctl_show; # make copy, since @ctl_file can change during delete process!
-  if ($type == 1) { # < delete folder>
-    my $folders = join("\n",@del_files[@runs]);
-    $del_dialog_frame -> Label (-text=>"Really delete folder(s)\n".$folders."\nand everything in it?\n")->grid(-row=>1,-column=>1,-columnspan=>2);
-    } else {     # < models >
-    my $files = join ("\n",@del_files[@runs]);
-    $del_dialog_frame -> Label (-text=>"Really delete model(s)\n".$files."\n?\n")->grid(-row=>1,-column=>1,-columnspan=>2);
-  };
+  my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  my $type = @file_type_copy[@runs];
+  
+  $del_dialog_frame -> Label (-text=>"Selected models / folders:", -background=>$bgcol) -> grid(-row=>0, -column=>1,-sticky=>"nws"); # spacer
+  $del_dialog_frame -> Label (-text=>"Files / folders to delete:", -background=>$bgcol) -> grid(-row=>0, -column=>2, -columnspan=>2,-sticky=>"nws"); # spacer
+  my $delete_models_listbox = $del_dialog_frame -> Scrolled('Listbox',
+        -selectmode => "single", -highlightthickness => 0, 
+        -scrollbars => 'se', -width => 16, -height     => 16,
+        -border     => 1, -background => $tab_hlist_color, -selectbackground => $pirana_orange,
+        -font       => $font_normal
+  )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>'nswe', -ipady=>0);   
+  my $delete_files_listbox = $del_dialog_frame -> Scrolled('Listbox',
+        -selectmode => "single", -highlightthickness => 0,
+        -scrollbars => 'se', -width => 30, -height     => 16,
+        -border     => 1, -background => $tab_hlist_color, -selectbackground => $pirana_orange,
+        -font       => $font_normal
+  )->grid(-column => 2, -columnspan=>2, -row => 1, -sticky=>'nswe', -ipady=>0);   
+  
+  my $del_folders_check = 1;
+  my $del_models_check = 1;
+  my $del_results_check = 1;
+  my $del_tables_check = 1;
+# filter out folders
+  my @folders;
+  foreach my $num (@$sel_ref) {
+    if ((@file_type_copy[$num] == 1)&&(@del_files[$num] ne "..")) {push (@folders, @del_files[$num])};
+  }
+  $del_dialog_frame -> Label (-text=>"", -background=>$bgcol) -> grid(-row=>3, -column=>1, -sticky=>"nse"); # spacer
+  $del_dialog_frame -> Label (-text=>"Delete:", -background=>$bgcol) -> grid(-row=>4, -column=>1, -sticky=>"nse"); # spacer
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_models_check, -text => " Models", -background=>$bgcol, -command=>sub{
+    populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders );
+  })-> grid(-row=> 4, -column=>2, -sticky=>"nws");
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_results_check, -text => " Results", -background=>$bgcol, -command=>sub{  
+    populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
+  })-> grid(-row=> 5, -column=>2, -sticky=>"nws");
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_tables_check, -text => " Table files", -background=>$bgcol, -command=>sub{  
+    populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
+  })-> grid(-row=> 6, -column=>2,-sticky=>"nws");
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_folders_check, -text => " Folders", -background=>$bgcol, -command=>sub{
+    populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders );
+  })-> grid(-row=> 7, -column=>2, -sticky=>"nws");
+
+  my $files_ref = populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
+  
+  $del_dialog_frame -> Label (-text=>' ', -background=>$bgcol) -> grid(-row=>8, -column=>2); # spacer
   $del_dialog_frame -> Button (-text=>'Delete ', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
-    if ($type == 1) {
-      foreach(@del_files[@runs]) {
-        if($_ ne "..") {   # for safety...
-          status ("Deleting complete folder ".$_);
-          rmtree($cwd."/".$_,1,1);
+     # first, delete folders
+     if ($del_folders_check == 1) {
+       foreach my $folder (@folders) {
+         if($folder ne "..") {   # for safety...
+           status ("Deleting complete folder ".$folder);
+           rmtree ($cwd."/".$folder,1,1);
         }
       }
-    } else {
-        $i=0; while (@runs[$i]) {
-          $delstring = "$cwd/@del_files[@runs[$i]].".$setting{ext_ctl};
-          $delstring =~ s/\//\\/g;
-          status ("Deleting model file ".$_);
-          unlink ($delstring);
-          $i++;
-        };
-      }
-    status ();
-    destroy $del_dialog;
-    read_curr_dir($cwd,$filter, 1);
-  })->grid(-row=>2,-column=>2,-sticky=>"w");
-  $del_dialog_frame -> Button (-text=>'Cancel ', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=>sub{destroy $del_dialog})->grid(-column=>1,-row=>2);
+     }
+     # next, the selected files
+     my $files_ref = populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
+     foreach my $del_file (@$files_ref) {
+       unlink (unix_path($cwd."/".$del_file));
+     }
+     status ();
+     $del_dialog -> destroy();
+     read_curr_dir($cwd,$filter, 1);
+  })->grid(-row=>9,-column=>3,-sticky=>"nwse");
+  $del_dialog_frame -> Button (-text=>'Cancel ', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=>sub{
+    destroy $del_dialog
+  })->grid(-column=>2,-row=>9, -sticky=>"nwse");
 }
 
 sub duplicate_model_window {
@@ -2387,6 +2490,10 @@ sub read_curr_dir {
 ### Compat  : W+
 ### Notes   : sub could be somewhat more refined
 
+  # remove superfluous batch files
+  my @bat_remove = dir($cwd,"pirana_start");
+  foreach(@bat_remove) {unlink ($_)}; 
+  
   # arguments (dir, filter, reload?)
   $load_dir = @_[0]; 
   $filter = @_[1];
@@ -3243,7 +3350,7 @@ sub create_output_summary {
         $model_date = sprintf "%4d-%02d-%02d %02d:%02d:%02d", $year+1900,$mon+1,$mday,$hour,$min,$sec;
         ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime($models_resdates_db{$model});
         $res_date = sprintf "%4d-%02d-%02d %02d:%02d:%02d", $year+1900,$mon+1,$mday,$hour,$min,$sec;  
-        @res_lst = ("'".$model, $models_ofv{$model}, $models_descr{$model}, $models_notes{$model}, 
+        @res_lst = ('="'.$model.'"', $models_ofv{$model}, $models_descr{$model}, $models_notes{$model}, 
           $models_method {$model}, $models_suc{$model},  $res{feval}, $res{sig}, $res{cond_nr}, 
           $models_bnd{$model}, $models_cov{$model}, $model_date, $res_date);
         print CSV join (",", @res_lst);
@@ -3313,11 +3420,11 @@ sub frame_tab_show {
   #our $tab_hlist_color = "#f5FAFF";
   our $tab_hlist_color = "#f0f0f0";
   if ($tab_frame) {
-    our $tab_hlist = $tab_frame ->Scrolled('HList',
+  our $tab_hlist = $tab_frame ->Scrolled('HList',
         -head       => 0,
         -selectmode => "single",
         -highlightthickness => 0,
-        -columns    => int(@models_hlist_headers),
+        -columns    => 1, # int(@models_hlist_headers),
         -scrollbars => 'se',
         -width      => 20,
         -height     => $nrows,
@@ -4159,8 +4266,11 @@ sub frame_models_show {
          });
          
     $models_menu -> separator ( -background=>$bgcol) ; 
-    $models_menu -> command (-label=> " Generate run report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_report_command();
+         });
+    $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex}, -compound=>'left', -background=>$bgcol, -command => sub{
+           generate_LaTeX_command();
          });
     $models_menu -> command (-label=> " View NM output file",  -image=>$gif{notepad}, -compound=>'left', -background=>$bgcol, -command => sub{
            view_outputfile_command();
@@ -4532,11 +4642,11 @@ sub model_properties_window {
       $models_hlist -> itemConfigure($idx, 10, -text => $note_strip);
       $models_hlist -> update();
       $model_prop_window -> destroy();
-      return();
+      return(1);
     }) -> grid(-row=>10, -column=>2, -sticky=>"wn");
-    $model_prop_frame -> Button (-text=>"Cancel", -width=>15, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
-    $table_info_window -> destroy();
-    return();
+  $model_prop_frame -> Button (-text=>"Cancel", -width=>15, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
+    $model_prop_window -> destroy();
+    return(1);
   }) -> grid(-row=>10, -column=>1, -sticky=>"en");
 }
 
@@ -4765,11 +4875,11 @@ sub project_optionmenu {
 ### Purpose : Create the optionmenu showing the different projects
 ### Compat  : W+L+
     @projects = keys(%project_dir);
-    $project_buttons = $frame_dir -> Optionmenu(-options => [sort (@projects)], -width=>38, -border=>$bbw,  
+    my $project_optionmenu = $frame_dir -> Optionmenu(-options => [sort (@projects)], -width=>38, -border=>$bbw,  
         -variable => \$active_project,-background=>"#202099",-activebackground=>"#5050aa",-font=>$font_bold, -foreground=>'white', -activeforeground=>'white')
      -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky=>'we');
      $frame_dir -> update();
-     $project_buttons -> configure (-command=>sub{
+     $project_optionmenu -> configure (-command=>sub{
         $cwd = $project_dir{$active_project}; 
         $dir_entry -> configure(-text=>$cwd);
         save_log();
@@ -4778,6 +4888,8 @@ sub project_optionmenu {
      });
     $cwd = $project_dir{$active_project}; 
     $dir_entry -> configure(-text=>$cwd);  
+    $project_optionmenu -> configure(-state=>'disabled');
+    return($project_optionmenu);  
 }
 
 sub project_buttons_show {
