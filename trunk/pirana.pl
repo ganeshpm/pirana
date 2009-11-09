@@ -39,27 +39,28 @@ use DBI;                    # database connection to sqlite
 use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
-our $version="2.2.0"; # version "Pipeline"
-our $os = $^O;
-our $base = cwd();
+our $version = "2.2.0"; # version "Pipeline"
+our $os      = $^O;
 if ($os =~ m/MSWin/i) {
   require Win32::Process;
   Win32::SetChildShowWindow(0); # don't open new console windows
   require Win32::DriveInfo;     # needed for NM install
-} 
-our $base_dir = $base;
+}
+our $user = getlogin();
+
+# delcare some global variables (keep to a minimum)
+our $cwd      = cwd();
+our $base_dir = cwd();
+if ($os =~ m/MSWin/i) {
+  our $home_dir = $ENV{HOME}."/Application Data/pirana";
+} else {
+  our $home_dir = $ENV{HOME}."/.pirana";
+}
 our %setting, our %setting_descr, our %nm_dirs, our %nm_vers;
 our %software, our %software_descr; our $nm_reg_chosen; our $nm_reg_chosen;
 our %project, our %project_dir, our %project_nr = (); our %scripts; our %scripts_descr;
-our %clients, our %clients_descr; our $active_project; our $cwd;
-our $show_ofv, our $show_successful, our $show_covar; our $init_message;
-our $first_startup; our %vars; our %psn_commands; our %psn_commands_descr;
-our $dir_old, our $run_listbox, our $i, our $nm_reg_chosen; our $mw_width = 1016; our $mw_height = 600;
-our $method_chosen, our $local_method_chosen, our $psn_parameters;  our $cluster_active = 0;
-our @runs, our @ctl_files, our @res_files; our @res_files_loc; our @tabcsv_files; our @tabcsv_loc;
-our $models_hlist; our $tab_hlist; our $frame_links; our $cluster_active;
-
-if (-e $base_dir."/log/startup.log") {$first_startup=0} else {$first_startup=1};
+our %clients, our %clients_descr; our $active_project; our %vars; our %psn_commands; our %psn_commands_descr; 
+our $first_time_flag= 0;
 
 #*** Read all Pirana modules ***************************************************
 do ("./subs.pl");           
@@ -123,15 +124,18 @@ foreach my $file (@images) {
 create_menu_bar();
 
 #*** Main Loop ***********************************************************
-if ($init_message ne "") {message ($init_message)};
 $mw -> optionAdd('*BorderWidth' => 1);
 $mw -> resizable( 0, 0);
 $mw -> update();
 
 renew_pirana();
-
 our $pirana_normal_width = $mw->width;
 our $pirana_normal_height = $mw->height;
+
+if ($first_time_flag==1) { # save to home folder
+  $first_time_flag = 0;
+  first_time_dialog($user);
+}
 
 MainLoop;
 #***********************************************************************

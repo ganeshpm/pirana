@@ -1027,8 +1027,8 @@ sub show_estim_window {
 sub read_log {
 ### Purpose : Read Pirana log file
 ### Compat  : W+L?
-    if (-e "<".$base_dir."/log/pirana.log") {
-      open (NM_LOG, "<".$base_dir."/log/pirana.log");
+    if (-e "<".$home_dir."/log/pirana.log") {
+      open (NM_LOG, "<".$home_dir."/log/pirana.log");
       @lines = <NM_LOG>;
       $nm_inst_chosen = @lines[0];
       if ($nm_dirs{$nm_inst_chosen} eq "") {$nm_inst_chosen=""};
@@ -1041,8 +1041,8 @@ sub read_log {
 sub save_log {
 ### Purpose : Save pirana log file
 ### Compat  : W+L?
-    if (-e "<".$base_dir."/log/pirana.log") {
-      open (NM_LOG, ">".$base_dir."/log/pirana.log");
+    if (-e "<".$home_dir."/log/pirana.log") {
+      open (NM_LOG, ">".$home_dir."/log/pirana.log");
       print NM_LOG $nm_inst_chosen."\n"; 
       print NM_LOG $active_project;
       close NM_LOG;
@@ -1151,7 +1151,7 @@ sub remove_nm_inst {
     delete $nm_dirs{$nm_name};
     delete $nm_vers{$nm_name};
     save_settings ("nm_inst_local.ini", \%nm_dirs, \%nm_vers);
-    ($nm_dirs_ref,$nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
+    ($nm_dirs_ref,$nm_vers_ref) = read_ini("nm_inst_local.ini");
     %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
     chdir($cwd);
     refresh_pirana($cwd);
@@ -1170,10 +1170,10 @@ sub save_settings {
   %ini_descr = %$ref_ini_descr;
   %ini_add_1 = %$ref_add_1;
   print %ini_add_1;
-  open (INI, "<".unix_path($base_dir."/ini/".$ini_file));
+  open (INI, "<".unix_path($home_dir."/ini/".$ini_file));
   @lines=<INI>;
   close INI;
-  open (INI, ">".unix_path($base_dir."/ini/".$ini_file));
+  open (INI, ">".unix_path($home_dir."/ini/".$ini_file));
   foreach(@lines) {
      if ((substr($_,0,1) eq "#")||(substr($_,0,1) eq "[")) {print INI $_;} else {
         ($key,$value) = split (/,/,$_);
@@ -1302,11 +1302,11 @@ sub edit_scripts {
     $command = win_path($base_dir."\\scripts\\".$curr_script).$params;
     if ($params =~ m/.pl/)  {$lang = "perl"};
     if ($params =~ m/.awk/) {$lang = "awk"}; 
-    system "start ".$lang." ".$command; #" >".win_path($base_dir."\\log\\")."script.log";
+    system "start ".$lang." ".$command; #" >".win_path($home_dir."\\log\\")."script.log";
     #$see_script_log = $edit_scripts_w -> messageBox(-type=>'yesno', -icon=>'question',
     #  -message=>"Script executed.\nDo you want to view the script output?"); 
     #if( $see_script_log eq "Yes") {
-    #  start_command ($software{editor}, $base_dir."\\log\\script.log");
+    #  start_command ($software{editor}, $home_dir."\\log\\script.log");
     #}
     #$edit_scripts_w->destroy();
     renew_pirana()
@@ -1319,7 +1319,7 @@ sub edit_ini_window {
   ($ini_file, $ref_ini, $ref_ini_descr, $title, $software) = @_;
   %ini = %$ref_ini; 
   %ini_descr = %$ref_ini_descr;
-  open (INI, "<".unix_path($base_dir."/ini/".$ini_file));
+  open (INI, "<".unix_path($home_dir."/ini/".$ini_file));
   @lines=<INI>;
   close INI;
   my @keys;
@@ -1380,13 +1380,13 @@ sub edit_ini_window {
     }
     save_settings ($ini_file, \%ini, \%ini_descr);
     chdir($base_dir);
-    my $software_ini = "ini/software_linux.ini";  
-    if ($os =~ m/MSWin/i) {$software_ini = "ini/software_win.ini";}
+    my $software_ini = "software_linux.ini";  
+    if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
     ($software_ref,$software_descr_ref) = read_ini($software_ini);
     %software = %$software_ref; %software_descr = %$software_descr_ref;  
-    ($setting_ref,$setting_descr_ref) = read_ini("ini/settings.ini");
+    ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
     %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
-    ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("ini/psn.ini");
+    ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("psn.ini");
     %psn_commands = %$psn_commands_ref; our %psn_commands_descr = %$psn_commands_descr_ref;
     $psn_parameters = $psn_commands{$psn_option};
     if ($psn_command_entry) {$psn_command_entry -> update();}
@@ -1658,7 +1658,7 @@ sub edit_sizes_window {
   $nm_manage_frame -> Label (-text=>"\nNote: Only SIZES files of local NM installations can be read. Versions will be read\nfrom pirana ini-files, and psn.conf (if found). Only regular (non-NMQual) installations\ncan be altered and recompiled. Hover over records to view description.",-background=>$bgcol,-justify=>'left')
     ->grid(-column=>1, -row=>5, -columnspan=>4, -sticky=>"nws");
   my @nm6_installations = ();
-  ($nm_dirs_ref, $nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
+  ($nm_dirs_ref, $nm_vers_ref) = read_ini("nm_inst_local.ini");
   %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref; 
   # add Perl NM-versions
   my ($psn_nm_versions_ref, $psn_nm_versions_vers_ref) = get_psn_nm_versions(\%setting, \%software);
@@ -1716,7 +1716,7 @@ sub edit_sizes_window {
       delete $nm_types{$nm_chosen};
       foreach (keys(%nm_dirs)) {if (($_ =~ m/PsN:/)||($_ eq "")) { delete $nm_dirs{$_}; delete $nm_vers{$_};  delete $nm_types{$_};}}
       save_settings ("nm_inst_local.ini", \%nm_dirs, \%nm_vers);
-      ($nm_dirs_ref,$nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
+      ($nm_dirs_ref,$nm_vers_ref) = read_ini("nm_inst_local.ini");
       our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref; 
       chdir($cwd);
       refresh_pirana($cwd);
@@ -1793,6 +1793,19 @@ sub status {
   $status_bar -> configure (-text=>"Status: ".$status_text);
   $mw->update();
 }
+sub setup_ini_dir {
+  my ($user, $home_dir) = @_;
+  unless (-d $home_dir) {mkdir $home_dir};
+  unless (-d $home_dir."/ini") {mkdir $home_dir."/ini"};
+  unless (-d $home_dir."/log") {mkdir $home_dir."/log"};
+  my $cwd = cwd();
+  my @dir = dir ($base_dir."/ini_defaults", ".ini");
+  foreach my $ini (@dir) {
+    unless (-e $home_dir."/ini/".$ini) {
+      copy ($base_dir."/ini_defaults/".$ini, $home_dir."/ini/".$ini);
+    }
+  };
+}
 
 sub renew_pirana {
 ### Purpose : To reload the main part of the GUI
@@ -1810,9 +1823,8 @@ sub renew_pirana {
   refresh_pirana ($cwd, $filter, 1);
   $project_optionmenu -> configure(-state=>'normal');
   status();
-  if ($first_time_flag==1) {message("Welcome to Piraña!\n\nSince this is the first time you start Piraña, please check the preferences and software\nsettings under 'File' in the menu.\n\nNONMEM installations may be added under 'Tools' -> 'NONMEM' -> 'Manage Installations'\n\n")};
-
 }
+
 sub refresh_pirana {
 ### Purpose : To refresh the interface
 ### Compat  : W+
@@ -1844,7 +1856,7 @@ sub show_console_output {
 sub message { 
 ### Purpose : Show a small window with a text and an OK button
 ### Compat  : W+L+
- $mw -> messageBox(-type=>'ok', -font=> $font_normal, -message=>@_[0]);
+ $mw -> messageBox(-type=>'ok', -message=>@_[0]);
 }
  
 sub intro_msg {
@@ -1853,7 +1865,7 @@ sub intro_msg {
   $kill = shift;
   if ($kill == 1) {$kill_text = "\nClick OK to exit Piraña.\n"} else {$kill_text=""};
   our $mw2 = MainWindow -> new (-title => "Piraña",-width=>740, -height=>410);
-  open (LOG, "<log/startup.log");
+  open (LOG, "<".$home_dir."/log/startup.log");
   @lines=<LOG>;
   close LOG;
   $all = join("",@lines);
@@ -1866,7 +1878,7 @@ sub intro_msg {
 sub read_ini {
 ### Purpose : Reads pirana ini-files
 ### Compat  : W+L+
-  unless (open (INI,"<".$base_dir."/".@_[0])) {print LOG "File not found: ".@_[0]."\n"};
+  unless (open (INI,"<".$home_dir."/ini/".@_[0])) {print LOG "File not found: ".@_[0]."\n"};
   my %setting;
   my %descr;
   my %add_1;
@@ -1927,26 +1939,60 @@ sub nmqual_compile_script {
   close OUT;
 }
 
+sub first_time_dialog {
+  my $user = shift;
+  my $first_time_dialog_window = $mw -> Toplevel(-title=>'Welcome to Piraña!');
+  my $first_time_dialog_frame = $first_time_dialog_window -> Frame(-background=>$bgcol) -> grid(-ipadx=>10, -ipady=>10);
+  $first_time_dialog_frame -> Label (-font=>$font_normal, -background=>$bgcol, -justify=>"left",
+    -text=> "Welcome to Piraña!\n\nSince this is the first time you start Piraña, please check the preferences and software\nsettings under 'File' in the menu.\n\nNONMEM installations may be added under 'NONMEM' -> 'Manage Installations'\n\n"
+  )->grid(-row=>1, -column=>1, -columnspan=>2);
+  $first_time_dialog_frame -> Label (-font=>$font_normal, -background=>$bgcol, -justify=>"left",
+    -text=> "Please specify your username: \n(no spaces)"
+  )->grid(-row=>2, -column=>1, -sticky=>"nse");
+  $first_time_dialog_frame -> Entry (-font=>$font_normal, -background=>'white', -justify=>"left",
+    -textvariable => \$user 
+  )->grid(-row=>2, -column=>2, -sticky=>"wn");
+  $first_time_dialog_frame -> Label (-font=>$font_normal, -background=>$bgcol, -justify=>"left",
+    -text=> " "
+  )->grid(-row=>3, -column=>1);
+  $first_time_dialog_frame -> Button (-text=>'OK', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{  
+    $user =~ s/\s//g; 
+    our ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
+    our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
+    $setting{username} = $user;
+    save_settings ("settings.ini", \%setting, \%setting_descr);
+    $first_time_dialog_window -> destroy();
+  })->grid(-row=>4, -column=>2, -sticky=>"wns");
+  center_window($first_time_dialog_window);
+}
+
 sub initialize {
 ### Purpose : Initialize pirana: read ini-files and update settings-hashes
 ### Compat  : W+L? 
-  our $first_time_flag=0;
-  unless (-e "log/startup.log") {$first_time_flag=1};
-  open (LOG,">log/startup.log");
+  
+  # check if it's the first time to start pirana
+  my $user    = getlogin();
+  unless (-e $home_dir."/log/startup.log") {
+    our $first_time_flag = 1;
+  } 
+  setup_ini_dir ($user, $home_dir);
+  open (LOG,">".$home_dir."/log/startup.log");
   my $error=0;
   print LOG "Piraña ".$version."\n";
   print LOG "Startup time: ".localtime()."\n\n";
   print LOG "Checking pirana installation...\n";
-  unless (-d $base_dir."/ini") {$error++; print LOG "Error: Pirana could not find ini/settings.ini. Program halted.\n";} ;
+
+  our ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
+  our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
+
   unless (-d $base_dir."/internal") {$error++; print LOG "Error: Pirana could not find dir containing internal subroutines. Program halted.\n"};
-  unless (-d $base_dir."/log") {$error++; print LOG "Error: Pirana could not find log-folder. Program halted.\n"; };
   unless (-d $base_dir."/images") {$error++; print LOG "Error: Pirana could not find images. Program halted.\n"; };
   if ($error>0) {print LOG "Errors were found. Check installation of pirana.\n"; close LOG; intro_msg(1)} else {print LOG "Done\n"};
 
   print LOG "Reading Pirana settings...\n"; 
-  ($setting_ref,$setting_descr_ref) = read_ini("ini/settings.ini");
+  ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
   %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
-  if ($setting{name_researcher}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
+  #if ($setting{username}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
   our $models_view = $setting{models_view};
     
   if ($setting{font_size}==2) {
@@ -1970,8 +2016,8 @@ sub initialize {
   }
   
   print LOG "Reading software settings...\n"; 
-  my $software_ini = "ini/software_linux.ini";  
-  if ($os =~ m/MSWin/i) {$software_ini = "ini/software_win.ini";}
+  my $software_ini = "software_linux.ini";  
+  if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
   ($software_ref,$software_descr_ref) = read_ini($software_ini);
   %software = %$software_ref; %software_descr = %$software_descr_ref;  
 
@@ -1982,42 +2028,41 @@ sub initialize {
   # check if XML:XPath is present, if NMQual will be used.
   if ($setting{use_nmq}==1) {
     print LOG "Checking XML::XPath availability (NMQual)...\n";
-    system ('perl "'.win_path($base_dir.'/internal/test_xpath.pl" >"'.$base_dir.'/log/xpath.log"'));
-    if (-s $base_dir."/log/xpath.log" > 2) { 
+    system ('perl "'.win_path($base_dir.'/internal/test_xpath.pl" >"'.$home_dir.'/log/xpath.log"'));
+    if (-s $home_dir."/log/xpath.log" > 2) { 
       our $xpath=1;
     } else {our $xpath = 0; print LOG "Perl module XML::XPath required for NMQual support was not found.\nIf you prefer not to work with NMQual,\ndisable use of NMQual under 'File->Preferences'.\n"; intro_msg(0) 
     }; 
   }
   if ($setting{use_psn}==1) {
     print LOG "Reading PsN commands default parameters...\n"; 
-    my ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("ini/psn.ini");
+    my ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("psn.ini");
     our %psn_commands = %$psn_commands_ref; our %psn_commands_descr = %$psn_commands_descr_ref;  
     foreach(keys(%psn_commands_descr)) {
       $psn_commands_descr{$_} =~ s/\\n/\n/g;
     }
   }
 
-  if (-e "ini/scripts.ini") {
-    print LOG "Reading scripts...\n"; 
-    ($scripts_ref,$scripts_descr_ref) = read_ini("ini/scripts.ini");
-    %scripts = %$scripts_ref; %scripts_descr = %$scripts_descr_ref;  
-  }
+#  if (-e "ini/scripts.ini") {
+#    print LOG "Reading scripts...\n"; 
+#    ($scripts_ref,$scripts_descr_ref) = read_ini("scripts.ini");
+#    %scripts = %$scripts_ref; %scripts_descr = %$scripts_descr_ref;  
+#  }
   
   print LOG "Reading Projects...\n"; 
-  (%project_dir,%project_descr) = read_ini("ini/projects.ini");
-  ($project_dir_ref,$project_descr_ref) = read_ini("ini/projects.ini");
+  ($project_dir_ref,$project_descr_ref) = read_ini("projects.ini");
   %project_dir = %$project_dir_ref; %project_descr = %$project_descr_ref;
   $pr_dir_err=0;
   while(($key, $value) = each(%project_dir)) {
     unless (-d $value) {$pr_dir_err++; print LOG "Error: folder for project ".$value." not found!\n"};
   }
-  unless ($pr_dir_err==0) {print LOG $pr_dir_err." project(s) not found. Check ini/projects.ini!\n"; close LOG; 
+  unless ($pr_dir_err==0) {print LOG $pr_dir_err." project(s) not found. Check projects.ini!\n"; close LOG; 
     # intro_msg(0)
   };
   
   print LOG "Reading NM versions...\n";
   $pr_dir_err=0;   
-  ($nm_dirs_ref, $nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
+  ($nm_dirs_ref, $nm_vers_ref) = read_ini("nm_inst_local.ini");
   our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref; 
   while(($key, $value) = each(%nm_dirs)) {
     unless (-d $value) {$pr_dir_err++; print LOG "Error: NM installation ".$value." not found!\n"};
@@ -2029,9 +2074,10 @@ sub initialize {
     }
   }
   if ($setting{cluster_type}!=0) {
-    ($nm_dirs_cluster_ref,$nm_vers_cluster_ref,$nm_types_cluster_ref) = read_ini("ini/nm_inst_cluster.ini");
+    ($nm_dirs_cluster_ref,$nm_vers_cluster_ref,$nm_types_cluster_ref) = read_ini("nm_inst_cluster.ini");
     %nm_dirs_cluster = %$nm_dirs_cluster_ref; %nm_vers_cluster = %$nm_vers_cluster_ref;
   }
+  close (LOG);
 }
 
 sub cluster_monitor {
@@ -2136,8 +2182,10 @@ sub save_project {
      $project_dir{$new_project_name} = $cwd;  
      rewrite_projects_ini();
      $active_project = $new_project_name;
-     project_optionmenu();
-     destroy $save_dialog;})
+     my $project_optionmenu = project_optionmenu();
+     $project_optionmenu -> configure(-state=>"normal");
+     destroy $save_dialog;
+  })
    ->grid(-row=>5,-column=>2,-sticky=>'w'); 
  $save_proj_frame -> Button (-text=>'Cancel ', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{destroy $save_dialog})->grid(-column=>1,-row=>5,-sticky=>"nwse");
 }
@@ -2164,7 +2212,8 @@ sub del_project {
     delete $project_dir{$active_project};
     rewrite_projects_ini();
     ($active_project,@rest) = keys(%project_dir);
-    project_optionmenu();
+    my $project_optionmenu = project_optionmenu();
+    $project_optionmenu -> configure(-state=>"normal");
     refresh_pirana($cwd,$filter,1);
     destroy $delproj_dialog;
   })->grid(-row=>2,-column=>2,-sticky=>"nwse");
@@ -2871,7 +2920,7 @@ sub print_note {
   open (NOTE,">note.txt");
   print NOTE "*********************************************************\n";
   print NOTE "Compiled by Pirana v".$version." using NONMEM version: ".$nm_inst_chosen."\n";
-  print NOTE "Run started locally by ".$setting{name_researcher}."\n";
+  print NOTE "Run started locally by ".$setting{username}."\n";
   print NOTE "at ".localtime().".\n";
   print NOTE "*********************************************************\n";
   my %sizes = read_sizes($nm_dirs{@_[0]});
@@ -2916,7 +2965,7 @@ sub exec_run_nmfe {
          $setting{ext_ctl}.' '.$file.'.'.$setting{ext_res}.' &"';
       if ($stdout) {$stdout -> insert('end', "\n".$command);}
       system $command;
-      db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "LinuxCluster", $command, $setting{name_researcher});
+      db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "LinuxCluster", $command, $setting{username});
     }
   } else { # regular execution
     my $run_script = create_nm_start_script ($nm_inst, os_specific_path($cwd), \@files, $run_in_new_dir);
@@ -2936,7 +2985,7 @@ sub exec_run_nmfe {
     if ($stdout) {$stdout -> insert('end', "\n".$command);}
     system $command;
     foreach my $model (@files) {
-      db_log_execution ($model.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "local", $command, $setting{name_researcher});   
+      db_log_execution ($model.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "local", $command, $setting{username});   
     }
   }
   if ( $method =~ m/compile/i) { # Only compile, in current folder
@@ -4081,7 +4130,7 @@ sub psn_run_window {
             system $psn_command.' &';
           }        
         }        
-        db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "local", $psn_command, $setting{name_researcher});
+        db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "local", $psn_command, $setting{username});
         #if ($stdout) {$stdout -> insert('end', "\n".$psn_command);}
         status ();
       }
@@ -4104,7 +4153,7 @@ sub psn_run_window {
               system $psn_command.' &';
             }           
           }  
-          db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "LinuxCluster", $psn_command, $setting{name_researcher});
+          db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "LinuxCluster", $psn_command, $setting{username});
             #if ($stdout) {$stdout -> insert('end', "\n".$psn_command);}
         } else {  message ("Your current directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.")};
       }
@@ -4112,7 +4161,7 @@ sub psn_run_window {
         if (lcase(substr($cwd,0,1)) eq lcase(substr($setting{cluster_drive},0,1))) {
             my $psn_command = win_path($software{perl_dir})."\\bin\\".$psn_command_line;
             system "start ".$psn_command;
-            db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "PCLuster", $psn_command, $setting{name_researcher});
+            db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "PCLuster", $psn_command, $setting{username});
             #if ($stdout) {$stdout -> insert('end', "\n".$psn_command);}
         } else {  message ("Your current directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.")};
       }
@@ -4466,9 +4515,9 @@ sub frame_models_show {
 }
 
 sub show_run_frame {
-  ($nm_dirs_ref,$nm_vers_ref) = read_ini("ini/nm_inst_local.ini");
+  ($nm_dirs_ref,$nm_vers_ref) = read_ini("nm_inst_local.ini");
   %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
-  if (-e $base_dir."/log/pirana.log") {  # read last used NM installation
+  if (-e $home_dir."/log/pirana.log") {  # read last used NM installation
           read_log();
   }
   $run_frame = $model_overview_frame -> Frame(-background=>$bgcol)->grid(-row=>4,-column=>1,-columnspan=>3,-sticky => 'wns', -ipady=>0);
@@ -4742,17 +4791,17 @@ sub exec_run_wfn {
           }
         }
         message ("WFN bootstrap scheduled, ".$count." job specification file(s) created.");
-        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{name_researcher} );
+        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );
       } else {
         open (BAT,">".$rand_filename.".bat");
         print BAT "CALL ".win_path($wfn_dir."/bin/wfn.bat ").$wfn_parameters."\n";
         print BAT "CALL ".win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters)."\n";
         close BAT;
-        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{name_researcher} );    
+        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );    
         if ($cluster_active == 1) {
           if (generate_zink_file($setting{zink_host}, $setting{cluster_drive},"Bootstrap ".$file, 3, win_path($cwd), "CALL ".win_path($cwd."\\".$rand_filename).".bat\n", "") == 1) {
             message ("WFN job scheduled.");
-            db_log_execution ($file, @ctl_descr[$file], "WFN", "PCluster", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{name_researcher} );
+            db_log_execution ($file, @ctl_descr[$file], "WFN", "PCluster", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );
           };
         } 
       }
