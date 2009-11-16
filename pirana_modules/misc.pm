@@ -89,9 +89,9 @@ sub rnd {
   my ($n, $rnd) = @_;
   my $x = Math::BigFloat->new($n);
   $x -> bround($rnd);
-  # $x =~ s/0+$//; #remove trailing zeroes
+  $x =~ s/\.0+$//; #remove trailing zeroes
   if ($x == int($n)) {return int($n)} else {return ($x)};  # return 1 FIX and not 1.0000
-}   
+} 
 
 sub one_dir_up {
 ### Purpose : Return the directory paht located one dir up

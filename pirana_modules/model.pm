@@ -868,10 +868,12 @@ sub output_results_LaTeX {
   my $etabar_p_ref = $res{etabar_p};  my @etabar_p = @$etabar_p_ref;
  
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($res{resdat});   
-  # Start LaTeX output  my $latex = "\\begin{table}[H]\n";
-  my $latex .= "\\begin{tabular}{l l c c c c}\n";
-  # Parameter estimates  $latex .= "\\hline\n";
-  $latex .= "Theta & Parameter & Estimate & & SE & RSE \\tabularnewline\n";
+  # Start LaTeX output
+  my $latex .= "\\begin{table}[ht] \n";
+  $latex .= "\\begin{tabular}{l l c c c c}\n";
+  # Parameter estimates
+  $latex .= "\\hline\n";
+  $latex .= "\\footnotesize{Theta} & \\footnotesize{Parameter} & \\footnotesize{Estimate} & & \\footnotesize{SE} & \\footnotesize{RSE} \\tabularnewline\n";
   $latex .= "\\hline\n";
   
   my $theta_ref = $res{theta};  my @theta = @$theta_ref;
@@ -893,12 +895,12 @@ sub output_results_LaTeX {
   my $i=0;
   foreach (@theta) {
 
-    if (@theta[$i] ne "") {$latex .= "".($i+1)." & ".
-       "".@theta_names[$i]." & ".rnd(@theta[$i],5)." & "};
-    $latex .= "".@theta_fix[$i]." & ";
+    if (@theta[$i] ne "") {$latex .= "\\footnotesize{".($i+1)."} & ".
+       "\\footnotesize{".@theta_names[$i]."} & ".rnd(@theta[$i],5)." & "};
+    $latex .= "\\footnotesize{".@theta_fix[$i]."} & ";
     my $rse = "";
     unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,3)) };
-    if (@theta_se[$i] ne "") {$latex .= "".rnd(@theta_se[$i],4)."&".$rse.""} 
+    if (@theta_se[$i] ne "") {$latex .= "\\footnotesize{".rnd(@theta_se[$i],4)."}&\\footnotesize{".$rse."}"} 
       else {$latex .= ""};
     my $low = $theta_bnd_low[$i];
     my $up = $theta_bnd_up[$i];
@@ -910,26 +912,20 @@ sub output_results_LaTeX {
     $i++;  
   }
   $latex .= "\\hline\n";
-  $latex .= "\\end{tabular}\n";
-  $latex .= "\\end{table}\n";
-
-  $latex .= "\\begin{table}[H]\n";
-  $latex .= "\\begin{tabular}{l l c c c}\n";
-  $latex .= "\\hline\n";
-  $latex .= "Omega & Description ";
+    $latex .= "\\footnotesize{Omega} & \\footnotesize{Description} ";
   $i=1;
-  foreach my $om (@omega) {$latex .= "&".$i."" ; $i++};
+  foreach my $om (@omega) {$latex .= "& \\footnotesize{Om} \\footnotesize{".$i."}" ; $i++};
   $latex .= "\\tabularnewline\n";
   $latex .= "\\hline\n";
   $i=0; my $om_se_x; my @om_cov_se;
   foreach my $om (@omega) {
       my @om_x = @$om; my $j = 1;
-      $latex .= "".($i+1)." & ";
-      $latex .= "".@omega_names[$i]." & ";
+      $latex .= "\\footnotesize{".($i+1)."} & ";
+      $latex .= "\\footnotesize{".@omega_names[$i]."} & ";
       my $bg = "";
       foreach my $om_cov (@om_x) {
         if (@omega_se>0) {$om_se_x = @omega_se[$i]; @om_cov_se = @$om_se_x;};
-        $latex .= "".rnd($om_cov,4); 
+        $latex .= "\\footnotesize{".rnd($om_cov,4)."}"; 
         if (($om_cov!=0)&&(@om_cov_se[$i]!=0)) {
           $latex .= "(".rnd((@om_cov_se[$i]/$om_cov*100),3).")  ";
         } else {
@@ -943,27 +939,21 @@ sub output_results_LaTeX {
       $i++;
   }
   $latex .= "\\hline\n";
-  $latex .= "\\end{tabular}\n";
-  $latex .= "\\end{table}\n";
+  $latex .= "\\footnotesize{Sigma} & \\footnotesize{Description} & ";
   
-  $latex .= "\\begin{table}[H]\n";
-  $latex .= "\\begin{tabular}{l l c}\n";
-  $latex .= "\\hline\n";
-  $latex .= "Sigma & Description & ";
-  $i=1; 
-  foreach my $si (@sigma) {$latex .= "".$i." \\tabularnewline\n" ; $i++};
+  $latex .=  "\\tabularnewline\n";
   $latex .= "\\hline\n";
   $i=0; my $si_se_x; my @si_cov_se; my $bg;
   foreach my $si (@sigma) {
       my @si_x = @$si; my $j = 1;
-      $latex .= "".($i+1)." & ";
-      $latex .= "".@sigma_names[$i]." & ";
+      $latex .= "\\footnotesize{".($i+1)."} & ";
+      $latex .= "\\footnotesize{".@sigma_names[$i]."} & ";
       foreach my $si_cov (@si_x) {
         if (@omega_se>0) {
            $om_se_x = @omega_se[$i]; 
            #@om_cov_se = @$om_se_x;
         };
-        $latex .= "".rnd($si_cov,4); 
+        $latex .= "\\footnotesize{".rnd($si_cov,4)."}"; 
         if (($si_cov!=0)&&(@si_cov_se[$i]!=0)) {
           $latex .= "(".rnd((@si_cov_se[$i]/$si_cov*100),3)."%) & ";
         } else {
@@ -978,7 +968,6 @@ sub output_results_LaTeX {
   $latex .= "\\hline\n";
   $latex .= "\\end{tabular}\n";
   $latex .= "\\end{table}\n";
-  
   return ($latex);
 }
 

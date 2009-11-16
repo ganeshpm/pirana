@@ -48,11 +48,15 @@ if ($os =~ m/MSWin/i) {
 }
 our $user = getlogin();
 
-# delcare some global variables (keep to a minimum)
+# delcare some global variables (keep globals to a minimum)
 our $cwd      = cwd();
 our $base_dir = cwd();
 if ($os =~ m/MSWin/i) {
-  our $home_dir = $ENV{HOME}."/Application Data/pirana";
+  if ($ENV{APPDATA} eq "") {
+    our $home_dir = $base_dir;
+  } else {
+    our $home_dir = $ENV{APPDATA}."/pirana";
+  }
 } else {
   our $home_dir = $ENV{HOME}."/.pirana";
 }
