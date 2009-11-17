@@ -733,8 +733,10 @@ sub restart_msf {
       sleep(1); # to make sure the file is ready for reading
       refresh_pirana($cwd);
     } 
-  }) -> grid(-row=>7,-column=>2,-sticky=>"w");
-  $msf_dialog_frame -> Button (-text=>'	Cancel ', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=>sub{destroy $msf_dialog})->grid(-column=>1,-row=>7,-sticky=>"e");
+  }) -> grid(-row=>7,-column=>2,-sticky=>"wens");
+  $msf_dialog_frame -> Button (-text=>'Cancel',  -border=>$bbw, -width=>12, -justify=>'center', -background=>$button, -activebackground=>$abutton, -command=>sub{
+    destroy $msf_dialog
+  })->grid(-column=>1,-row=>7,-sticky=>"ens");
 };
 
 sub edit_model {
@@ -4029,7 +4031,7 @@ sub nmfe_run_window {
  
   $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
 
-  $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -command=> sub {
+  $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -border=>$bbw, -command=> sub {
     unless ($nm_version_chosen eq "") { #NM installed?
       if ($cluster_active==2)  {
         distribute ($nm_version_chosen, $method_chosen, "nmfe");
@@ -4292,14 +4294,17 @@ sub frame_models_show {
           }
         }
     )->grid(-column => 1, -columnspan=>3, -row => 1, -rowspan=>3, -sticky=>'nswe', -ipady=>0);
-    $models_hlist -> bind ('<Button-1>' => sub {
-      if ($hires_time) { # workaround, on Linux double-click doesn't work due to headers in listbox.
-        if ((Time::HiRes::time - $hires_time)<0.2) {
-          models_hlist_action();
-        }
-      }      
-      our $hires_time = Time::HiRes::time;  
-    })  ;
+    unless ($os =~ m/MSWin/i) {
+      $models_hlist -> bind ('<Button-1>' => sub {
+        if ($hires_time) { # workaround, on Linux double-click doesn't work due to headers in listbox.
+          if ((Time::HiRes::time - $hires_time)<0.25) {
+            models_hlist_action();
+          }
+        }      
+        our $hires_time = Time::HiRes::time;  
+      })  ;
+    }
+    
     our $models_menu = $models_hlist->Menu(-tearoff => 0, -background=>$bgcol, -title=>'None');
     $models_menu -> command (-label=> " Run (nmfe)", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        nmfe_command();
@@ -5623,7 +5628,7 @@ sub extract_inter {
   
 sub combine_wfn_bootstraps {
 ### Purpose : Combine WFN bootstrap results into a combined file
-### Compat  : W+
+### Compat  : W+L+
 ### Notes   : beta 
   my @bs_dirs = <*_bs*>;  # get all possible bootstrap dirs
   foreach (@bs_dirs) {    # check if it is a directory
@@ -5653,7 +5658,7 @@ sub combine_wfn_bootstraps {
 
 sub create_duplicates_window { 
 ### Purpose : Create dialog window for making n duplicates from model(s)
-### Compat  : W+
+### Compat  : W+L+
     my @models = $models_hlist -> selectionGet ();
     my $no_changed = 0; my $prefix = "###"; my $no_duplicates = 100;
     if (@models == 0) {
@@ -5710,7 +5715,7 @@ sub create_duplicates_window {
 
 sub batch_replace_block { # change block in models
 ### Purpose : Create dialog for replacing code in batch of files
-### Compat  : W+
+### Compat  : W+L+
     my @models = $models_hlist -> selectionGet ();
     my $no_changed = 0;
     if (@models == 0) {

@@ -37,10 +37,10 @@ sub replace_block {
     my @lines = <MOD>;
     close MOD;
     open (WMOD, ">".$mod);
-    my $bl_flag = 0;
+    my $bl_flag = 0; 
     foreach my $line (@lines) {
-      if (substr($line,0,1) eq "\$") {$bl_flag = 0}
-      if (substr($line,0,length($block)) eq $block) {
+      if ((substr($line,0,1) eq "\$")&&(substr($line,0,length($block)) ne $block)) {$bl_flag = 0;}
+      if ((substr($line,0,length($block)) eq $block)&&($bl_flag==0)) {
         print WMOD $replace_with."\n";
         $bl_flag = 1;
       }
@@ -867,7 +867,8 @@ sub output_results_LaTeX {
   my $etabar_se_ref = $res{etabar_se};  my @etabar_se = @$etabar_se_ref;
   my $etabar_p_ref = $res{etabar_p};  my @etabar_p = @$etabar_p_ref;
  
-  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($res{resdat});   
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($res{resdat}); 
+  
   # Start LaTeX output
   my $latex .= "\\begin{table}[ht] \n";
   $latex .= "\\begin{tabular}{l l c c c c}\n";
