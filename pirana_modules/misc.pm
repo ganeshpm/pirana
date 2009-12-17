@@ -2,19 +2,89 @@
 
 package pirana_modules::misc;
 
-use strict;
+# use strict;
+use Win32::PerfLib;
+use Win32::Process;
+use Getopt::Std;
 use Cwd;
 require Exporter;
+
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
+our @EXPORT_OK = qw(nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
+
+sub nonmem_priority {
+    my $priority = shift;
+    my %process_by_name = &get_processes;
+    my @proc = keys(%process_by_name);
+    my $count_succ = 0; my $count_nm = 0;
+    foreach my $key (@proc) {
+	if ($key eq "nonmem") {
+	    my $info_ref =$process_by_name{$key};
+	    my @info = @$info_ref;
+	    foreach my $pid (@info) {
+		$count_nm = $count_nm + 1;
+		my $iflags = 0;
+		Win32::Process::Open (my $nm_proc, $pid , $iflags);
+		my $pr;
+		if ($priority eq "low") {
+		    $pr = $nm_proc -> SetPriorityClass( IDLE_PRIORITY_CLASS );
+		}
+		if ($priority eq "normal") {
+		    $pr = $nm_proc -> SetPriorityClass( NORMAL_PRIORITY_CLASS );
+		}
+		if ($priority eq "high") {
+		    $pr = $nm_proc -> SetPriorityClass( HIGH_PRIORITY_CLASS );
+		}
+	        $count_succ = $count_succ + $pr;
+	    }
+	}
+    }
+    return ($count_succ." of ".$count_nm." NONMEM processes were set to ".$priority." priority.")
+}
+
+# Get all process IDs by name.
+sub get_processes
+{
+    my (%counter, %r_counter, %process_by_name);
+    Win32::PerfLib::GetCounterNames('', \%counter);
+    %r_counter = reverse %counter;
+
+    # Get id for the process object
+    my $process_obj = $r_counter{'Process'};
+    # Get id for the process ID counter
+    my $process_id = $r_counter{'ID Process'};
+
+    # create connection to local computer
+    my $perflib = new Win32::PerfLib('');
+    my $proc_ref = {};
+
+    # get the performance data for the process object
+    $perflib->GetObjectList($process_obj, $proc_ref);
+    $perflib->Close();
+
+    my $instance_ref = $proc_ref->{'Objects'}->{$process_obj}->{'Instances'};
+    foreach my $instance (values %{$instance_ref})
+    {
+        my $counter_ref = $instance->{'Counters'};
+        foreach my $counter (values %{$counter_ref})
+        {
+            if($counter->{'CounterNameTitleIndex'} == $process_id)
+            {
+                # Process ID:s stored by name, in anonymous array:
+                push @{$process_by_name{$instance->{'Name'}}}, $counter->{'Counter'};
+            }
+        }
+    }
+    return %process_by_name;
+}
 
 sub generate_random_string {
 ### Purpose : Generate a random string of n length
-### Compat  : W+L? 
+### Compat  : W+L?
 	my $length_of_randomstring=shift;
 	my @chars=('a'..'z','A'..'Z','0'..'9','_');
 	my $random_string;
-	foreach (1..$length_of_randomstring) 
+	foreach (1..$length_of_randomstring)
 	{$random_string.=$chars[rand @chars];}
 	return $random_string;
 }
@@ -32,7 +102,7 @@ sub replace_string_in_file {
   foreach (@file){
     $_ =~ s/$string/$replace/g;
     print IN $_;
-  } 
+  }
   close IN;
 }
 
@@ -54,11 +124,11 @@ sub dir {
 }
 
 sub ascend
-### Purpose : Sort ascending 
+### Purpose : Sort ascending
 ### Compat  : W+L+
 {
  $a <=> $b;
-} 
+}
 
 sub log10 {
 ### Purpose : return logarithmic value
@@ -91,7 +161,7 @@ sub rnd {
   $x -> bround($rnd);
   $x =~ s/\.0+$//; #remove trailing zeroes
   if ($x == int($n)) {return int($n)} else {return ($x)};  # return 1 FIX and not 1.0000
-} 
+}
 
 sub one_dir_up {
 ### Purpose : Return the directory paht located one dir up
@@ -104,7 +174,7 @@ sub one_dir_up {
 }
 
 sub win_path {
-### Purpose : Return a path with only \ 
+### Purpose : Return a path with only \
 ### Compat  : W+L+
   my $win_dir = @_[0];
   $win_dir =~ s/\//\\/g ;
@@ -151,7 +221,7 @@ sub csv2tab {
   close OUT;
 }
 
-sub tab2csv {   
+sub tab2csv {
 ### Purpose : Convert a NM table to a csv file (e.g. for reading in excel)
 ### Compat  : W+
 ### Notes: laborious method, since NONMEM does not output tables using \t but with spaces
@@ -171,8 +241,8 @@ sub tab2csv {
       @TAB[$i] =~ s/,,,,/,/g;
       @TAB[$i] =~ s/,,,/,/g;
       @TAB[$i] =~ s/,,/,/g;
-    } 
-    $i=$i+1; 
+    }
+    $i=$i+1;
   };
   open (OUT,">".@_[1]);
   my $start=1;
@@ -182,7 +252,7 @@ sub tab2csv {
   } else {                      # TAB file has column names
     my $row1 = @TAB[0];
     chomp($row1);
-    my @row = split (/,/,$row1);  
+    my @row = split (/,/,$row1);
     my $k=1;
     my $header="";
     while($k<@row) {             # Impute column names
@@ -199,7 +269,7 @@ sub tab2csv {
     $_ =~ s/,//;
     my @row = split (/,/,$_);      # data
     my $j=0;
-    foreach(@row) {  
+    foreach(@row) {
       $j++;
       if ($k>=$start) {print OUT $_ * 1;}         # data
         else {print OUT $_;}; # headers
@@ -210,13 +280,13 @@ sub tab2csv {
   close (OUT);
 }
 sub center_window {
-### Purpose : Sort ascending 
+### Purpose : Sort ascending
 ### Compat  : W+L+
-### Notes   : Doesn't work entirely correct yet... 
+### Notes   : Doesn't work entirely correct yet...
   my $win = shift;
   $win->withdraw;   # Hide the window while we move it about
   $win->update;     # Make sure width and height are current
-  my $xpos = int(($win->screenwidth  - $win->width ) / 2); 
+  my $xpos = int(($win->screenwidth  - $win->width ) / 2);
   my $ypos = int(($win->screenheight - $win->height) / 2);
   $win->geometry("+$xpos+$ypos");
   $win->deiconify;  # Show the window again
@@ -246,7 +316,7 @@ sub win_start {
   # arguments: program, arguments
   my @path = split(/\\/,@_[0]);
   my $program = @path[@path-1];
-  $program =~ s/.exe//i; 
+  $program =~ s/.exe//i;
   my $cmd_line = $program." ".@_[1];
   my $priority = "LOW_PRIORITY_CLASS";
   if (-e @_[0]) {
@@ -265,7 +335,7 @@ sub linux_start {
 }
 
 sub start_command {
-  my $os = "$^O"; 
+  my $os = "$^O";
   if ($os =~ m/MSWin/i) {
     win_start (@_);
   }
