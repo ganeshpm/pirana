@@ -8,7 +8,7 @@
 #    Piraña is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.                                  
+#    (at your option) any later version.
 #
 #    Piraña is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,7 +24,7 @@
 # As much as possible, subs are located in separate modules
 
 sub create_nm_start_script {
-### Purpose : Create a script (bat or sh) to start 
+### Purpose : Create a script (bat or sh) to start
 ### Compat  : W+L+
   my ($nm_version, $run_dir, $mod_ref, $run_in_new_dir) = @_;
   my $nmfe_file;
@@ -33,12 +33,12 @@ sub create_nm_start_script {
   my @mod = @$mod_ref;
   my $drive = "";
   if ($os =~ m/MSWin/i) {
-    if ($run_dir =~ m/:/) {$drive = substr($run_dir, 0,2)."\n";} 
+    if ($run_dir =~ m/:/) {$drive = substr($run_dir, 0,2)."\n";}
     $ext = "bat";
-    $nmfe_file = "nmfe6.bat";
+    $nmfe_file = "nmfe".$nm_vers{$nm_version}.".bat";
   } else {
     $ext = "sh";
-    $nmfe_file = "nmfe6"
+    $nmfe_file = "nmfe".$nm_vers{$nm_version};
   }
   unless (-d $base_dir."/temp") {mkdir $base_dir."/temp"};
   my $nm_start_script = os_specific_path ($nm_dirs{$nm_version}."/util/".$nmfe_file);
@@ -62,10 +62,10 @@ sub create_nm_start_script {
     }
     if ($run_in_new_dir == 1) {print SCR "cd ..\n";}
   }
-  print SCR "cd ".os_specific_path($cwd)."\n";    
+  print SCR "cd ".os_specific_path($cwd)."\n";
   close (SCR);
   return ($script_file);
-} 
+}
 
 sub redraw_screen {
 ### Purpose : Redraw the widgets on the canvas
@@ -75,27 +75,27 @@ sub redraw_screen {
   if ($full_scr==1) {
      my $width = ($mw->screenwidth)-5;
      my $height;
-     if ($os =~ m/MSWin/i) {  
-       $height = ($mw->screenheight)-70;     
-       our $entry_width = int((($mw->screenwidth)-750)/5.7);   
+     if ($os =~ m/MSWin/i) {
+       $height = ($mw->screenheight)-70;
+       our $entry_width = int((($mw->screenwidth)-750)/5.7);
        our $nrows = int((($mw->screenheight)-240)/14.5);
      } else {
        $height = ($mw->screenheight)-100;
-       our $entry_width = int((($mw->screenwidth)-750)/6.2);   
+       our $entry_width = int((($mw->screenwidth)-750)/6.2);
        our $nrows = int((($mw->screenheight)-250)/17.8);
-     }     
+     }
      $mw -> geometry($width."x".$height."+0+0");
   } else {
      $mw->geometry($pirana_normal_width."x".$pirana_normal_height);
      center_window($mw);
-     our $entry_width = 36; 
+     our $entry_width = 36;
      our $nrows = 27;
      #$mw -> resizable( 0, 0);
   }
-  if ($os =~ m/MSWin/i) { 
-    $entry_width = $entry_width + (1-$show_tabs)*24; 
+  if ($os =~ m/MSWin/i) {
+    $entry_width = $entry_width + (1-$show_tabs)*24;
   } else {
-    $entry_width = $entry_width + (1-$show_tabs)*24; 
+    $entry_width = $entry_width + (1-$show_tabs)*24;
   }
   $models_hlist -> destroy();
   if ($tab_hlist) {$tab_hlist -> destroy(); undef($tab_hlist)};
@@ -114,7 +114,7 @@ sub redraw_screen {
 }
 
 sub nmfe_command {
-### Purpose : Action when run (nmfe) is clicked 
+### Purpose : Action when run (nmfe) is clicked
 ### Compat  : W+L+
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model."); return(); }
@@ -122,19 +122,19 @@ sub nmfe_command {
   nmfe_run_window ($model_id);
 }
 sub psn_command {
-### Purpose : Action when a PsN function is clicked 
+### Purpose : Action when a PsN function is clicked
 ### Compat  : W+L+
   my $command = shift;
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model."); return(); }
   my $model_id = @ctl_show[@sel[0]];
   psn_run_window ($model_id, $command);
-}  
+}
 sub wfn_command {
-### Purpose : Action when NMGO/NMBS is clicked 
+### Purpose : Action when NMGO/NMBS is clicked
 ### Compat  : W+L+
   my @sel = $models_hlist -> selectionGet ();
-  if (@sel == 0) { message("First select a model."); return(); }  
+  if (@sel == 0) { message("First select a model."); return(); }
   my $model_id = @ctl_show[@sel[0]];
 }
 sub properties_command {
@@ -182,7 +182,7 @@ sub generate_report_command {
 }
 sub generate_LaTeX_command {
   my @run;
-  @run[0] = shift; 
+  @run[0] = shift;
   if (@run[0] = "") {
     @run = @ctl_show[$models_hlist -> selectionGet];
     if (@run == 0) { message("First select a model / result file."); return(); }
@@ -209,14 +209,14 @@ sub create_menu_bar {
         edit_ini_window("settings.ini", \%setting, \%setting_descr, "Piraña preferences",0)});
   $mbar_file -> command(-label => "Software...", -background=>$bgcol,-underline=>5,
 		  -command=>sub {
-		  my $software_ini = "software_linux.ini";  
+		  my $software_ini = "software_linux.ini";
         if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
         edit_ini_window($software_ini, \%software, \%software_descr, "Software integration",1);
       });
-  
-  $mbar_file -> command(-label => "Exit", -underline=>0,-background=>$bgcol, 
+
+  $mbar_file -> command(-label => "Exit", -underline=>0,-background=>$bgcol,
 		  -command=>sub { quit(); } );
-  
+
   our $mbar_NM = $mbar -> cascade(-label =>"NONMEM", -background=>$bgcol,-underline=>1, -tearoff => 0);
   $mbar_NM -> command(-label => "Manage NM installations", -background=>$bgcol,-underline=>1,
 		  -command=> sub { manage_nm_window();
@@ -225,11 +225,28 @@ sub create_menu_bar {
 		  -command=> sub { install_nonmem_nmq_window() });
   $mbar_NM -> command(-label => "Install NM6/7 from CD", -background=>$bgcol,-underline=>0,
 		  -command=> sub { install_nonmem_window() });
-    
+
+  if ($os =~ m/MSWin/i) {
+    our $mbar_NM_priority = $mbar_NM -> cascade(-label => "Set priority active runs", -background=>$bgcol,-underline=>1, -tearoff => 0);
+    $mbar_NM_priority -> command(-label => "Low", -background=>$bgcol,-underline=>1, -command=> sub {
+       my $m = nonmem_priority("low");
+       message ($m);
+    });
+    $mbar_NM_priority -> command(-label => "Normal", -background=>$bgcol,-underline=>1, -command=> sub {
+       my $m = nonmem_priority("normal");
+       message ($m);
+    });
+    $mbar_NM_priority -> command(-label => "High", -background=>$bgcol,-underline=>1, -command=> sub {
+       my $m = nonmem_priority("high");
+       message ($m);
+    });
+  }
+
+
   our $mbar_model = $mbar -> cascade(-label =>"Model", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_model -> command(-label => "Run (nmfe)", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
-		  -command=> sub { nmfe_command() }); 
-  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0); 
+		  -command=> sub { nmfe_command() });
+  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
   $mbar_model_psn -> command (-label=> " execute", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
@@ -237,7 +254,7 @@ sub create_menu_bar {
        psn_command("vpc");
     });
     $mbar_model_psn -> command (-label=> " npc", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("npc");  
+       psn_command("npc");
     });
     $mbar_model_psn -> command (-label=> " bootstrap", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("bootstrap");
@@ -246,47 +263,47 @@ sub create_menu_bar {
        psn_command("cdd");
     });
     $mbar_model_psn -> command (-label=> " llp", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("llp"); 
+       psn_command("llp");
     });
     $mbar_model_psn -> command (-label=> " sse", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("sse");   
+       psn_command("sse");
     });
     $mbar_model_psn -> command (-label=> " sumo", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
     });
 
-  if ($os =~ m/MSWin/i) {  
-    $mbar_model_wfn = $mbar_model -> cascade(-label => "WFN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0); 
-  }  
-  $mbar_model -> separator ; 
+  if ($os =~ m/MSWin/i) {
+    $mbar_model_wfn = $mbar_model -> cascade(-label => "WFN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
+  }
+  $mbar_model -> separator ;
   $mbar_model -> command(-label => "Properties", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol,-underline=>0,
-		  -command=> sub { properties_command(); }); 
+		  -command=> sub { properties_command(); });
   $mbar_model -> command(-label => "Edit model", -image=>$gif{notepad}, -compound=>'left', -background=>$bgcol,-underline=>0,
-		  -command=> sub { edit_model_command(); }); 
+		  -command=> sub { edit_model_command(); });
   $mbar_model -> command(-label => "Rename model",  -image=>$gif{rename}, -compound=>'left',-background=>$bgcol,-underline=>0,
-		  -command=> sub { rename_model_command(); }); 
+		  -command=> sub { rename_model_command(); });
   $mbar_model -> command(-label => "Duplicate model",  -image=>$gif{duplicate}, -compound=>'left',-background=>$bgcol,-underline=>0,
-		  -command=> sub { duplicate_model_command(); }); 
+		  -command=> sub { duplicate_model_command(); });
   $mbar_model -> command(-label => "Duplicate model for MSF restart",  -image=>$gif{msf}, -compound=>'left',-background=>$bgcol,-underline=>0,
-		  -command=> sub { duplicate_msf_command(); }); 
+		  -command=> sub { duplicate_msf_command(); });
   $mbar_model -> command(-label => "Delete model(s)", -image=>$gif{trash}, -compound=>'left',-background=>$bgcol,-underline=>0,
-		  -command=> sub { delete_models_command(); }); 
+		  -command=> sub { delete_models_command(); });
 
   our $mbar_results = $mbar -> cascade(-label =>"Results", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_results -> command(-label => "Generate HTML run report", -background=>$bgcol,-underline=>0,  -image=>$gif{HTML}, -compound=>'left',
-		  -command=> sub { 
+		  -command=> sub {
            @run = @ctl_show[$models_hlist -> selectionGet];
            if (@run>0) {
              foreach (@run) {$_ .= ".".$setting{ext_res}};
              output_results_HTML(@run[0], \%setting);
              start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum.html"');
            } else {message("Please select model first!")};
-      }); 
+      });
   $mbar_results -> command(-label => "LaTeX tables of parameter estimates", -background=>$bgcol,-underline=>0,  -image=>$gif{latex}, -compound=>'left',
-		  -command=> sub { 
+		  -command=> sub {
            generate_LaTeX_command();
-      });   
-      
+      });
+
   $mbar_results -> command(-label => "View NM output file", -background=>$bgcol,-underline=>0,-image=>$gif{notepad}, -compound=>'left',
 		  -command=> sub {
 		     @run = @ctl_show[$models_hlist -> selectionGet];
@@ -295,12 +312,12 @@ sub create_menu_bar {
            my $model_id = @ctl_show[@sel[0]];
            edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_res}));
          } else {message("Please select model first!")};
-       }); 
-  
+       });
+
   our $mbar_tools = $mbar -> cascade(-label =>"Tools", -background=>$bgcol,-underline=>0, -tearoff => 0);
 
   if ($setting{use_psn}==1) {
-    our $mbar_psn = $mbar_tools -> cascade (-label => "PsN", -background=>$bgcol, -underlin=>0, -tearoff => 0);  
+    our $mbar_psn = $mbar_tools -> cascade (-label => "PsN", -background=>$bgcol, -underline=>0, -tearoff => 0);
     if (-e unix_path($software{psn_dir})."/psn.conf") {
       $mbar_psn -> command(-label => "Edit psn.conf (local)", -background=>$bgcol,-underline=>0,
 		    -command=> sub {start_command ($software{editor}, win_path($software{psn_dir}."/psn.conf"));
@@ -312,48 +329,48 @@ sub create_menu_bar {
       })
   };
   if ((-e unix_path($software{wfn_dir})."/bin/wfn.bat")&&($os =~ m/MSWin/i)) {
-    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -background=>$bgcol, -underlin=>0, -tearoff => 0);  
+    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -background=>$bgcol, -underlin=>0, -tearoff => 0);
     $mbar_wfn -> command(-label => "Edit wfn.bat", -background=>$bgcol,-underline=>0,
 		  -command=> sub {start_command ($software{editor}, win_path($software{wfn_dir}."/bin/wfn.bat"));});
     $mbar_wfn -> command(-label => "Combine bootstrap results", -background=>$bgcol,-underline=>0,
 		  -command=> sub {combine_wfn_bootstraps()} );
   };
-    our $mbar_matrix = $mbar_tools -> cascade (-label => "Matrices", -background=>$bgcol, -underlin=>0, -tearoff => 0);  
+    our $mbar_matrix = $mbar_tools -> cascade (-label => "Matrices", -background=>$bgcol, -underlin=>0, -tearoff => 0);
     $mbar_matrix -> command(-label => "Extract all matrices from output", -background=>$bgcol,
 		   -command=> sub {save_matrices();} );
     $mbar_matrix -> command(-label => "Plot correlation matrix (R)", -background=>$bgcol,
 		    -command=> sub {plot_corr_matrix();} );
-  
+
   if (-d $software{r_dir}) {
-    our $mbar_xpose = $mbar_tools -> cascade (-label => "Xpose", -background=>$bgcol, -underline=>0, -tearoff => 0);  
+    our $mbar_xpose = $mbar_tools -> cascade (-label => "Xpose", -background=>$bgcol, -underline=>0, -tearoff => 0);
     $mbar_xpose -> command(-label => "xpose.VPC from npc_dir folder", -background=>$bgcol,-underline=>6,
 		    -command=> sub {xpose_VPC_window();} );
   };
 
   our $mbar_tools_batch = $mbar_tools -> cascade(-label =>"Batch processing", -background=>$bgcol,-underline=>1, -tearoff => 0);
   $mbar_tools_batch -> command(-label => "Create n duplicates of model(s)", -background=>$bgcol,-underline=>1,
-		  -command=> sub { create_duplicates_window()}); 
+		  -command=> sub { create_duplicates_window()});
   $mbar_tools_batch -> command(-label => "Add code to models", -background=>$bgcol,-underline=>1,
-		  -command=> sub { add_code() }); 
+		  -command=> sub { add_code() });
   $mbar_tools_batch -> command(-label => "Replace blocks", -background=>$bgcol,-underline=>1,
-		  -command=> sub { batch_replace_block() }); 
+		  -command=> sub { batch_replace_block() });
   $mbar_tools_batch -> command(-label => "Random seeds in \$SIM", -background=>$bgcol,-underline=>1,
-		  -command=> sub { random_sim_block_window() }); 
+		  -command=> sub { random_sim_block_window() });
   if ($setting{use_scripts} == 1) { # beta functionality
     $mbar_tools -> command(-label => "Scripts", -image=>$gif{script}, -compound=>'left',-background=>$bgcol,-underline=>1,
 		  -command=>sub {edit_scripts()});
   }
-  my $mbar_tools_misc = $mbar_tools -> cascade(-label => "Misc", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  $mbar_tools_misc -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -compound=>'left', -background=>$bgcol,-underline=>0,
+  #my $mbar_tools_misc = $mbar_tools -> cascade(-label => "Misc", -background=>$bgcol,-underline=>0, -tearoff => 0);
+  $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -compound=>'left', -background=>$bgcol,-underline=>0,
 		  -command=>sub {cov_calc_window()});
   $mbar_tools -> command(-label => "Generate summary (csv) of all output", -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1,
-		  -command=> sub { 
+		  -command=> sub {
         create_output_summary ("pirana_output_list.csv");
         if (-e $software{spreadsheet}) {
           start_command($software{spreadsheet},'"'.win_path('pirana_output_list.csv').'"');
         } else {message("Spreadsheet application not found. Please check settings.")};
         status ();
-    }); 
+    });
   our $full_screen = 0;
   our $show_tab_list = 1;
   our $mbar_view = $mbar -> cascade(-label =>"View", -background=>$bgcol,-underline=>0, -tearoff => 0);
@@ -365,14 +382,14 @@ sub create_menu_bar {
   $mbar_view -> checkbutton(-variable=>\$show_tab_list, -label=>"Show tables & files", , -background=>$bgcol,-underline=>0, -command=>sub{
     redraw_screen($full_screen, $show_tab_list);
   });
-  
+
   $mbar_view -> command (-label => "Execution log", -image=>$gif{log}, -compound=>'left',-background=>$bgcol,-underline=>1,
 	  -command=>sub {
       show_exec_runs_window();
     });
   $mbar_view -> command(-label => "PCluster monitor", -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol,-underline=>1,
 		  -command=>sub {cluster_monitor()});
-		  
+
   our $process_monitor = 0;
  #$mbar_view -> checkbutton (-label => "Console output", -variable=> \$process_monitor, -background=>$bgcol,-underline=>1,
  #  -command=>sub {
@@ -390,9 +407,9 @@ sub create_menu_bar {
     $cwd = $dir_entry -> get();
       chdir($cwd);
       show_inter_window();
-      if ($inter_window) {$inter_window -> focus();} 
+      if ($inter_window) {$inter_window -> focus();}
    });
-	  
+
 	our $mbar_help = $mbar -> cascade(-label =>"Help", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_help -> command(-label => "Piraña manual", -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
   $mbar_help -> command(-label => "Piraña website", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://pirana.sf.net")});
@@ -400,7 +417,7 @@ sub create_menu_bar {
   our @nm_keys = keys(%nm_dirs);
   unless (@nm_keys == 0) {
     $mbar_help -> command(-label => "NONMEM Help files", -background=>$bgcol,-underline=>0,-command=>sub {
-      start_command($software{browser},unix_path($nm_dirs{@nm_keys[0]}."/html/index.htm")) } 
+      start_command($software{browser},unix_path($nm_dirs{@nm_keys[0]}."/html/index.htm")) }
     );
   }
   $mbar_help -> command(-label => "NM UsersNet", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
@@ -413,11 +430,11 @@ sub create_menu_bar {
   $mbar_help_psn -> command(-label => "llp", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
   $mbar_help_psn -> command(-label => "sse", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
   $mbar_help_psn -> command(-label => "sumo", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-      
+
   $mbar_help -> command(-label => "Xpose", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
   $mbar_help -> command(-label => "WFN", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
   $mbar_help -> command(-label => "About Piraña", -background=>$bgcol,-underline=>0, -command=>sub {
-  $mw -> messageBox(-type=>'ok',	-message=>"Piraña (version ".$version.")\n   Created by Ron Keizer.\n   Department of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by the Uppsala PM group,\nand several other modelers.\n\nhttp://pirana.sf.net\n"); 
+  $mw -> messageBox(-type=>'ok',	-message=>"Piraña (version ".$version.")\n   Created by Ron Keizer.\n   Department of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by the Uppsala PM group,\nand several other modelers.\n\nhttp://pirana.sf.net\n");
   });
 }
 
@@ -431,7 +448,7 @@ sub check_out_dataset {
   open (CSV, "<".$file);
   @lines = <CSV>;
   close CSV;
-   
+
   open (HTML,">".$html_out);
   print HTML "<HTML>\n<HEAD>\n<STYLE>\n";
   print HTML "TD {
@@ -494,11 +511,11 @@ sub check_out_dataset {
 }
 
 sub cov_calc_window {
-### Purpose : Open a dialog window in which covariance can be re-calulated to correlation no an SD scale 
-### Compat  : W+L+ 
+### Purpose : Open a dialog window in which covariance can be re-calulated to correlation no an SD scale
+### Compat  : W+L+
   my $cov_calc_dialog = $mw -> Toplevel(-title=>'Cov Calculator');
   $cov_calc_dialog -> resizable( 0, 0 );
-  center_window($cov_calc_dialog);  
+  center_window($cov_calc_dialog);
   my $cov_calc_frame = $cov_calc_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $cov_calc_frame -> Label (-text=>"Covariance block:",-background=>$bgcol) -> grid(-row=>1, -column=>1);
   my $var1=1; my $covar=1; my $var2=1;
@@ -512,7 +529,7 @@ sub cov_calc_window {
   $cov_calc_frame -> Label (-text=>"SD1:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>4, -column=>1,-sticky=>'e');
   $cov_calc_frame -> Label (-text=>"SD2:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>5, -column=>1,,-sticky=>'e');
   $cov_calc_frame -> Label (-text=>"Correlation:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>6, -column=>1,,-sticky=>'e');
-  our $var1_sd=rnd(sqrt($var1),3); our $var2_sd=rnd(sqrt($var1),3); our $covar_sd=rnd(sqrt($covar/($var1_sd*$var2_sd)),3); 
+  our $var1_sd=rnd(sqrt($var1),3); our $var2_sd=rnd(sqrt($var1),3); our $covar_sd=rnd(sqrt($covar/($var1_sd*$var2_sd)),3);
   $var1_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var1_sd, -justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>4, -column=>2);
   $var2_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$covar_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>6, -column=>2);
   $covar_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var2_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>5, -column=>2);
@@ -545,7 +562,7 @@ sub plot_corr_matrix {
     my $available = output_matrix ($corr_ref, $labels_ref, "matrix_corr.csv");
     if ($available == -1) {message ("Correlation matrix was not found in results file ".$lst_file)} else {
       copy ($base_dir."/internal/plot_corr_matrix.R", "pirana_plot_corr_matrix.R");
-      run_script ('"'.$software{r_dir}.'\bin\R" --vanilla <pirana_plot_corr_matrix.R |');  
+      run_script ('"'.$software{r_dir}.'\bin\R" --vanilla <pirana_plot_corr_matrix.R |');
       if (-e "matrix_corr.pdf") {system ("start matrix_corr.pdf")} else {message ("PDF file not created. Please check that\nthe result file contains a correlation matrix.")};
     }
   } else {message ("Please select a model of which a result file exists (*.".$setting{ext_res}.")")}
@@ -573,8 +590,8 @@ sub save_matrices {
 }
 
 sub output_matrix {
-### Purpose : Converts a referenced matrix obtained from a result-file to a CSV file 
-### Compat  : W+L+ 
+### Purpose : Converts a referenced matrix obtained from a result-file to a CSV file
+### Compat  : W+L+
   my ($cov_ref, $labels_ref, $csv_file) = @_;
   my @cov = @$cov_ref;
   my @labels = @$labels_ref;
@@ -584,31 +601,31 @@ sub output_matrix {
   $j=0;
   foreach (@cov) {
     @cov_line = @$_;
-    $i=0; 
+    $i=0;
     foreach(@cov_line) {
       @{@cov[$i]}[$j] = $_ ;
-      $i++; 
+      $i++;
     }
-    $j++;  
+    $j++;
   }
   $i=0;
   if (@labels[-1] eq "") {pop @labels};
   print MAT '"'.join('","',@labels).'"'."\n";
   foreach (@cov) {
     @cov_line = @$_;
-    print MAT join(",", @cov_line)."\n"; 
+    print MAT join(",", @cov_line)."\n";
     $i++;
   }
-  close MAT; 
+  close MAT;
   return ($csv_file." saved\n");
 }
 
 sub xpose_VPC_window {
 ### Purpose : Create a dialog window for creating VPC with R/Xpose from a directory created with PsN
-### Compat  : W+L? 
+### Compat  : W+L?
   my @dirs = @ctl_show[$models_hlist -> selectionGet ()];
   my $dir = @dirs[0];
-  my $pdf_file = $dir.".pdf"; 
+  my $pdf_file = $dir.".pdf";
   my $script_file = "pirana_xpose_VPC.R";
   if (-d $dir) {
   my @vpctab = <vpctab>;
@@ -620,18 +637,18 @@ sub xpose_VPC_window {
   my $vpc_code_text = $vpc_dialog_frame -> Scrolled ("Text", -scrollbars=>'e',
    -width=>70, -height=>10, -relief=>groove, -exportselection => 0,
     -border=>1, -wrap=>'none'
-  )->grid(-row=>1,-column=>1,-sticky=>"we");  
+  )->grid(-row=>1,-column=>1,-sticky=>"we");
   open (VPC, "<".$base_dir."/internal/pirana_xpose_VPC.R");
   my @lines = <VPC>; my $r_text;
   close VPC;
-    $vpc_code_text -> insert ("end", join ("", @lines)); 
+    $vpc_code_text -> insert ("end", join ("", @lines));
   $vpc_help = $vpc_dialog_frame -> Button (-image=>$gif{help}, -background=>$button, -activebackground=>$abutton,-command=>sub {
     if (-e $software{r_dir}."/library/xpose4specific/html/xpose.VPC.html") {
       start_command ($software{browser}, win_path($software{r_dir}.'/library/xpose4specific/html/xpose.VPC.html'));
     } else {message ("Xpose help file not found!")};
   })-> grid(-row=>7,-column=>1,-sticky=>"w");
   $help -> attach($vpc_help, -msg => "Open VPC help file");
-  
+
   $vpc_dialog_frame -> Button (-text=>'Create VPC', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton,-command=>sub {
     my $vpc_code = $vpc_code_text -> get("0.0", "end");
     open (TEMPL, ">".$base_dir."/internal/pirana_xpose_VPC.R"); # update template
@@ -643,9 +660,9 @@ sub xpose_VPC_window {
     open (VPC, ">".$script_file);
     print VPC $vpc_code;
     close VPC;
-    
+
     $vpc_dialog -> destroy();
-    run_script ('"'.$software{r_dir}.'\bin\R" --vanilla <'.$script_file.' |'); 
+    run_script ('"'.$software{r_dir}.'\bin\R" --vanilla <'.$script_file.' |');
     if (-e $pdf_file) {system "start ".$pdf_file};
   }) -> grid(-row=>7,-column=>1,-sticky=>"e");
   } else {
@@ -654,7 +671,7 @@ sub xpose_VPC_window {
   } else {message ("Please select a valid folder")}
 }
 
-sub run_script { 
+sub run_script {
 ### Purpose : Run a perl (or other type of) script and capture the console output
 ### Compat  : W+L?
   $command = shift;
@@ -672,7 +689,7 @@ sub run_script {
 
 sub restart_msf {
 ### Purpose : Create a NM model file from a previous one, and alter it so that it restart with the MSF-file that was created
-### Compat  : W+L? 
+### Compat  : W+L?
   my $model = shift;
   my $modelfile = $model.".".$setting{ext_ctl};
   my $mod_ref = extract_from_model ($modelfile, $modelno, "all");
@@ -687,13 +704,13 @@ sub restart_msf {
   $msf_dialog -> resizable( 0, 0 );
   center_window($msf_dialog);
   $msf_dialog_frame = $msf_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-  
+
   $msf_dialog_frame -> Label (-background=>$bgcol, -text=>'New model number (without '.$setting{ext_ctl}.'):')->grid(-row=>1,-column=>1,-sticky=>"e");
   $msf_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove',
-     -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");  
+     -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");
   $msf_dialog_frame -> Label (-background=>$bgcol, -text=>'Restart using MSF file:')->grid(-row=>2,-column=>1,-sticky=>"e");
   my $restart_msf_entry = $msf_dialog_frame -> Entry (-width=>12, -border=>2, -relief=>'groove', -text=>$msf,
-     -textvariable=>\$msf)->grid(-row=>2,-column=>2,-sticky=>"w");  
+     -textvariable=>\$msf)->grid(-row=>2,-column=>2,-sticky=>"w");
   $msf_dialog_frame -> Label (-background=>$bgcol, -text=>'New MSF file:')->grid(-row=>3,-column=>1,-sticky=>"e");
   my $new_msf_entry = $msf_dialog_frame -> Entry (-width=>12, -border=>2, -relief=>'groove', -text=>$new_msf,
      -textvariable=>\$new_msf)->grid(-row=>3,-column=>2,-sticky=>"w");
@@ -702,8 +719,8 @@ sub restart_msf {
     my $overwrite_bool=1;
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
       my $overwrite = $mw -> messageBox(-background=>$bgcol, -type=>'yesno', -icon=>'question',
-        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?"); 
-      if( $overwrite eq "No") {$overwrite_bool=0;} 
+        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
+      if( $overwrite eq "No") {$overwrite_bool=0;}
     } else {$overwrite_bool=1};
     if ($overwrite_bool==1) {
       my $file = $cwd."/".@ctl_show[@runs[0]].".".$setting{ext_ctl};
@@ -732,7 +749,7 @@ sub restart_msf {
       destroy $msf_dialog;
       sleep(1); # to make sure the file is ready for reading
       refresh_pirana($cwd);
-    } 
+    }
   }) -> grid(-row=>7,-column=>2,-sticky=>"wens");
   $msf_dialog_frame -> Button (-text=>'Cancel',  -border=>$bbw, -width=>12, -justify=>'center', -background=>$button, -activebackground=>$abutton, -command=>sub{
     destroy $msf_dialog
@@ -751,7 +768,7 @@ sub edit_model {
     text_edit_window ($text, $modelfile, \$mw);
   } else {
     start_command($software{editor}, $modelfile);
-  }  
+  }
 }
 
 sub tree_models {
@@ -770,7 +787,7 @@ sub tree_models {
         } else {
           $tree{$_} = $models_refmod{@ctl_copy[$i]}."::";  # unknown model as parent
         }
-      } 
+      }
       $tree{$_} .= @ctl_copy[$i];
     } else {
       push(@tr, $_); # directories
@@ -794,7 +811,7 @@ sub tree_models {
     $model_indent{@ctl_copy_order[$i]} = @spl-1;
     $i++;
   }
-  
+
   # generate a tree in text format
     my %lastchild;
   foreach(@tr_sorted) { # get the lastchild's number
@@ -802,7 +819,7 @@ sub tree_models {
     $lastchild {@line[-2]} = @line[-1];
   }
   $last_root_child = @line[0];
-  $tree = ""; 
+  $tree = "";
   my @flags ; my $ofv;
   foreach (@tr_sorted) {
     my @line = split (/\:\:/, $_);
@@ -815,11 +832,11 @@ sub tree_models {
     if (($lastchild{@line[-2]} eq @line[-1])||(@line[-1] eq $last_root_child)) {
       #chop($tree); $tree .= chr(192).chr(196);
       chop($tree); $tree .= "`--";
-    } 
+    }
     else {
       #chop ($tree); $tree .= chr(195).chr(196);
       $tree .= "--";
-    } 
+    }
     if ($models_ofv{@line[-2]} ne "") {
       $dofv = rnd($models_ofv{@line[-2]}-$models_ofv{@line[-1]},3);
     } else {
@@ -830,7 +847,7 @@ sub tree_models {
     if (@line>3) {chop($space);};
     my $info = $models_suc{@line[-1]}.$models_cov{@line[-1]}.$models_bnd{@line[-1]}."\t".$models_sig{@line[-1]};
     $tree .=  @line[-1].$space."\t".$ofv." (".$dofv.") \t".$info."\n";
-  } 
+  }
   return (\@ctl_copy_order, $tree);
 }
 
@@ -838,17 +855,17 @@ sub project_info_window {
 ### Purpose : Create a dialog shown info for the current project
 ### Compat  : W+L+
 ### Note    : save functionality not implemented yet
-  
+
   # Get project info from database
   my %proj_record;
-  my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date"); 
+  my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date");
   my $db_results = db_get_project_info();
   my $row = @{$db_results}[0];
   my @values = @$row;
   my $i=0;
   foreach (@sql_fields) {
     $proj_record{@sql_fields[$i]} = @values[$i];
-    $i++;  
+    $i++;
   }
   $proj_record{"notes"} = @values[$i];
   # Build window
@@ -871,14 +888,14 @@ sub project_info_window {
   $i++;
   $project_window_frame -> Label(-text=> "Notes:", -font=>$font_normal) ->grid(-row=>($i*2)+1,-column=>1,-sticky=>'e');
   my $proj_notes_text = $project_window_frame ->Scrolled('Text',
-      -width=>40, -relief=>'sunken', 
-      -border=>$bbw,-height=>10, 
-      -font=>$font_normal, -background=>'white', 
+      -width=>40, -relief=>'sunken',
+      -border=>$bbw,-height=>10,
+      -font=>$font_normal, -background=>'white',
       -state=>'normal',-scrollbars=>'e'
   )->grid(-column=>2, -row=>($i*2)+1,-rowspan=>10,-sticky=>'nw');
   $proj_notes_text -> insert("0.0", $proj_record{"notes"});
   $project_window_frame -> Label (-text=>'  ')->grid(-column=>2, -row=>30,-rowspan=>1);
-  $project_window_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{  
+  $project_window_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     foreach (keys(%proj_rec_entry)) {
       $proj_record{$_} = $proj_rec_entry{$_} -> get();
     }
@@ -886,7 +903,7 @@ sub project_info_window {
     db_insert_project_info (\%proj_record);
     $project_window -> destroy();
   })->grid(-column=>2, -row=>31,-rowspan=>1, -sticky=>"w");
-  $project_window_frame -> Button (-text=>'Cancel', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{  
+  $project_window_frame -> Button (-text=>'Cancel', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     $project_window -> destroy();
   })->grid(-column=>1, -row=>31,-rowspan=>1, -sticky=>"e");
 }
@@ -897,7 +914,7 @@ sub show_estim_window {
     my $lstfile = shift;
     my $modelfile = $lstfile;
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
-    
+
     my ($th_ref, $om_ref, $si_ref, $th_se_ref, $om_se_ref, $si_se_ref) = get_estimates_from_lst ($lstfile);
     my @th = @$th_ref; my @om = @$om_ref; my @si = @$si_ref;
     my @th_se = @$th_se_ref; my @om_se = @$om_se_ref; my @si_se = @$si_se_ref;
@@ -914,7 +931,7 @@ sub show_estim_window {
     my $cols = ((floor(@theta/10)+1)*3)-1; # calculate no of columns in window
     if (int(@om) > $cols) {$cols = int(@om+1)};
     if (int(@si) > $cols) {$cols = int(@si+1)};
-    
+
     unless ($estim_window) {
       our $estim_window = $mw -> Toplevel(-title=>'Final parameter estimates');
       $estim_window -> OnDestroy ( sub{
@@ -925,29 +942,29 @@ sub show_estim_window {
     our $estim_window_frame = $estim_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
 
     @estim_grid_headers = ("Parameter", "Description", "Value", "RSE(%)");
-    our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1, 
+    our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
         -columns    => $cols+2, -scrollbars => 'se',-highlightthickness => 0,
         -height     => 25, -width      => 60,
         -border     => 0, -indicator=>0,
         -background => 'white',
-      )->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');   
+      )->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');
     $estim_grid -> columnWidth(1, 120);
-  
+
     my $headerstyle = $models_hlist->ItemStyle('window', -padx => 0, -pady=>0);
     foreach my $x ( 0 .. $#estim_grid_headers ) {
-        @estim_headers[$x] = $estim_grid -> HdrResizeButton( 
+        @estim_headers[$x] = $estim_grid -> HdrResizeButton(
           -text => $estim_grid_headers[$x], -relief => 'flat', -font=>$font_normal,
           -background=>$button, -activebackground=>$abutton, -foreground=>'black',
           -border=> 0, -pady => $header_pad, -command => sub {; }, -resizerwidth => 2,
           -column => $x
         );
-        $estim_grid ->header('create', $x, 
+        $estim_grid ->header('create', $x,
           -itemtype => 'window', -style => $headerstyle,
           -widget => @estim_headers[$x]
         );
     }
     $estim_grid -> update();
-    
+
     $i = 1; $j=1; my $max_i = 1;
     if (@th>0) {
     $estim_window ->configure (-title=>'Final parameter estimates '.$lstfile);
@@ -987,7 +1004,7 @@ sub show_estim_window {
         $estim_grid -> itemCreate($i, $j+1, -text => rnd($om_cov,4), -style=>$style);
         if ($j == $cnt) {
              my $om_se_x = @om_se[$cnt-1];
-             my @om_cov_se = @$om_se_x; 
+             my @om_cov_se = @$om_se_x;
             if (($om_cov!=0)&&(@om_cov_se[$cnt-1]!=0)) {
               $estim_grid -> itemCreate($i, $j+2, -text => "(".rnd((@om_cov_se[$cnt-1]/$om_cov*100),3)."%)", -style=>$estim_style_se);
             }
@@ -1013,7 +1030,7 @@ sub show_estim_window {
         $estim_grid -> itemCreate($i, $j+1, -text => rnd($si_cov,4), -style=>$style);
         if ($j == $cnt) {
             my $si_se_x = @si_se[$cnt-1];
-            my @si_cov_se = @$si_se_x; 
+            my @si_cov_se = @$si_se_x;
             if (($si_cov!=0)&&(@si_cov_se[$cnt-1]!=0)) {
               $estim_grid -> itemCreate($i, $j+2, -text => "(".rnd((@si_cov_se[$cnt-1]/$si_cov*100),3)."%)", -style=>$estim_style_se);
             }
@@ -1044,14 +1061,14 @@ sub save_log {
 ### Compat  : W+L?
     if (-e "<".$home_dir."/log/pirana.log") {
       open (NM_LOG, ">".$home_dir."/log/pirana.log");
-      print NM_LOG $nm_inst_chosen."\n"; 
+      print NM_LOG $nm_inst_chosen."\n";
       print NM_LOG $active_project;
       close NM_LOG;
-    }  
+    }
 }
 
 sub add_nm_inst_local {
-### Purpose : Add a local NM installation to Pirana 
+### Purpose : Add a local NM installation to Pirana
 ### Compat  : W+L+
   my $nm_inst_w = $mw -> Toplevel(-title=>"Add existing NONMEM installation to Piraña");
   $nm_inst_w -> resizable( 0, 0 );
@@ -1061,10 +1078,10 @@ sub add_nm_inst_local {
   $nm_inst_frame -> Label (-text=>"Name in Piraña: ",-background=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>"e");
   $nm_inst_frame -> Label (-text=>"NM Location: ",-background=>$bgcol)->grid(-row=>3,-column=>1,-sticky=>"e");
   $nm_inst_frame -> Label (-text=>"NM version: ",-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e");
-  my $nm_name="NM6"; 
-  my $nm_dir ="C:\\nmvi";   
+  my $nm_name="NM6";
+  my $nm_dir ="C:\\nmvi";
   if ($os =~ m/MSWin/i) {
-    $nm_dir = "/opt/nmvi";  
+    $nm_dir = "/opt/nmvi";
   }
   my $nm_type = "regular";
   my $nm_locality = "Local";
@@ -1080,12 +1097,12 @@ sub add_nm_inst_local {
   $help->attach($browse_button, -msg => "Browse filesystem");
   $nm_inst_frame -> Optionmenu (-options=>["Local","Remote"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
     -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue)
-         ->grid(-column=>2,-row=>1,-sticky=>"w");   
-  $nm_inst_frame -> Optionmenu (-options=>["5","6","7"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal, 
+         ->grid(-column=>2,-row=>1,-sticky=>"w");
+  $nm_inst_frame -> Optionmenu (-options=>["5","6","7"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
     -background=>$lightblue, -activebackground=>$darkblue)
-         ->grid(-column=>2,-row=>4,-sticky=>"w");       
+         ->grid(-column=>2,-row=>4,-sticky=>"w");
   $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
-  $nm_inst_frame -> Button (-text=>"Add", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{ 
+  $nm_inst_frame -> Button (-text=>"Add", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     if ($nm_dirs{$nm_name}) {
       message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
     } else {
@@ -1093,7 +1110,7 @@ sub add_nm_inst_local {
       $nm_ini_file = "nm_inst_local.ini";
       if ($nm_locality eq "Local") {
         # look if it is maybe an NMQual NM isntallation
-        $nmq_name = get_nmq_name($nm_dir); 
+        $nmq_name = get_nmq_name($nm_dir);
         if (-e unix_path($nm_dir."/test/".$nmq_name.".pl")) {
           $nm_type = "nmqual";
           $valid_nm = 1;
@@ -1105,10 +1122,10 @@ sub add_nm_inst_local {
         }
       } else { # just assume it is the correct location
         $valid_nm = 1;
-        $nm_type = "regular"; 
+        $nm_type = "regular";
       }
     }
-    if ($valid_nm==1) {  
+    if ($valid_nm==1) {
       $nm_dirs{$nm_name} = $nm_dir; $nm_vers{$nm_name} = $nm_ver; $nm_types{$nm_name} = $nm_type;
       save_settings ($nm_ini_file, \%nm_dirs, \%nm_vers);
       chdir($cwd);
@@ -1124,12 +1141,12 @@ sub add_nm_inst_local {
     };
   })-> grid(-row=>6,-column=>2,-sticky=>"w");
   $nm_inst_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    $nm_inst_w->destroy; 
+    $nm_inst_w->destroy;
   })-> grid(-row=>6,-column=>1,-sticky=>"e");
 }
 
 sub remove_nm_inst {
-### Purpose : Remove an NM installation from Pirana (but don't delete the installation) 
+### Purpose : Remove an NM installation from Pirana (but don't delete the installation)
 ### Compat  : W+L?
   $nm_remove_w = $mw -> Toplevel(-title=>"Remove NONMEM installation from Piraña");
   $nm_remove_w -> resizable( 0, 0 );
@@ -1139,18 +1156,18 @@ sub remove_nm_inst {
   $nm_remove_frame -> Label (-text=>"NONMEM Location: ")->grid(-row=>2,-column=>1,-sticky=>"e");
   $nm_remove_frame -> Label (-text=>"NONMEM version: ")->grid(-row=>3,-column=>1,-sticky=>"e");
   ($nm_name,@dummy) = keys(%nm_dirs);
- 
+
   $nm_dir_entry = $nm_remove_frame -> Entry (-textvariable=>\$nm_dirs{$nm_name},-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>2,-sticky=>"w");
   $nm_ver_entry = $nm_remove_frame -> Entry (-textvariable=>\$nm_vers{$nm_name},-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>3,-sticky=>"w");
-  
+
   $nm_remove_frame -> Optionmenu (-options=>[keys(%nm_dirs)],-variable=>\$nm_name,-border=>$bbw,-width=>10,-font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue, -command=>sub{
       $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_name});
       $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_name});
     })->grid(-column=>2,-row=>1,-sticky=>"w");
   $nm_remove_frame -> Label (-text=>" ")->grid(-row=>4,-column=>1,-sticky=>"e");
-  $nm_remove_frame -> Button (-text=>"Remove", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{ 
+  $nm_remove_frame -> Button (-text=>"Remove", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     delete $nm_dirs{$nm_name};
     delete $nm_vers{$nm_name};
     save_settings ("nm_inst_local.ini", \%nm_dirs, \%nm_vers);
@@ -1161,7 +1178,7 @@ sub remove_nm_inst {
     $nm_remove_w -> destroy;
   })-> grid(-row=>5,-column=>2,-sticky=>"w");
   $nm_remove_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    $nm_remove_w->destroy; 
+    $nm_remove_w->destroy;
   })-> grid(-row=>5,-column=>1,-sticky=>"e");
 }
 
@@ -1201,7 +1218,7 @@ sub save_settings {
 
 sub show_script_params {
 ### Purpose : In the interface for scripts (currently discontinued function) show the script parameters
-### Compat  : W+L? 
+### Compat  : W+L?
   $script = shift ;
   if ($edit_scripts_params) {
     $edit_scripts_params->destroy();
@@ -1216,7 +1233,7 @@ sub show_script_params {
   %defaults = %$defaults_ref;
   our %descr = %$descr_ref;
   #print keys(%$descr_ref);
-  $i=0; %p_entry; 
+  $i=0; %p_entry;
   foreach (keys (%descr)) {
     $edit_scripts_params -> Label (-text=>substr($_,0,15), -justify=>'left')->grid(-column=>1,-row=>$i+4,-sticky=>"w");
     if (exists $vars{$_}) {$defaults{$_} = $vars{$_}};         # you can use internal pirana variables for your scripts
@@ -1227,7 +1244,7 @@ sub show_script_params {
     $p_entry{$_} = $edit_scripts_params -> Entry (-textvariable=>\$defaults{$_}, -width=>$width, -border=>2, -relief=>'groove')->grid(-column=>2,-row=>$i+4,-sticky=>"w");
     $help -> attach($p_entry{$_}  , -msg => $descr{$_});
     $i++;
-  }  
+  }
 }
 
 sub read_scripts {
@@ -1235,7 +1252,7 @@ sub read_scripts {
 ### Compat  : W+L?
   $script = shift;
   open (SCRIPT, "<".$base_dir."/scripts/".$script);
-  @lines = <SCRIPT>; 
+  @lines = <SCRIPT>;
   close (SCRIPT);
   $arg_flag=0; $descr_flag=0; $script_descr="";
   my %arguments_descr, my %arguments_default;
@@ -1249,7 +1266,7 @@ sub read_scripts {
       $key =~ s/-//;
       chomp($default);
       $arguments_descr{$key} = $descr;
-      $arguments_default{$key} = $default; 
+      $arguments_default{$key} = $default;
     }
     if ($descr_flag==1) {
       $script_descr = $_;
@@ -1258,7 +1275,7 @@ sub read_scripts {
     }
     if ($_ =~ m/<arguments>/i) {$arg_flag=1};
     if ($_ =~ m/<description>/i) {$descr_flag=1};
-  } 
+  }
   return \%arguments_descr, \%arguments_default, $script_descr;
 }
 
@@ -1276,7 +1293,7 @@ sub edit_scripts {
   center_window($edit_scripts_w);
   our $edit_scripts_frame = $edit_scripts_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n',-column=>1,-row=>1);
   our $edit_scripts_params = $edit_scripts_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n',-column=>2,-row=>1);
-  $edit_scripts_params -> Label (-text=>"Description: ", -font=>$font_bold)->grid(-column=>1,-row=>1); 
+  $edit_scripts_params -> Label (-text=>"Description: ", -font=>$font_bold)->grid(-column=>1,-row=>1);
   $edit_scripts_params -> Label (-text=>"Parameters: ", -font=>$font_bold)->grid(-column=>1,-row=>3);
   $edit_scripts_params -> Label (-text=>" ", -width=>50)->grid(-column=>2,-row=>1,-sticky=>"w");
   $edit_scripts_frame -> Label (-text=>"\n \n \n \n \n ")->grid(-column=>2,-row=>13,-sticky=>"w");
@@ -1286,14 +1303,14 @@ sub edit_scripts {
       -> grid(-row=>1,-column=>1,-rowspan=>9,-columnspan=>3,-sticky => 'we',);
   $edit_scripts_listbox -> bind ('<ButtonPress-1>', sub {
      $curr_script = @scripts[$edit_scripts_listbox->curselection];
-     show_script_params(@scripts[$edit_scripts_listbox->curselection]) 
+     show_script_params(@scripts[$edit_scripts_listbox->curselection])
   });
   $edit_scripts_scrollbar -> grid(-row=>1,-column=>4,-rowspan=>10,-sticky => 'wens',);
   $edit_scripts_listbox -> insert(0, @scripts);
   $edit_scripts_scrollbar -> configure(-command => ['yview' => $edit_scripts_listbox]);
-  $edit_scripts_frame -> Button (-text=>'Edit', -width=>10, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{ 
+  $edit_scripts_frame -> Button (-text=>'Edit', -width=>10, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     edit_model (unix_path($base_dir."\\scripts\\".@scripts[$edit_scripts_listbox->curselection]));
-  })->grid(-row=>12,-column=>2,-sticky=>"e"); 
+  })->grid(-row=>12,-column=>2,-sticky=>"e");
   $edit_scripts_frame -> Button (-text=>'Run', -width=>10, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     $params = "";
     $i=0;
@@ -1303,10 +1320,10 @@ sub edit_scripts {
     }
     $command = win_path($base_dir."\\scripts\\".$curr_script).$params;
     if ($params =~ m/.pl/)  {$lang = "perl"};
-    if ($params =~ m/.awk/) {$lang = "awk"}; 
+    if ($params =~ m/.awk/) {$lang = "awk"};
     system "start ".$lang." ".$command; #" >".win_path($home_dir."\\log\\")."script.log";
     #$see_script_log = $edit_scripts_w -> messageBox(-type=>'yesno', -icon=>'question',
-    #  -message=>"Script executed.\nDo you want to view the script output?"); 
+    #  -message=>"Script executed.\nDo you want to view the script output?");
     #if( $see_script_log eq "Yes") {
     #  start_command ($software{editor}, $home_dir."\\log\\script.log");
     #}
@@ -1319,7 +1336,7 @@ sub edit_ini_window {
 ### Purpose : Open a window to edit preferences/software settings
 ### Compat  : W+L?
   ($ini_file, $ref_ini, $ref_ini_descr, $title, $software) = @_;
-  %ini = %$ref_ini; 
+  %ini = %$ref_ini;
   %ini_descr = %$ref_ini_descr;
   open (INI, "<".unix_path($home_dir."/ini/".$ini_file));
   @lines=<INI>;
@@ -1348,10 +1365,10 @@ sub edit_ini_window {
   center_window($edit_ini_w);
   my $edit_ini_frame = $edit_ini_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   # $edit_ini_frame -> Label (-text=>"Piraña settings: ")->grid(-column=>1, -row=>1);
-  my $row=2; my $col=1; 
+  my $row=2; my $col=1;
   my $i=0; my $j=0;
   my @ini_value;
-  foreach (@keys) {  
+  foreach (@keys) {
        if (length($ini{$_})<10) {$length=10} else {$length=40};
        if ((@sections_cnt[$j]==$i)&&(@sections_cnt>0)) {
          $edit_ini_frame -> Label (-text=>@sections[$j], -font=>$font_bold, -background=>$bgcol)->grid(-column=>$col,-row=>$row, -sticky=>"w"); # spacer
@@ -1367,14 +1384,14 @@ sub edit_ini_window {
          if ((-d @ini_value[$i])||(-e @ini_value[$i])) {$entry_color=$lightgreen} else {$entry_color=$lightred};
        };
        @edit_ini_entry[$i] = $edit_ini_frame -> Entry (-textvariable=>\@ini_value[$i],-border=>2, -relief=>'groove',-background=>$entry_color,-width=>$length)
-         ->grid(-column=>$col+1,-row=>$row,-sticky=>"w"); 
+         ->grid(-column=>$col+1,-row=>$row,-sticky=>"w");
        $help -> attach(@edit_ini_entry[$i], -msg => $ini_descr{$_});
-       $row++; 
+       $row++;
        $i++;
        if($row==int(((@keys+@sections)/2)-0.1)+3) {$row=2; $col=$col+3};
   }
   $edit_ini_frame -> Label (-text=>"  ", -background=>$bgcol)->grid(-column=>1, -row=>int((@keys+@sections)/2)+3,-columnspan=>1,-sticky=>"e");
-  $edit_ini_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{  
+  $edit_ini_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     $i=0;
     foreach(@keys) {  # update %settings
       $ini{$_} = @ini_value[$i];
@@ -1382,10 +1399,10 @@ sub edit_ini_window {
     }
     save_settings ($ini_file, \%ini, \%ini_descr);
     chdir($base_dir);
-    my $software_ini = "software_linux.ini";  
+    my $software_ini = "software_linux.ini";
     if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
     ($software_ref,$software_descr_ref) = read_ini($software_ini);
-    %software = %$software_ref; %software_descr = %$software_descr_ref;  
+    %software = %$software_ref; %software_descr = %$software_descr_ref;
     ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
     %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
     ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("psn.ini");
@@ -1396,7 +1413,7 @@ sub edit_ini_window {
     refresh_pirana($cwd,$filter,1);
   })->grid(-row=>int((@keys+@sections)/2)+4,-column=>5,-sticky=>"w");
   $edit_ini_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    $edit_ini_w->destroy; 
+    $edit_ini_w->destroy;
   })-> grid(-row=>int((@keys+@sections)/2)+4,-column=>4,-sticky=>"e");
 }
 
@@ -1408,7 +1425,7 @@ sub read_sizes {
     open (SIZES, "<".unix_path($nm_dir)."/SIZES");
     @lines = <SIZES>;
     close SIZES;
-    my %setting; 
+    my %setting;
     $i=0; $line=0;
     foreach(@lines) {
       unless (substr($_,0,2) eq "C ") {
@@ -1434,7 +1451,7 @@ sub refresh_sizes {
 ### Compat  : W+L+
     my ($nm_type_chosen, $nm_vers_chosen, $nm_dir_chosen, $nm_chosen) = @_;
     if ($nm_type_chosen ne "SSH") {
-       our $sizes_frame = $nm_manage_frame ->  Frame(-background=>$bgcol) -> grid(-ipadx=>'10',-ipady=>'10',-sticky=>'nws',-column=>1,-row=>6,-columnspan=>3); 
+       our $sizes_frame = $nm_manage_frame ->  Frame(-background=>$bgcol) -> grid(-ipadx=>'10',-ipady=>'10',-sticky=>'nws',-column=>1,-row=>6,-columnspan=>3);
        my @sizes; my @sizes_key; my @sizes_value; my @sizes_comment;
        my @sizes_refs = read_sizes($nm_dir_chosen);
        my ($sizes_key_ref,$sizes_value_ref,$sizes_comment_ref) = @sizes_refs;
@@ -1446,20 +1463,20 @@ sub refresh_sizes {
           $sizes_frame -> Label (-text=>@sizes_key[$i], -background=>$bgcol)->grid(-column=>$col,-row=>$row,-sticky=>"e",-ipadx=>'8');
           $sizes_frame -> Label (-text=>"  ", -background=>$bgcol)->grid(-column=>$col+2,-row=>$row); # spacer
           if ($nm_type_chosen =~ m/SSH/i) {@sizes_value[$i] = ""};
-		    if (($nm_type_chosen =~ m/nmq/i)||($nm_type_chosen =~ m/SSH/i)) {$state='disabled'} else {$state='normal'};       
-          @sizes_entry[$i] = $sizes_frame -> Entry (-textvariable=>\@sizes_value[$i],-state=>$state,-border=>2, -relief=>'groove')->grid(-column=>$col+1,-row=>$row);          
-          $help->attach(@sizes_entry[$i], -msg => @sizes_comment[$i] ); 
+		    if (($nm_type_chosen =~ m/nmq/i)||($nm_type_chosen =~ m/SSH/i)) {$state='disabled'} else {$state='normal'};
+          @sizes_entry[$i] = $sizes_frame -> Entry (-textvariable=>\@sizes_value[$i],-state=>$state,-border=>2, -relief=>'groove')->grid(-column=>$col+1,-row=>$row);
+          $help->attach(@sizes_entry[$i], -msg => @sizes_comment[$i] );
           $row++; $i++;
           if($row==18&&$col==1) {$row=0; $col=4};
           if($row==18&&$col==4) {$row=0; $col=7};
        }
     } else {
-      my $na = "NA";      
+      my $na = "NA";
       foreach (@sizes_entry) {
         $_ -> configure(-textvariable => \$na) ;
       }
       if ($sizes_frame) {$sizes_frame -> destroy(); undef $sizes_frame;}
-      $nm_manage_frame -> update();    
+      $nm_manage_frame -> update();
     };
     if ($nm_type_chosen =~ m/nmq/i) {$nm_save_recompile->configure(-state=>"disabled")} else {$nm_save_recompile->configure(-state=>"normal")};
     if ($nm_type_chosen =~ m/nmq/i) {$nm_save->configure(-state=>"disabled")} else {$nm_save->configure(-state=>"normal")};
@@ -1493,7 +1510,7 @@ sub save_sizes {
 }
 
 sub nmqual_xml {
-### Purpose : Read an NMQual XML file, and return the NM target directory and the NM version 
+### Purpose : Read an NMQual XML file, and return the NM target directory and the NM version
 ### Compat  : W+L+
   my $nmq_xml = shift;
   open (XML, "<".$nmq_xml);
@@ -1509,8 +1526,8 @@ sub nmqual_xml {
   chomp($target);
   $version =~ s/<nonmem version='//i;
   $version = substr($version,0,1);
-  return ($target,$version);      
-} 
+  return ($target,$version);
+}
 
 
 sub install_nonmem_nmq_window {
@@ -1530,26 +1547,26 @@ sub install_nonmem_nmq_window {
     ->grid(-row=>2,-column=>1, -columnspan=>1,-sticky=>"w");
   $install_nm_nmq_frame -> Label (-text=>"Installation",-justify=>"left")
     ->grid(-row=>3,-column=>1, -columnspan=>1,-sticky=>"w");
-  $install_nm_nmq_frame -> Entry (-textvariable=>\$nm_name, -border=>$bbw, -width=>16, -border=>2, -relief=>'groove') 
+  $install_nm_nmq_frame -> Entry (-textvariable=>\$nm_name, -border=>$bbw, -width=>16, -border=>2, -relief=>'groove')
     -> grid(-row=>2,-column=>2,-columnspan=>2,-sticky=>"news");
 
   $install_nm_nmq_frame -> Label (-text=>"Installation directory:",-justify=>"left")
     ->grid(-row=>4,-column=>1, -columnspan=>1,-sticky=>"w");
-  $nmq_to = $install_nm_nmq_frame -> Entry (-state=>'disabled',-border=>$bbw, -width=>16, -border=>2, -relief=>'groove') 
+  $nmq_to = $install_nm_nmq_frame -> Entry (-state=>'disabled',-border=>$bbw, -width=>16, -border=>2, -relief=>'groove')
     -> grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>"news");
   $install_nm_nmq_frame -> Label (-text=>"NONMEM version:",-justify=>"left")
     ->grid(-row=>5,-column=>1, -columnspan=>1,-sticky=>"w");
-  $nmq_nmver = $install_nm_nmq_frame -> Entry (-state=>'disabled',-border=>$bbw, -width=>16, -border=>2, -relief=>'groove') 
+  $nmq_nmver = $install_nm_nmq_frame -> Entry (-state=>'disabled',-border=>$bbw, -width=>16, -border=>2, -relief=>'groove')
     -> grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>"news");
   chdir ($software{nmq_path});
-  @xml = <config.*.xml>;  
+  @xml = <config.*.xml>;
   ($target, $version) = nmqual_xml(win_path($software{nmq_path}."/".@xml[0]));
   $nmq_to -> configure(-textvariable=>$target);
-  $nmq_nmver -> configure(-textvariable=>$version); 
+  $nmq_nmver -> configure(-textvariable=>$version);
   $install_nm_nmq_frame -> Optionmenu (-options=>[@xml], -variable=> \$nmq_xml, -border=>$bbw, -width=>5, -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue, -command=> sub{
     ($target, $version) = nmqual_xml(win_path($software{nmq_path}."/".$nmq_xml));
     $nmq_to -> configure(-textvariable=>$target);
-    $nmq_nmver -> configure(-textvariable=>$version); 
+    $nmq_nmver -> configure(-textvariable=>$version);
   }) -> grid(-row=>3,-column=>2,-columnspan=>2,-sticky=>"we");
   $install_nm_nmq_frame -> Button (-image=>$gif{notepad}, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
         edit_model(unix_path($nmq_xml));
@@ -1563,13 +1580,13 @@ sub install_nonmem_nmq_window {
        print BAT "SET LIBRARY_PATH=".$setting{nmq_env_libpath}.";%LIBRARY_PATH% \n";
        print BAT win_path("perl.exe nmqual.pl ".$nmq_xml)."\n";
        close BAT;
-       
+
        system("start /wait ".win_path($base_dir."/internal/nmq_install_nm.bat"));
        # check if the perl file in the /test directory exists
        $perl_file = get_nmq_name ($target);
        print $target."/test/".$perl_file.".pl";
        if (-e $target."/test/".$perl_file.".pl") {
-         my $add_to_pirana = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"NONMEM installations seems valid.\n Do you want to add this installation to Piraña?"); 
+         my $add_to_pirana = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"NONMEM installations seems valid.\n Do you want to add this installation to Piraña?");
            if ($add_to_pirana eq "Yes") {
            $nm_dirs{$nm_name} = $target;
            $nm_vers{$nm_name} = $version;
@@ -1580,7 +1597,7 @@ sub install_nonmem_nmq_window {
            project_buttons_show();
          }
        } else {message("Cannot find Perl startup file (".$target."/test/".$perl_file.".pl).\nNMQual NONMEM installation failed.")
-       }       
+       }
        $install_nm_nmq_w -> destroy;
     }
   })->grid(-row=>7,-column=>2,-sticky=>"w");
@@ -1606,7 +1623,7 @@ sub install_nonmem_window {
   $install_nm_frame -> Label (-text=>"NONMEM Install CD")->grid(-column=>1, -row=>3,-sticky=>"e");
   $install_nm_frame -> Label (-text=>"Install to")->grid(-column=>1, -row=>4,-sticky=>"e");
   $install_nm_frame -> Label (-text=>"Default compiler optimization")->grid(-column=>1, -row=>5,-sticky=>"e");
-  
+
   $nm_install_name = "nmvi";
   $install_nm_frame -> Entry (-textvariable=>\$nm_install_name, -border=>$bbw, -width=>12, -border=>2, -relief=>'groove') -> grid(-row=>2,-column=>2,-sticky=>"nws");
   @drives = Win32::DriveInfo::DrivesInUse();
@@ -1621,14 +1638,14 @@ sub install_nonmem_window {
   $do_bugfixes = 1;
 
   $install_nm_frame -> Label (-text=>"  ")->grid(-column=>1, -row=>8,-columnspan=>2,-sticky=>"e");
-  
+
   $install_nm_frame -> Button(-image=>$gif{browse_small}, -border=>0, -command=> sub{
       $nm_install_to = $mw-> chooseDirectory();
       if($cwd eq "") {$install_nm_to_entry ->configure(-textvariable=>\$nm_install_to) };
       $install_nm_w -> focus;
   })
   ->grid(-column=>3, -row=>4, -sticky => 'we');
-    
+
   $install_nm_frame -> Button (-text=>"Proceed", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
          if (-d $nm_install_to) {message ("Target folder already exists.\nPlease choose another destination.")} else {
         ($nm_to_drive,$nm_to_dir) = split (/:/,$nm_install_to);
@@ -1640,7 +1657,7 @@ sub install_nonmem_window {
         chdir($nm_install_drive.":\\");
         system "start /wait cdsetup6.bat ".$nm_install_drive." ".$nm_to_drive." ".$nm_to_dir." ".$setting{compiler}." ".$def_optimize." link";
         if (-e unix_path($nm_install_to."/util/nmfe6.bat")) {
-           my $add_to_pirana = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"NONMEM installation seems successful.\nDo you want to add this installation to Piraña?"); 
+           my $add_to_pirana = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"NONMEM installation seems successful.\nDo you want to add this installation to Piraña?");
            if( $add_to_pirana eq "Yes") {
               $nm_dirs{$nm_install_name} = $nm_install_to;
               $nm_vers{$nm_install_name} = 6;
@@ -1660,12 +1677,12 @@ sub install_nonmem_window {
 
 sub manage_nm_window {
 ### Purpose : Create the dialog for editing the NM sizes file
-### Compat  : W+L+ 
+### Compat  : W+L+
   $sizes_w = $mw -> Toplevel(-title=>'Configure NM6+ installations');
   $sizes_w -> resizable( 0, 0 );
   center_window($sizes_w);
-      
-  our $nm_manage_frame = $sizes_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');  
+
+  our $nm_manage_frame = $sizes_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $nm_manage_frame -> Label (-text=>"NONMEM Installation: ", -background=>$bgcol)->grid(-column=>1, -row=>1,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Location: ", -background=>$bgcol)->grid(-column=>1, -row=>2,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Version: ",-background=>$bgcol)->grid(-column=>1, -row=>3,-sticky=>"nws");
@@ -1674,9 +1691,9 @@ sub manage_nm_window {
   my @nm6_installations = ();
   my ($nm_dirs_ref, $nm_vers_ref) = read_ini("nm_inst_local.ini");
   my %nm_dirs = %$nm_dirs_ref; my %nm_vers = %$nm_vers_ref; my %nm_types;
-  # Add remote NM versions   
+  # Add remote NM versions
   my ($nm_dirs_remote_ref, $nm_vers_remote_ref) = read_ini("nm_inst_cluster.ini");
-  my %nm_dirs_remote = %$nm_dirs_remote_ref; my %nm_vers_remote = %$nm_vers_remote_ref; 
+  my %nm_dirs_remote = %$nm_dirs_remote_ref; my %nm_vers_remote = %$nm_vers_remote_ref;
   # add Perl NM-versions
   my ($psn_nm_versions_ref, $psn_nm_versions_vers_ref) = get_psn_nm_versions(\%setting, \%software);
   my %psn_nm_versions = %$psn_nm_versions_ref;
@@ -1691,12 +1708,12 @@ sub manage_nm_window {
     $nm_dirs{"Remote: ".$_} = $nm_dirs_remote{$_};
     $nm_vers{"Remote: ".$_} = $nm_vers_remote{$_};
   }
-  foreach(keys(%nm_vers)) {   # filter out only NM6 installations 
+  foreach(keys(%nm_vers)) {   # filter out only NM6 installations
     #if (($nm_vers{$_} =~ m/6/)||($nm_vers{$_} =~ m/7/)&&($nm_type{_})) {
       push (@nm6_installations, $_)
     #};
   };
-    
+
   $nm_save = $nm_manage_frame -> Button (-text=>"Save", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
     save_sizes($nm_chosen, \@sizes_key, \@sizes_value);
     $sizes_w->destroy;
@@ -1715,11 +1732,11 @@ sub manage_nm_window {
     $compile_nm_frame -> Label (-text=>"folders NM, PR, TL and TR in ".$nm_dirs{$nm_chosen}." will be deleted!", -background=>$bgcol) -> grid(-row=>1,-column=>1,-columnspan=>2,-sticky=>"w");
     $compile_nm_frame -> Label (-text=>"Recompile command: \n",-background=>$bgcol,-justify=>'left') -> grid(-row=>2,-column=>1);
     $compile_nm_frame -> Entry (-textvariable=>\$compile_command, -border=>$bbw, -width=>32, -border=>2, -relief=>'groove') -> grid(-row=>2,-column=>2,-sticky=>"wn");
-    $compile_nm_frame -> Button (-text=>'Proceed', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{  
+    $compile_nm_frame -> Button (-text=>'Proceed', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{
       system "start ".$compile_command;
       $compile_nm -> destroy;
       $sizes_w -> destroy;
-      message("SIZES saved.\nRecompile started in separate window.");    
+      message("SIZES saved.\nRecompile started in separate window.");
     })->grid(-row=>4,-column=>2,-sticky=>"nw",-ipadx=>10);
     $compile_nm_frame-> Button (-text=>'Cancel', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{
       $compile_nm -> destroy;
@@ -1728,15 +1745,15 @@ sub manage_nm_window {
   $nm_manage_frame -> Button (-text=>"Cancel", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
      $sizes_w->destroy;
   })-> grid(-row=>10,-column=>1);
-  
+
   $nm_dir_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_dirs{$nm_chosen},-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>2,-sticky=>"we");
   $nm_ver_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_vers{$nm_chosen},-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>3,-sticky=>"w");  
-    
+         ->grid(-column=>2,-row=>3,-sticky=>"w");
+
   my $button_frame = $nm_manage_frame -> Frame (-background=>$bgcol)->grid(-row=>1, -column=>3,-sticky=>"wns");
-  $del_nm_button = $button_frame -> Button (-image=>$gif{trash}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{ 
-    my $delete = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"Do you really want to delete this NONMEM installation?\nNB. The actual installation will not be removed, only the link from Piraña.");       
+  $del_nm_button = $button_frame -> Button (-image=>$gif{trash}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{
+    my $delete = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"Do you really want to delete this NONMEM installation?\nNB. The actual installation will not be removed, only the link from Piraña.");
       if( $delete eq "Yes") {
       delete $nm_dirs{$nm_chosen};
       delete $nm_vers{$nm_chosen};
@@ -1744,33 +1761,33 @@ sub manage_nm_window {
       foreach (keys(%nm_dirs)) {if (($_ =~ m/PsN:/)||($_ eq "")) { delete $nm_dirs{$_}; delete $nm_vers{$_};  delete $nm_types{$_};}}
       save_settings ("nm_inst_local.ini", \%nm_dirs, \%nm_vers);
       ($nm_dirs_ref,$nm_vers_ref) = read_ini("nm_inst_local.ini");
-      our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref; 
+      our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref;
       chdir($cwd);
       refresh_pirana($cwd);
       $sizes_w -> destroy;
     }
   })-> grid(-row=>1,-column=>1,-sticky=>"wns");
-  
+
   $help->attach($del_nm_button, -msg => "Remove NM installation");
-  $new_nm_button = $button_frame -> Button (-image=>$gif{plus}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{ 
+  $new_nm_button = $button_frame -> Button (-image=>$gif{plus}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
      foreach (keys(%nm_dirs)) {if ($_ =~ m/PsN:/) { delete $nm_dirs{$_}; delete $nm_vers{$_}; delete $nm_types{$_};}}
      add_nm_inst_local();
      #refresh_pirana($cwd);
   })-> grid(-row=>1,-column=>2,-sticky=>"wns");
   $help->attach($new_nm_button, -msg => "Add new NM installation");
-  
+
   @nm6_installations = sort (@nm6_installations);
-  $nm_manage_frame -> Optionmenu (-options => [@nm6_installations], -border=>$bbw,   
+  $nm_manage_frame -> Optionmenu (-options => [@nm6_installations], -border=>$bbw,
         -variable => \$nm_chosen, -width=>25, -background=>$lightblue,-activebackground=>$darkblue,-font=>$font_normal,
-        -command=>sub{ 
+        -command=>sub{
           refresh_sizes($nm_types{$nm_chosen},$nm_vers{$nm_chosen},$nm_dirs{$nm_chosen},$nm_chosen);
           if ($nm_chosen =~ m/PsN/) {$del_nm_button -> configure (-state=>'disabled')} else {$del_nm_button -> configure (-state=>'normal')};
           $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_chosen});
           $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_chosen});
-    })->grid(-row=>1,-column=>2, -sticky => 'wens'); 
+    })->grid(-row=>1,-column=>2, -sticky => 'wens');
 }
 
-sub csv_tab_window { 
+sub csv_tab_window {
 ### Purpose : Create the dialog for converting a csv-file into a tab file or viceversa
 ### Compat  : W+L?
    my $file = shift;
@@ -1785,13 +1802,13 @@ sub csv_tab_window {
    $csv_tab_frame -> Label(-text=> $file,-justify=>"left")->grid(-column=>2, -row=>1,-sticky=>"wns");
    $csv_tab_frame -> Label(-text=> "to: ",-justify=>"left")->grid(-column=>1, -row=>2,-sticky=>"wns");
    my $length = length($file); if($length<32) {$length=32};
-   $csv_tab_frame -> Entry(-textvariable=> \$new_file,  
+   $csv_tab_frame -> Entry(-textvariable=> \$new_file,
       -border=>1, -relief=>'groove', -width=>$length)->grid(-column=>2, -row=>2,-sticky=>"wns");
    $csv_tab_frame -> Button(-text=> "Convert", -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
      my $overwrite_bool = 1;
      if (-e $new_file) {
        my $overwrite = $mw -> messageBox(-type=>'yesno', -icon=>'question',
-        -message=>"Datafile ".$new_file." already exists.\n Do you want to overwrite?"); 
+        -message=>"Datafile ".$new_file." already exists.\n Do you want to overwrite?");
        if( $overwrite eq "No") {$overwrite_bool=0;};
      }
      if ($overwrite_bool==1) {
@@ -1822,7 +1839,10 @@ sub status {
   $status_bar -> configure (-text=>"Status: ".$status_text);
   $mw->update();
 }
+
 sub setup_ini_dir {
+### Purpose : Create directories /ini en /log in home folder
+### Compat  : W+L+
   my ($user, $home_dir) = @_;
   unless (-d $home_dir) {mkdir $home_dir};
   unless (-d $home_dir."/ini") {mkdir $home_dir."/ini"};
@@ -1839,7 +1859,7 @@ sub setup_ini_dir {
 sub renew_pirana {
 ### Purpose : To reload the main part of the GUI
 ### Compat  : W+L+
-  if($frame2) {$frame2->gridForget()}; 
+  if($frame2) {$frame2->gridForget()};
   if($run_frame) {$run_frame -> gridForget()};
   if ($frame_links) {$frame_links -> gridForget()};
   if ($frame_status) {$frame_status -> gridForget()};
@@ -1865,7 +1885,7 @@ sub refresh_pirana {
   $dir_entry -> configure(-textvariable=>$cwd);
   $dir_entry -> update;
   if ($frame_links) {$frame_links -> destroy()};
-  show_links ();   
+  show_links ();
   read_curr_dir (@_[0], $filter, 1);
   status ("Reading table files...");
   tab_dir(@_[0]);
@@ -1873,7 +1893,7 @@ sub refresh_pirana {
   status ();
 }
 sub show_console_output {
-### Purpose : Create (or destroy) a text-box that show the output of several commands 
+### Purpose : Create (or destroy) a text-box that show the output of several commands
 ### Compat  : W+L+
   open (FILE, $base_dir."/process_log");
   my @lines = <FILE>;
@@ -1882,14 +1902,14 @@ sub show_console_output {
   return($console);
 }
 
-sub message { 
+sub message {
 ### Purpose : Show a small window with a text and an OK button
 ### Compat  : W+L+
  $mw -> messageBox(-type=>'ok', -message=>@_[0]);
 }
- 
+
 sub intro_msg {
-### Purpose : Issue a message-window showing startup errors 
+### Purpose : Issue a message-window showing startup errors
 ### Compat  : W+L+
   $kill = shift;
   if ($kill == 1) {$kill_text = "\nClick OK to exit Piraña.\n"} else {$kill_text=""};
@@ -1899,7 +1919,7 @@ sub intro_msg {
   close LOG;
   $all = join("",@lines);
   $mw2 -> messageBox(-type=>'ok',
-    	-message=>"Errors were found when starting Piraña.\n Startup log:\n\n**************\n".$all."**************\n".$kill_text); 
+    	-message=>"Errors were found when starting Piraña.\n Startup log:\n\n**************\n".$all."**************\n".$kill_text);
   $mw2->destroy();
   if ($kill==1) {die;};
 }
@@ -1944,11 +1964,11 @@ sub nmqual_compile_script {
       $line_done=1;
     };
     if ($line =~ m/my \$outfile/i) {
-      print OUT $line; 
+      print OUT $line;
       print OUT '$outfile .= "_tmp1";'." # Added by Piraña \n";
       $line_done=1;
     }
-    if ($line =~ m/\#restore invoking directory/) { 
+    if ($line =~ m/\#restore invoking directory/) {
       print OUT 'close OUTFILE or die;                                                   # added by Pirana'."\n";
       print OUT '$outfile =~ s/tmp1/tmp2/;                                               # added by Piraña'."\n";
       print OUT 'open (OUTFILE,">".$outfile) or die "$nm cant open ".$outfile."_tmp\n";  # added by Piraña'."\n";
@@ -1969,6 +1989,8 @@ sub nmqual_compile_script {
 }
 
 sub first_time_dialog {
+### Purpose : Present a dialog the first time Pirana is started
+### Compat  : W+L+
   my $user = shift;
   my $first_time_dialog_window = $mw -> Toplevel(-title=>'Welcome to Piraña!');
   my $first_time_dialog_frame = $first_time_dialog_window -> Frame(-background=>$bgcol) -> grid(-ipadx=>10, -ipady=>10);
@@ -1979,15 +2001,15 @@ sub first_time_dialog {
     -text=> "Please specify your username: \n(no spaces)"
   )->grid(-row=>2, -column=>1, -sticky=>"nse");
   $first_time_dialog_frame -> Entry (-font=>$font_normal, -background=>'white', -justify=>"left",
-    -textvariable => \$user 
+    -textvariable => \$user
   )->grid(-row=>2, -column=>2, -sticky=>"wn");
   $first_time_dialog_frame -> Label (-font=>$font_normal, -background=>$bgcol, -justify=>"left",
     -text=> " "
   )->grid(-row=>3, -column=>1);
-  $first_time_dialog_frame -> Button (-text=>'OK', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{  
-    $user =~ s/\s//g; 
+  $first_time_dialog_frame -> Button (-text=>'OK', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{
+    $user =~ s/\s//g;
     our ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
-    our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
+    our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
     $setting{username} = $user;
     save_settings ("settings.ini", \%setting, \%setting_descr);
     $first_time_dialog_window -> destroy();
@@ -1997,13 +2019,13 @@ sub first_time_dialog {
 
 sub initialize {
 ### Purpose : Initialize pirana: read ini-files and update settings-hashes
-### Compat  : W+L? 
-  
+### Compat  : W+L?
+
   # check if it's the first time to start pirana
   my $user    = getlogin();
   unless (-e $home_dir."/log/startup.log") {
     our $first_time_flag = 1;
-  } 
+  }
   setup_ini_dir ($user, $home_dir);
   open (LOG,">".$home_dir."/log/startup.log");
   my $error=0;
@@ -2012,18 +2034,18 @@ sub initialize {
   print LOG "Checking pirana installation...\n";
 
   our ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
-  our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
+  our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
 
   unless (-d $base_dir."/internal") {$error++; print LOG "Error: Pirana could not find dir containing internal subroutines. Program halted.\n"};
   unless (-d $base_dir."/images") {$error++; print LOG "Error: Pirana could not find images. Program halted.\n"; };
   if ($error>0) {print LOG "Errors were found. Check installation of pirana.\n"; close LOG; intro_msg(1)} else {print LOG "Done\n"};
 
-  print LOG "Reading Pirana settings...\n"; 
+  print LOG "Reading Pirana settings...\n";
   ($setting_ref,$setting_descr_ref) = read_ini("settings.ini");
-  %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;  
+  %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
   #if ($setting{username}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
   our $models_view = $setting{models_view};
-    
+
   if ($setting{font_size}==2) {
     our $font_normal = 'Verdana 8';
     our $font_small = 'Verdana 7';
@@ -2034,65 +2056,59 @@ sub initialize {
     our $font_normal = 'Verdana 7';
     our $font_small = 'Verdana 6';
     our $font_fixed = "Courier 8 bold";
-    our $font_bold = 'Verdana 8 bold'; 
+    our $font_bold = 'Verdana 8 bold';
   }
-  
+
   print LOG "Deleting temporary files...\n";
   if(chdir ($base_dir."/temp")){
     my @temp_files = <*>;
     unlink (@temp_files);
     chdir ($base_dir);
   }
-  
-  print LOG "Reading software settings...\n"; 
-  my $software_ini = "software_linux.ini";  
+
+  print LOG "Reading software settings...\n";
+  my $software_ini = "software_linux.ini";
   if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
   ($software_ref,$software_descr_ref) = read_ini($software_ini);
-  %software = %$software_ref; %software_descr = %$software_descr_ref;  
+  %software = %$software_ref; %software_descr = %$software_descr_ref;
 
   if ($ENV{PATH} =~ m/$nm_dir/) {;} else { $ENV{PATH}="$nm_dir/util;".$ENV{PATH}} ;
   unless ($ENV{'PATH'} =~ m/$software{f77_dir}/) {
     $ENV{'PATH'} = $software{f77_dir}.";".$ENV{'PATH'};
-  } 
+  }
   # check if XML:XPath is present, if NMQual will be used.
   if ($setting{use_nmq}==1) {
     print LOG "Checking XML::XPath availability (NMQual)...\n";
     system ('perl "'.win_path($base_dir.'/internal/test_xpath.pl" >"'.$home_dir.'/log/xpath.log"'));
-    if (-s $home_dir."/log/xpath.log" > 2) { 
+    if (-s $home_dir."/log/xpath.log" > 2) {
       our $xpath=1;
-    } else {our $xpath = 0; print LOG "Perl module XML::XPath required for NMQual support was not found.\nIf you prefer not to work with NMQual,\ndisable use of NMQual under 'File->Preferences'.\n"; intro_msg(0) 
-    }; 
+    } else {our $xpath = 0; print LOG "Perl module XML::XPath required for NMQual support was not found.\nIf you prefer not to work with NMQual,\ndisable use of NMQual under 'File->Preferences'.\n"; intro_msg(0)
+    };
   }
   if ($setting{use_psn}==1) {
-    print LOG "Reading PsN commands default parameters...\n"; 
+    print LOG "Reading PsN commands default parameters...\n";
     my ($psn_commands_ref, $psn_commands_descr_ref) = read_ini("psn.ini");
-    our %psn_commands = %$psn_commands_ref; our %psn_commands_descr = %$psn_commands_descr_ref;  
+    our %psn_commands = %$psn_commands_ref; our %psn_commands_descr = %$psn_commands_descr_ref;
     foreach(keys(%psn_commands_descr)) {
       $psn_commands_descr{$_} =~ s/\\n/\n/g;
     }
   }
 
-#  if (-e "ini/scripts.ini") {
-#    print LOG "Reading scripts...\n"; 
-#    ($scripts_ref,$scripts_descr_ref) = read_ini("scripts.ini");
-#    %scripts = %$scripts_ref; %scripts_descr = %$scripts_descr_ref;  
-#  }
-  
-  print LOG "Reading Projects...\n"; 
+  print LOG "Reading Projects...\n";
   ($project_dir_ref,$project_descr_ref) = read_ini("projects.ini");
   %project_dir = %$project_dir_ref; %project_descr = %$project_descr_ref;
   $pr_dir_err=0;
   while(($key, $value) = each(%project_dir)) {
     unless (-d $value) {$pr_dir_err++; print LOG "Error: folder for project ".$value." not found!\n"};
   }
-  unless ($pr_dir_err==0) {print LOG $pr_dir_err." project(s) not found. Check projects.ini!\n"; close LOG; 
+  unless ($pr_dir_err==0) {print LOG $pr_dir_err." project(s) not found. Check projects.ini!\n"; close LOG;
     # intro_msg(0)
   };
-  
+
   print LOG "Reading NM versions...\n";
-  $pr_dir_err=0;   
+  $pr_dir_err=0;
   ($nm_dirs_ref, $nm_vers_ref) = read_ini("nm_inst_local.ini");
-  our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref; 
+  our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref;
   while(($key, $value) = each(%nm_dirs)) {
     unless (-d $value) {$pr_dir_err++; print LOG "Error: NM installation ".$value." not found!\n"};
     if ($nm_types{$key} =~ m/nmq/i ) {
@@ -2109,7 +2125,7 @@ sub initialize {
 
 sub cluster_monitor {
 ### Purpose : Create a window showing the active nodes in the PCluster
-### Compat  : 
+### Compat  :
     unless ($cluster_view) {
       our $cluster_view = $mw -> Toplevel(-title=>'PCluster monitor');
       $cluster_view -> OnDestroy ( sub{
@@ -2129,7 +2145,7 @@ sub cluster_monitor {
       $cluster_monitor_grid -> delete("all");
       populate_cluster_monitor();
     }) -> grid(-column => 1, -columnspan=>2, -row=>2, -sticky=>"we");
-    
+
 }
 sub populate_cluster_monitor {
 ### Purpose : Show the active nodes in the cluster overview window
@@ -2162,7 +2178,7 @@ sub populate_cluster_monitor {
         $cluster_monitor_grid->itemCreate("computer".@active[$i], 1, -text => $pc_names{@active[$i]},-style=>$align_left );
         $cluster_monitor_grid->itemCreate("computer".@active[$i], 2, -text => $total_cpus{@active[$i]}, -style=>$align_right);
         $cluster_monitor_grid->itemCreate("computer".@active[$i], 3, -text => $busy_cpus{@active[$i]},-style=>$align_left);
-    }   
+    }
 }
 
 sub quit{
@@ -2171,10 +2187,10 @@ sub quit{
   open (SETTINGS, "<$base_dir/internal/settings.inc");
   @settings_lines=<SETTINGS>; close SETTINGS;
   $i=0; while (@settings_lines[$i]) {
-    if (@settings_lines[$i] =~ m/data_start_dir/) {@settings_lines[$i]="our \$data_start_dir = '$cwd';\n";} ; 
+    if (@settings_lines[$i] =~ m/data_start_dir/) {@settings_lines[$i]="our \$data_start_dir = '$cwd';\n";} ;
     $i++;}
   open (SETTINGS, ">$base_dir/internal/settings.inc");
-  print SETTINGS @settings_lines; 
+  print SETTINGS @settings_lines;
   close SETTINGS;
   exit;
 }
@@ -2187,13 +2203,13 @@ sub save_project {
   $save_dialog -> resizable( 0, 0 );
   center_window($save_dialog);
   $save_proj_frame = $save_dialog -> Frame(-background=>$bgcol) -> grid(-ipadx=>10, -ipady=>10);
-  
+
   $save_proj_frame->Label(-text=>"folder:" ,-background=>$bgcol)->grid(-row=>1,-column=>1,-columnspan=>2,-sticky=>'w');
   $save_proj_frame->Label(-text=>@_[0],-background=>$bgcol)->grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>'w');
   $save_proj_frame->Label(-text=>"Overwrite project: ",-background=>$bgcol,-activebackground=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>'w');
   $new_project_name = "New project";
   my $proj_entry = $save_proj_frame->Entry(-width=>30, -background=>'#FFFFFF', -textvariable=>\$new_project_name,-background=>'#FFFFEE', -border=>2, -relief=>'groove') ->grid(-row=>3,-column=>2,-sticky=>'w');
-  $save_proj_frame->Optionmenu(-background=>$lightblue,-activebackground=>$darkblue, -width=>25,-border=>$bbw, 
+  $save_proj_frame->Optionmenu(-background=>$lightblue,-activebackground=>$darkblue, -width=>25,-border=>$bbw,
         -options=>["New project",keys(%project_dir)], -font=>$font_normal, -textvariable => \$project_chosen,
         -command=>sub{
           $new_project_name = $project_chosen;
@@ -2205,16 +2221,16 @@ sub save_project {
   $save_proj_frame->Button(-text=>"Save",-width=>16,-background=>$button,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
      # rewrite the hash:
      unless ($project_chosen eq "New project") {
-       delete $project_dir{$project_chosen};  
+       delete $project_dir{$project_chosen};
      }
-     $project_dir{$new_project_name} = $cwd;  
+     $project_dir{$new_project_name} = $cwd;
      rewrite_projects_ini();
      $active_project = $new_project_name;
      project_optionmenu();
      $project_optionmenu -> configure(-state=>"normal");
      destroy $save_dialog;
   })
-   ->grid(-row=>5,-column=>2,-sticky=>'w'); 
+   ->grid(-row=>5,-column=>2,-sticky=>'w');
  $save_proj_frame -> Button (-text=>'Cancel ', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{destroy $save_dialog})->grid(-column=>1,-row=>5,-sticky=>"nwse");
 }
 
@@ -2236,7 +2252,7 @@ sub del_project {
   $delproj_frame = $delproj_dialog -> Frame (-background=>$bgcol)->grid(-ipadx=>10, -ipady=>10);
   $delproj_dialog -> resizable( 0, 0 );
   $delproj_frame -> Label (-text=>"Really delete project $active_project?\n (folder will not be deleted, only shortcut in Piraña.)\n",-justify=>'left')->grid(-row=>1,-column=>1,-columnspan=>2);
-  $delproj_frame -> Button (-text=>'Delete ', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{  
+  $delproj_frame -> Button (-text=>'Delete ', -background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{
     delete $project_dir{$active_project};
     rewrite_projects_ini();
     ($active_project,@rest) = keys(%project_dir);
@@ -2251,14 +2267,14 @@ sub del_project {
 
 
 sub niy {
-### Purpose : Issue a message window showing that the functionality is not implemented yet 
+### Purpose : Issue a message window showing that the functionality is not implemented yet
 ### Compat  : W+L+
   $mw -> messageBox(-type=>'ok',
     	-message=>"Sorry, not implemented yet!");
 }
 
 sub populate_delete_models {
-### Purpose : insert models and files to be deleted into window's listboxes 
+### Purpose : insert models and files to be deleted into window's listboxes
 ### Compat  : W+L+
   my ($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, $delete_models_listbox_ref, $delete_files_listbox_ref, $runs_ref, $folders_ref) = @_;
   my @runs = @$runs_ref;
@@ -2270,7 +2286,7 @@ sub populate_delete_models {
     if (-d $run.".".$setting{ext_res}) { push (@lst_files, $run.".".$setting{ext_res}); };
     if (-e $run.".".$setting{ext_res}) { push (@lst_files, $run.".".$setting{ext_res}); };
     if (-e $run.".".$setting{ext_ctl}) { push (@mod_files, $run.".".$setting{ext_ctl}); };
-    if ($del_tables_check==1) { 
+    if ($del_tables_check==1) {
       my $mod_ref = extract_from_model ($run.".".$setting{ext_ctl}, $run, "all");
       my $tables_ref = $$mod_ref{tab_files};
       #print join(",", @tables);
@@ -2278,15 +2294,15 @@ sub populate_delete_models {
     }
   }
   my @files = ();
-  
-  if ($del_models_check == 1) {push (@files, @mod_files); }; 
+
+  if ($del_models_check == 1) {push (@files, @mod_files); };
   if ($del_results_check == 1) {push (@files, @lst_files); };
   if ($del_tables_check == 1) {push (@files, @tab_files); };
   $$delete_models_listbox_ref -> configure (-state=>'normal');
   $$delete_files_listbox_ref -> configure (-state=>'normal');
   $$delete_models_listbox_ref -> delete("0", "end");
   $$delete_files_listbox_ref -> delete("0", "end");
-  
+
   $$delete_models_listbox_ref -> insert(0, @runs);
   foreach my $folder (@folders) {$folder .= "/ (entire folder!)"};
   if ($del_folders_check == 1) {$$delete_files_listbox_ref -> insert(0, @folders);};
@@ -2307,22 +2323,22 @@ sub delete_models_window {
   center_window($del_dialog);
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   my $type = @file_type_copy[@runs];
-  
+
   $del_dialog_frame -> Label (-text=>"Selected models / folders:", -background=>$bgcol) -> grid(-row=>0, -column=>1,-sticky=>"nws"); # spacer
   $del_dialog_frame -> Label (-text=>"Files / folders to delete:", -background=>$bgcol) -> grid(-row=>0, -column=>2, -columnspan=>2,-sticky=>"nws"); # spacer
   my $delete_models_listbox = $del_dialog_frame -> Scrolled('Listbox',
-        -selectmode => "single", -highlightthickness => 0, 
+        -selectmode => "single", -highlightthickness => 0,
         -scrollbars => 'se', -width => 16, -height     => 16,
         -border     => 1, -background => $tab_hlist_color, -selectbackground => $pirana_orange,
         -font       => $font_normal
-  )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>'nswe', -ipady=>0);   
+  )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>'nswe', -ipady=>0);
   my $delete_files_listbox = $del_dialog_frame -> Scrolled('Listbox',
         -selectmode => "single", -highlightthickness => 0,
         -scrollbars => 'se', -width => 30, -height     => 16,
         -border     => 1, -background => $tab_hlist_color, -selectbackground => $pirana_orange,
         -font       => $font_normal
-  )->grid(-column => 2, -columnspan=>2, -row => 1, -sticky=>'nswe', -ipady=>0);   
-  
+  )->grid(-column => 2, -columnspan=>2, -row => 1, -sticky=>'nswe', -ipady=>0);
+
   my $del_folders_check = 1;
   my $del_models_check = 1;
   my $del_results_check = 1;
@@ -2337,10 +2353,10 @@ sub delete_models_window {
   $del_dialog_frame -> Checkbutton (-variable=>\$del_models_check, -text => " Models", -background=>$bgcol, -command=>sub{
     populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders );
   })-> grid(-row=> 4, -column=>2, -sticky=>"nws");
-  $del_dialog_frame -> Checkbutton (-variable=>\$del_results_check, -text => " Results", -background=>$bgcol, -command=>sub{  
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_results_check, -text => " Results", -background=>$bgcol, -command=>sub{
     populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
   })-> grid(-row=> 5, -column=>2, -sticky=>"nws");
-  $del_dialog_frame -> Checkbutton (-variable=>\$del_tables_check, -text => " Table files", -background=>$bgcol, -command=>sub{  
+  $del_dialog_frame -> Checkbutton (-variable=>\$del_tables_check, -text => " Table files", -background=>$bgcol, -command=>sub{
     populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
   })-> grid(-row=> 6, -column=>2,-sticky=>"nws");
   $del_dialog_frame -> Checkbutton (-variable=>\$del_folders_check, -text => " Folders", -background=>$bgcol, -command=>sub{
@@ -2348,7 +2364,7 @@ sub delete_models_window {
   })-> grid(-row=> 7, -column=>2, -sticky=>"nws");
 
   my $files_ref = populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
-  
+
   $del_dialog_frame -> Label (-text=>' ', -background=>$bgcol) -> grid(-row=>8, -column=>2); # spacer
   $del_dialog_frame -> Button (-text=>'Delete ', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
      # first, delete folders
@@ -2389,38 +2405,38 @@ sub duplicate_model_window {
   $dupl_dialog_frame = $dupl_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $dupl_dialog_frame -> Label (-background=>$bgcol, -text=>'New model number (without '.$setting{ext_ctl}.'):')->grid(-row=>1,-column=>1,-sticky=>"we");
   $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove',
-     -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");  
+     -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");
   $dupl_dialog_frame -> Label (-background=>$bgcol, -text=>'Reference model:')->grid(-row=>2,-column=>1,-sticky=>"e");
   my $ref_mod_entry = $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove', -text=>@ctl_show[@runs[0]],
-     -textvariable=>\$new_ctl_ref)->grid(-row=>2,-column=>2,-sticky=>"w");  
-  
+     -textvariable=>\$new_ctl_ref)->grid(-row=>2,-column=>2,-sticky=>"w");
+
   my $modelfile = @ctl_show[@runs[0]].".".$setting{ext_ctl};
   my $modelno = $modelfile;
   my $modelno =~ s/\.$setting{ext_ctl}//;
   my $mod_ref = extract_from_model ($modelfile, $modelno);
   my %mod = %$mod_ref;
-  $new_ctl_descr = $mod{description}; 
-     
+  $new_ctl_descr = $mod{description};
+
   $dupl_dialog_frame -> Label (-background=>$bgcol, -text=>'Model description:')->grid(-row=>3,-column=>1,-sticky=>"we");
   $dupl_dialog_frame -> Label (-background=>$bgcol, -justify=>"left", -text=>"\nAutomatically changing of table files only works if in the table name the exact filename of\nthe model is incorporated. E.g. if your model file is name 005.mod, then your tables should\nbe named sdtab005, tab005.tab, 005.tab, etc in the control stream\n\n."
-    )->grid(-row=>7,-column=>1,-columnspan=>2,-sticky=>"w"); 
+    )->grid(-row=>7,-column=>1,-columnspan=>2,-sticky=>"w");
   $dupl_dialog_frame -> Entry (-width=>40, -border=>2, -relief=>'groove',
-     -textvariable=>\$new_ctl_descr)->grid(-row=>3,-column=>2,-sticky=>"w");  
-     
-  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change run-numbers in ouput/tables?",-activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>'w');  
-  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Use final parameter estimates from reference model?",-activebackground=>$bgcol,-variable=>\$est_as_init)->grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>'w');  
+     -textvariable=>\$new_ctl_descr)->grid(-row=>3,-column=>2,-sticky=>"w");
+
+  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change run-numbers in ouput/tables?",-activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>'w');
+  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Use final parameter estimates from reference model?",-activebackground=>$bgcol,-variable=>\$est_as_init)->grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>'w');
   $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Fix estimates?",-activebackground=>$bgcol,-variable=>\$fix_est)->grid(-row=>6,-column=>2,-columnspan=>2,-sticky=>'w');
-    
+
   #$dupl_dialog_frame -> Label (-text=>'')->grid(-row=>7,-column=>1,-sticky=>"e");
   $dupl_dialog_frame -> Label (-background=>$bgcol, -text=>'')->grid(-row=>8,-column=>1,-sticky=>"e");
-    
+
   $dupl_dialog_frame -> Button (-text=>'Duplicate', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton,-command=>sub {
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
       my $overwrite = $mw -> messageBox(-type=>'yesno', -icon=>'question',
-        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?"); 
-      if( $overwrite eq "No") {$overwrite_bool=0; $dupl_dialog -> focus();} 
+        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
+      if( $overwrite eq "No") {$overwrite_bool=0; $dupl_dialog -> focus();}
     } else {$overwrite_bool=1};
-    
+
     if ($new_ctl_descr eq "") {$descr_bool=0; $mw -> messageBox(-type=>'ok', -message=>"You have to provide a description of the model");} else {$descr_bool=1};
     if (($overwrite_bool==1)&&($descr_bool==1)) {
       my $new_ctl_ref = $ref_mod_entry -> get();
@@ -2431,14 +2447,14 @@ sub duplicate_model_window {
       #start_command ($software{editor}, win_path($cwd)."\\".$new_ctl_name.".".$setting{ext_ctl});
       edit_model ( unix_path($cwd)."\\".$new_ctl_name.".".$setting{ext_ctl});
       refresh_pirana($cwd);
-    } 
+    }
   }) -> grid(-row=>8,-column=>2,-sticky=>"w");
   $dupl_dialog_frame -> Button (-text=>'Cancel ', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=>sub{destroy $dupl_dialog})->grid(-column=>1,-row=>8,-sticky=>"e");
 }
 
 sub new_ctl {
 ### Purpose : Create a new model file, either blank or from a template (dialog + creation of model file)
-### Compat  : W+L+ 
+### Compat  : W+L+
   my $overwrite_bool=1;
   $new_ctl_dialog = $mw -> Toplevel(-title=>'New model file');
   $new_ctl_dialog -> resizable( 0, 0 );
@@ -2447,27 +2463,27 @@ sub new_ctl {
   $new_ctl_frame -> Label (-text=>'Model number (without .'.$setting{ext_ctl}.'):')-> grid(-column=>1, -row=>1,-sticky=>'nse');
   $new_ctl_frame -> Entry (-width=>10, -border=>2, -relief=>'groove', -textvariable=>\$new_ctl_name)->grid(-column=>2,-row=>1, -sticky=>'w');
   chdir($base_dir."/templates");
-  @templates = <*.mod> ;  
+  @templates = <*.mod> ;
   $i=0; foreach (@templates) {
      open (IN,$_); @lines=<IN>; close IN;
      @firstline[$i] = @lines[0];
      @firstline[$i] =~ s/model desc://i;
      @firstline[$i] =~ s/\$problem//i;
      @firstline[$i] =~ s/\;//;
-     @firstline[$i] =~ s/\n//;  
-     @templates_descr[$i] = @firstline[$i];  
+     @firstline[$i] =~ s/\n//;
+     @templates_descr[$i] = @firstline[$i];
      $template_file{@templates_descr[$i]} = @templates[$i];
      $i++;
   };
   $new_ctl_frame -> Label (-text=>'Template: ')-> grid(-column=>1, -row=>2, -sticky=>'nse');
-  $menu = $new_ctl_frame -> Optionmenu(-options => [@templates_descr], -border=>$bbw,  
+  $menu = $new_ctl_frame -> Optionmenu(-options => [@templates_descr], -border=>$bbw,
       -variable=>\$template_chosen,-background=>$lightblue,-activebackground=>$darkblue, -justify=>'left', -border=>$bbw
         )-> grid(-column=>2,-row=>2);
-  
+
   $new_ctl_frame -> Button (-text=>'Create model', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
         my $overwrite = $mw -> messageBox(-type=>'yesno', -icon=>'question',
-        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?"); 
+        -message=>"Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
         if( $overwrite eq "No") {$overwrite_bool=0;}
       }
     if ($overwrite_bool==1) {
@@ -2493,8 +2509,8 @@ sub new_dir {
   $newdir_dialog_frame -> Entry (-width=>20, -border=>2, -relief=>'groove', -textvariable=>\$new_dir_name)->grid(-column=>2,-row=>1,-sticky=>"ne");
   $newdir_dialog_frame -> Button (-text=>'Create folder',  -width=>12, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
     if (-e $cwd."/".$new_dir_name) {  # check if control stream already exists;
-      $mw -> messageBox(-type=>'ok', -message=>"Folder ".$new_dir_name." already exists!"); 
-      } else { 
+      $mw -> messageBox(-type=>'ok', -message=>"Folder ".$new_dir_name." already exists!");
+      } else {
       mkdir ($cwd."/".$new_dir_name);
     }
     refresh_pirana($cwd);
@@ -2502,7 +2518,7 @@ sub new_dir {
   })->grid(-column=>2,-row=>2,-sticky=>"w");
   $newdir_dialog_frame -> Button (-text=>'Cancel', -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     destroy $newdir_dialog;
-  })->grid(-column=>1,-row=>2,-sticky=>"e");  
+  })->grid(-column=>1,-row=>2,-sticky=>"e");
 }
 
 sub rename_ctl {
@@ -2520,7 +2536,7 @@ sub rename_ctl {
   $ren_dialog_frame -> Button (-text=>"Rename", -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     if ((-e $cwd."/".$ren_ctl_name.".".$setting{ext_ctl})||((-e $cwd."/".$ren_ctl_name.".".$setting{ext_res}))) {  # check if control stream already exists;
       my $overwrite = $mw -> messageBox(-type=>'yesno', -icon=>'question',
-        -message=>"model- or result-file for ".$ren_ctl_name." already exists.\n Do you want to overwrite?"); 
+        -message=>"model- or result-file for ".$ren_ctl_name." already exists.\n Do you want to overwrite?");
       if( $overwrite eq "No") {$overwrite_bool=0;
       }
     }
@@ -2534,7 +2550,7 @@ sub rename_ctl {
   $ren_dialog_frame -> Button (-text=>'Cancel', -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     destroy $ren_dialog;
   })->grid(-column=>1,-row=>2,-sticky=>"e");
-    
+
 }
 sub update_model_descr {
 ### Purpose : Updata model description (extracted from NM model file)
@@ -2546,7 +2562,7 @@ sub update_model_descr {
   my $sql_command = "UPDATE model_db SET date_mod='".$mod{date_mod}."', descr='".$mod{description}.
         "', ref_mod='".$mod{refmod}."', method='".$mod{method}."', dataset='".$mod{dataset}."' WHERE model_id='".$mod_nr."'";
   status ("Gathering data for model ".$mod_nr);
-  return ($sql_command); 
+  return ($sql_command);
 }
 
 sub update_run_results {
@@ -2560,40 +2576,41 @@ sub update_run_results {
         "bnd='".$res{bnd}."', cov='".$res{cov}."' ".
         "WHERE model_id='".$mod."'";
   status ("Gathering data for model ".$mod);
-  return($sql_command); 
+  return($sql_command);
 }
+
 sub read_curr_dir {
-### Purpose : Get all model files and all directories in curr dir and put them in arrays 
+### Purpose : Get all model files and all directories in curr dir and put them in arrays
 ### Compat  : W+
 ### Notes   : sub could be somewhat more refined
 
   # remove superfluous batch files
   my @bat_remove = dir($cwd,"pirana_start");
-  foreach(@bat_remove) {unlink ($_)}; 
-  
+  foreach(@bat_remove) {unlink ($_)};
+
   # arguments (dir, filter, reload?)
-  $load_dir = @_[0]; 
+  $load_dir = @_[0];
   $filter = @_[1];
   $reload = @_[2];
 
   # file types: 0=[..] , 1=directory, 2=mod file
   if ($reload==1) {
     chdir @_[$load_dir];
-    
+
     status ("Reading output files...");
 
-    our %models_descr = {}; our %models_refmod = {}; 
+    our %models_descr = {}; our %models_refmod = {};
     our %file_type = {}; our %models_notes = {};  our %models_colors = {};
     our %models_dates = {}; our %models_dates_db = {}; our %models_resdates_db = {}; our %models_resdates = {};
     our %models_ofv = {}; our %models_suc = {}; our %models_bnd = {}; our %models_cov = {}; our %models_sig = {};
-    
+
     status ("Looking for new model files and results...");
-    undef @ctl_files; undef @ctl_descr; undef @firstline; undef @dirs; undef @dirs2; undef @dir_files; 
+    undef @ctl_files; undef @ctl_descr; undef @firstline; undef @dirs; undef @dirs2; undef @dir_files;
     undef @ctl_copy; undef @ctl_descr_copy;
-    undef @file_type; undef @file_type_copy;  @ctl_descr=""; 
+    undef @file_type; undef @file_type_copy;  @ctl_descr="";
     our @ctl_files = <*.$setting{ext_ctl}>;
     #our @ctl_files = dir (@_[$load_dir], $setting{ext_ctl}); # faster;
-    
+
     $i=0; if (@ctl_files>0) {
     foreach (@ctl_files) {
       @ctl_files[$i] =~ s/.$setting{ext_ctl}//i;
@@ -2603,8 +2620,8 @@ sub read_curr_dir {
       if (-e $_.".".$setting{ext_res}) {
         $models_resdates{$_} = stat($_.".".$setting{ext_res})->mtime;
       }
-      @ctl_descr[$i] = $models_descr{$_}; 
-      @file_type[$i] = 2; 
+      @ctl_descr[$i] = $models_descr{$_};
+      @file_type[$i] = 2;
       $file_type{@ctl_files[$i]} = 2;
       $i++;
     };
@@ -2617,7 +2634,7 @@ sub read_curr_dir {
    status ("Updating database..."); # and update the hashes containing the info
    my @sql_commands;
    # check all the runs in the directory with the Db
-   foreach my $mod (@ctl_files) { 
+   foreach my $mod (@ctl_files) {
       if ($file_type{$mod} == 2) {
         $mod =~ s/\.$setting{ext_ctl}//i;
         if (exists $models_dates_db{$mod}) { # if already exists in db-hash then do nothing
@@ -2640,25 +2657,25 @@ sub read_curr_dir {
     db_execute_multiple(\@sql_commands);
     update_model_info(db_read_all_model_data());
   }
-      
+
     # Get directories in the current folder
     our @dirs;
     our @dir_files = <*>;
 #    our @dir_files = dir ("."); # is faster than a regular <*>  ?
     foreach(@dir_files) {
       if (-d $_) {
-        unless ($_ =~ /\./) {  
+        unless ($_ =~ /\./) {
           push (@dirs,$_);
           push (@dirs2,"/".$_);
-        } 
+        }
       }
     }
-    unshift (@ctl_descr, @dirs2); 
-    unshift (@ctl_files, @dirs);  
+    unshift (@ctl_descr, @dirs2);
+    unshift (@ctl_files, @dirs);
     foreach (@dirs) {
       unshift (@file_type,1);
     }
-    
+
     if(length($cwd)>3) {  # if not in root, show "[..]"
       unshift (@ctl_descr,"/..");
       unshift (@ctl_files,"..");
@@ -2667,7 +2684,7 @@ sub read_curr_dir {
       unshift (@file_type,0)
     }
   }
-  
+
   # Filter
   if (($filter eq "")&&($psn_dir_filter==1)&&(($nmfe_dir_filter==1))) {
     @ctl_descr_copy = @ctl_descr;
@@ -2675,36 +2692,35 @@ sub read_curr_dir {
     @file_type_copy = @file_type;
   } else {
     $i=0;
-    undef @ctl_copy; undef @ctl_descr_copy; undef @file_type_copy; 
+    undef @ctl_copy; undef @ctl_descr_copy; undef @file_type_copy;
     foreach (@ctl_descr) {   # filter
-      # print int(@ctl_files[$i] =~ m/$filter/i).int(@ctl_descr[$i] =~ m/$filter/i).int(@ctl_descr[$i] =~ m/\.\./ ).$filter."\n";
-      if (((@ctl_files[$i] =~ m/$filter/i) || ($models_notes{@ctl_files[$i]} =~ m/$filter/i) || ($models_descr{@ctl_files[$i]} =~ m/$filter/i)) || (@ctl_descr[$i] =~ m/\.\./i) || ($filter eq "")) {        
-        unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0))) {
+      if (((@ctl_files[$i] =~ m/$filter/i) || ($models_notes{@ctl_files[$i]} =~ m/$filter/i) || ($models_descr{@ctl_files[$i]} =~ m/$filter/i)) || ($filter eq "")) {
+        unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || (@ctl_files[$i] =~ m/nmprd4p/i)) {
           push (@ctl_descr_copy, @ctl_descr[$i]);
           push (@ctl_copy, @ctl_files[$i]);
           push (@file_type_copy, @file_type[$i]);
         }
-      } 
-      $i++; 
-    } 
+      }
+      $i++;
+    }
   }
   populate_models_hlist ($models_view);
   status ();
 }
 
 sub update_model_info {
-### Purpose : Read model info and update the hash 
+### Purpose : Read model info and update the hash
 ### Compat  : W+L?
    my @model_refs = db_read_all_model_data ();
-   our %models_dates_db    = %{@model_refs[0]};  # and update the global information hashes 
+   our %models_dates_db    = %{@model_refs[0]};  # and update the global information hashes
    our %models_resdates_db = %{@model_refs[1]};
-   our %models_refmod      = %{@model_refs[2]}; 
+   our %models_refmod      = %{@model_refs[2]};
    our %models_descr       = %{@model_refs[3]};
    our %models_method      = %{@model_refs[4]};
    our %models_ofv         = %{@model_refs[5]};
    our %models_suc         = %{@model_refs[6]};
    our %models_bnd         = %{@model_refs[7]};
-   our %models_cov         = %{@model_refs[8]}; 
+   our %models_cov         = %{@model_refs[8]};
    our %models_sig         = %{@model_refs[9]};
    our %models_notes       = %{@model_refs[10]};
    our %models_colors      = %{@model_refs[11]};
@@ -2722,7 +2738,7 @@ sub populate_models_hlist {
     $models_hlist->columnWidth(0, (@header_widths[0]+@header_widths[1]));
     $models_hlist->columnWidth(1, 0);
   } else {
-    @ctl_show = @ctl_copy; 
+    @ctl_show = @ctl_copy;
     undef %model_indent;
     $models_hlist->columnWidth(0, @header_widths[0]);
     $models_hlist->columnWidth(1, @header_widths[1]);
@@ -2740,22 +2756,22 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 2, -text => @ctl_descr_copy[$i], -style=>$style );
           for ($j=3;$j<=10;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
-           $runno=@ctl_show[$i]; 
+           $runno=@ctl_show[$i];
            $mod_background = "#FFFFFF";
            if ($models_colors {$runno} ne "") {
              $mod_background = $models_colors{$runno};
            }
            $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$mod_background, -font => $font_normal);;
            $style_small = $models_hlist-> ItemStyle( 'text', -anchor => 'w', -padx => 5, -background=>$mod_background, -font => $font_small);;
-           
+
            our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'e', -background=>$mod_background, -foreground=>'#008800',-font => $font_fixed);
            our $style_red = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'e', -background=>$mod_background, -foreground=>'#990000', -font => $font_fixed);
            if (($models_ofv{$runno} ne "")&&($models_ofv{$models_refmod{$runno}} ne "")) {
              $ofv_diff = $models_ofv{$models_refmod{$runno}} - $models_ofv{$runno} ;
              if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
              if ($ofv_diff < 0) { $style_ofv = $style_red; }
-             if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) { 
-               $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_fixed); 
+             if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
+               $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_fixed);
              }
              $ofv_diff = rnd(-$ofv_diff,3); # round before printing
             } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_fixed);}
@@ -2775,13 +2791,13 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 4, -text => $models_ofv{$runno}, -style=>$style_ofv);
           $models_hlist -> itemCreate($i, 5, -text => $ofv_diff, -style=>$style_ofv);
           $models_hlist -> itemCreate($i, 6, -text => $models_suc{$runno}, -style=>$style_success);
-          $models_hlist -> itemCreate($i, 7, -text => $models_cov{$runno}, -style=>$style_cov); 
+          $models_hlist -> itemCreate($i, 7, -text => $models_cov{$runno}, -style=>$style_cov);
           $models_hlist -> itemCreate($i, 8, -text => $models_bnd{$runno}, -style=>$style_red);
           $models_hlist -> itemCreate($i, 9, -text => $models_sig{$runno}, -style=>$style);
           my $note = $models_notes{$runno};
           $note =~ s/\n/\ /g;
           $models_hlist -> itemCreate($i, 10, -text => $note, -style=>$style);
-        };  
+        };
       }
     }
     $models_hlist -> update();
@@ -2790,7 +2806,7 @@ sub populate_models_hlist {
 
 sub read_tab_files {
 ### Purpose : Read in all table/csv files in a directory
-### Compat  : W+ 
+### Compat  : W+
   my @tabcsv_files = (); my @tab_files; my @tabcsv_files_loc; my @csv_files = (), my @xp_tabs = (); my @xp_tabsnos = (); my @split=(); my @split2=();
   if (! -d @_[0]) {return ;};
   my $dir = shift;
@@ -2811,13 +2827,13 @@ sub read_tab_files {
     my @vpc_tabs = <vpctab*>;
     push (@xp_tabs, @vpc_tabs);
     foreach (@tab_files) {
-      unless ($_=~ m/.$setting{ext_csv}/i) { 
+      unless ($_=~ m/.$setting{ext_csv}/i) {
         push (@tabcsv_files, $_);
         push (@tabcsv_files_loc, $dir.'/'.$_);
       }
     }
     foreach (@xp_tabs) {
-      unless ($_=~ m/.$setting{ext_csv}/i) { 
+      unless ($_=~ m/.$setting{ext_csv}/i) {
         push (@tabcsv_files, $_) ;
         push (@tabcsv_files_loc, $dir.'/'.$_);
       }
@@ -2830,8 +2846,8 @@ sub read_tab_files {
       if ((-d $_)&&($_ =~ m/\./)&&(-e $_."/".$model.".fit")) {
         push (@tabcsv_files, $model.".fit (".$rest.")");
         push (@tabcsv_files_loc, $_."/".$model.".fit");
-      }    
-    }  
+      }
+    }
   }
   if ($show_data eq "csv") {
     our @csv_files = <*.$setting{ext_csv}>;
@@ -2869,7 +2885,7 @@ sub read_tab_files {
     @tabcsv_files = @all_files;
     @tabcsv_files_loc = @all_files;
   }
-  
+
   # get table/file info from databases and put in hash
   chdir($cwd);
   $db_table_info = db_read_table_info ();
@@ -2881,7 +2897,7 @@ sub read_tab_files {
     $table_creator{$file} = $creator;
     $table_note{$file} = $note;
   }
-  
+
   return (\@tabcsv_files, \@tabcsv_files_loc); # these are also global variables
   }
 }
@@ -2890,14 +2906,21 @@ sub configure_tab_buttons {
 ### Purpose : Activate/deactive the correct buttons for the table-overview listbox
 ### Compat  : W+L+
   my $show_data = shift;
-  $show_tab_button->configure(-background=>$button); # first deactivate all buttons
+  # first deactivate all buttons
+  $show_tab_button->configure(-background=>$button);
   $show_csv_button->configure(-background=>$button);
   $show_xpose_button->configure(-background=>$button);
   $show_r_button->configure(-background=>$button);
   $show_all_button->configure(-background=>$button);
+  if ($show_data eq "tab") {$show_tab_button->configure(-background=>$abutton);}
+  if ($show_data eq "csv") {$show_csv_button->configure(-background=>$abutton);}
+  if ($show_data eq "xpose") {$show_xpose_button->configure(-background=>$abutton);}
+  if ($show_data eq "R") {$show_r_button->configure(-background=>$abutton);}
+  if ($show_data eq "*") {$show_all_button->configure(-background=>$abutton);}
+
 }
 
-sub tab_dir { 
+sub tab_dir {
 ### Purpose : Read tab/csv/r files for the current dir
 ### Compat  : W+
   my $tabdir = shift;
@@ -2905,21 +2928,21 @@ sub tab_dir {
   ($tabcsv_files_ref, $tabcsv_loc_ref) = read_tab_files ($tabdir);
   $tab_hlist -> delete("all");
   $tab_hlist -> update();
-  our @tabcsv_files = @$tabcsv_files_ref; 
+  our @tabcsv_files = @$tabcsv_files_ref;
   our @tabcsv_loc = @$tabcsv_loc_ref;
   if ($setting{alt_data_dir} ne "") {
       ($alt_files_ref, $alt_loc_ref) = read_tab_files (unix_path($tabdir."\/".$setting{alt_data_dir}));
-      @alt_files = @$alt_files_ref; 
+      @alt_files = @$alt_files_ref;
       @alt_loc = @$alt_loc_ref;
       if ($setting{alt_data_dir} =~ m/\.\./) {
-        $dir_up = one_dir_up($cwd); 
+        $dir_up = one_dir_up($cwd);
         $alt_dir = $setting{alt_data_dir};
         $alt_dir =~ s/\.\./$dir_up/i;
         foreach (@alt_loc) {$_ = unix_path($alt_dir."/".$_ ); };
       } else {
         $alt_dir = $setting{alt_data_dir};
         foreach (@alt_loc) {$_ = unix_path($_ ); };
-      } 
+      }
       foreach (@alt_files) {$_ = unix_path($setting{alt_data_dir}."/".$_ )};
       push (@tabcsv_files, @alt_files);
       push (@tabcsv_loc, @alt_loc);
@@ -2963,7 +2986,7 @@ sub print_note {
   close (NOTE);
 }
 
-sub exec_run_nmfe {  
+sub exec_run_nmfe {
 ### Purpose : Run a model using the nmfe command
 ### Compat  : W+L?
   status ("Starting run using nmfe (or NMQual perl file)");
@@ -2975,16 +2998,16 @@ sub exec_run_nmfe {
   chdir($cwd);
   my $cur_dir;
   if ($cluster_active==1) { # change the current path to the path on the cluster-server
-    $cur_dir = $cwd;   
+    $cur_dir = $cwd;
     unless ($cur_dir =~ m/$setting{ssh_local_mount}/i) {
       message ("This directory is not located on the cluster, on not mounted correctly.\nPlease check your preferences.");
-      return();    
+      return();
     }
-    $cur_dir =~ s/$setting{ssh_local_mount}/$setting{ssh_cluster_mount}/; # change mounted location to actual cluster loc 
-    $cur_dir = unix_path($cur_dir);  
-    $nm_dir_cluster = $nm_dirs_cluster{$nm_inst}; 
-    $nm_ver_cluster = $nm_vers_cluster{$nm_inst}; 
-    print $nm_dirs_cluster{$nm_inst}."\n"; 
+    $cur_dir =~ s/$setting{ssh_local_mount}/$setting{ssh_cluster_mount}/; # change mounted location to actual cluster loc
+    $cur_dir = unix_path($cur_dir);
+    $nm_dir_cluster = $nm_dirs_cluster{$nm_inst};
+    $nm_ver_cluster = $nm_vers_cluster{$nm_inst};
+    print $nm_dirs_cluster{$nm_inst}."\n";
     print $nm_inst;
   }
   my $command;
@@ -2993,7 +3016,7 @@ sub exec_run_nmfe {
   }
   if ($cluster_active==1) { # through SSH
     foreach $file (@files) {
-      if($os =~ m/MSWin/i) {           
+      if($os =~ m/MSWin/i) {
            $command = 'start ';
          }
       $command .= $setting{ssh_login}.' "cd '.$cur_dir.'; '.$nm_dir_cluster.'/util/nmfe'.$nm_ver_cluster.' '.$file.'.'.
@@ -3009,19 +3032,19 @@ sub exec_run_nmfe {
       $command = "start ".$run_script;
     } else {
       if ($setting{terminal} ne "") {
-        $command = $setting{terminal}.' -e "'.$setting{shell}.' '.$run_script;        
+        $command = $setting{terminal}.' -e "'.$setting{shell}.' '.$run_script;
         if ($setting{quit_shell}==0) { # don't close terminal window after completion
           $command .= ';read -n1';
-		  }  
+		  }
         $command .= '" &';
       } else {
-        $command = $setting{shell}.' '.$run_script.' &';         
+        $command = $setting{shell}.' '.$run_script.' &';
       }
     }
     if ($stdout) {$stdout -> insert('end', "\n".$command);}
     system $command;
     foreach my $model (@files) {
-      db_log_execution ($model.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "local", $command, $setting{username});   
+      db_log_execution ($model.".".$setting{ext_ctl}, $models_descr{$model}, "nmfe", "local", $command, $setting{username});
     }
   }
   if ( $method =~ m/compile/i) { # Only compile, in current folder
@@ -3057,18 +3080,18 @@ sub text_window {
     $text_window -> resizable( 0, 0 );
   }
   our $text_window_frame = $text_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
-  our $text_text = $text_window_frame -> Scrolled ('Text', 
-      -scrollbars=>'e', -width=>80, -height=>35, 
-      -background=>"#ffffff",-exportselection => 0, 
-      -relief=>'groove', -border=>2, 
+  our $text_text = $text_window_frame -> Scrolled ('Text',
+      -scrollbars=>'e', -width=>80, -height=>35,
+      -background=>"#ffffff",-exportselection => 0,
+      -relief=>'groove', -border=>2,
       -selectbackground=>'#606060',-font=>$font_normal,-highlightthickness =>0) -> grid(-column=>1, -row=>1, -sticky=>'nwes');
   $text_text->insert('end', $text);
-  return $text_text; 
+  return $text_text;
 }
 
 
-sub distribute {  
-### Purpose : Create an interface for distributing NM runs (using nmfe-method) to PCluster (actual distribution of runs is done in sub exec_run_pcluster) 
+sub distribute {
+### Purpose : Create an interface for distributing NM runs (using nmfe-method) to PCluster (actual distribution of runs is done in sub exec_run_pcluster)
 ### Compat  : W+L?
   ($nm_inst, $method, $nm_type) = @_;
   my $run_flag=0;
@@ -3114,11 +3137,11 @@ sub distribute {
       center_window($run_client_w);
       $run_client_frame = $run_client_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'nws');
       $run_client_frame -> Label(-text=>"Run model(s):",-justify	=>'left')-> grid(-row=>0,-column=>1,-sticky => 'wn'); ;
-      $run_client_frame -> Label(-text=>join("\n",@ctl_show[@runs]),-justify	=>'left')-> grid(-row=>0,-column=>2,-sticky => 'w'); 
-      $run_client_frame -> Label(-text=>"on client: ",-justify	=>'left')-> grid(-row=>1,-column=>1,-sticky => 'w  '); 
+      $run_client_frame -> Label(-text=>join("\n",@ctl_show[@runs]),-justify	=>'left')-> grid(-row=>0,-column=>2,-sticky => 'w');
+      $run_client_frame -> Label(-text=>"on client: ",-justify	=>'left')-> grid(-row=>1,-column=>1,-sticky => 'w  ');
       $run_client_frame -> Optionmenu(-options => [@available], -variable => \$specific_client,-border=>$bbw,
         -command=>sub{},-background=>$lightblue,-activebackground=>$darkblue,-font=>$font_normal)
-        -> grid(-row=>1,-column=>2,-sticky => 'we'); 
+        -> grid(-row=>1,-column=>2,-sticky => 'we');
       $run_client_frame -> Button(-image=>$gif{run}, -height=>50, -width=>50,-background=>$button, -activebackground=>$abutton,-border=>$bbw,-command=> sub{
         my ($client, $rest) = split(/-/,$specific_client);
         exec_run_pcluster($nm_inst, $client, $nm_type);
@@ -3133,11 +3156,11 @@ sub distribute {
 }
 sub cluster_report {
 ### Purpose : Show a messagewindow displaying a message that n runs were successfully copied to cluster
-### Compat  : W+L? 
+### Compat  : W+L?
   $successfull_comps=@_[0];
   $used_clients = @_[1];
   $see_comp_log = $mw -> messageBox(-type=>'yesno', -icon=>'question',
-      -message=>($successfull_comps)." runs were succesfully copied to cluster\nClient(s):\n".$used_clients."\n There were ".$comp_errors." unsuccesful compilations.\n Do you want to view the compilation log?"); 
+      -message=>($successfull_comps)." runs were succesfully copied to cluster\nClient(s):\n".$used_clients."\n There were ".$comp_errors." unsuccesful compilations.\n Do you want to view the compilation log?");
   if( $see_comp_log eq "Yes") {
     chdir ($base_dir);
     edit_model (unix_path("log\\compilation.txt"));
@@ -3147,7 +3170,7 @@ sub cluster_report {
 
 sub compile_run {
 ### Purpose : Compile an model to an .exe file (using nmfe-method)
-### Compat  : 
+### Compat  :
   $curr_dir = fastgetcwd;
   if ($ENV{PATH}=~m/$nm_dir/) {;} else {$ENV{PATH}="$nm_dir/util;".$ENV{PATH}} ;
   $error_flag=0;
@@ -3163,13 +3186,13 @@ sub compile_run {
       print OUT win_path($nm_dir."\\util\\pirana_nmfe".$nm_vers{$nm_to_use}."_compile.bat "
           .$file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}.' >"'.$base_dir.'\log\compilation_NM.txt"');
       system win_path($nm_dir."\\util\\pirana_nmfe".$nm_vers{$nm_to_use}."_compile.bat "
-          .$file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}.' >"'.$base_dir.'\log\compilation_NM.txt"'); 
+          .$file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}.' >"'.$base_dir.'\log\compilation_NM.txt"');
     }
   chdir ($curr_dir);
   return $new_dir;
 }
 
-sub move_nm_files {  
+sub move_nm_files {
 ### Purpose : move nonmem files to a new directory for compilation or running in new dir
 ### Compat  : W+L?
   my ($file, $new_dir) = @_;
@@ -3196,9 +3219,9 @@ sub move_nm_files {
   @include = split ("=", $include);
   print @include[1]."\n";
   @include_files = split(",", @include[1]);
-  
+
   mkdir ($new_dir);
-  my $new_file = $new_dir."/".$file.".".$setting{ext_ctl}; 
+  my $new_file = $new_dir."/".$file.".".$setting{ext_ctl};
   unless (copy($file.".".$setting{ext_ctl}, $new_file)) {print OUT "Error: Unable to copy control stream.\n"; $error_flag=1;}
   my $up_one = one_dir_up($cwd);
   my $data_file =~ s/\.\./$up_one/;
@@ -3208,16 +3231,16 @@ sub move_nm_files {
   @data[1] = $csv_file;
   push (my @batch, $new_file);
   replace_block (\@batch, '$DATA', join(" ",@data));
-  
+
   $for="FOR";
   if (@fortran3[1]=~$for) {
     copy (@fortran3[0].".for",$new_dir."/".@fortran3[0].".for");
     copy (@fortran3[0].".csv",$new_dir."/".@fortran3[0].".csv");
   }
   copy (@fortran3[0].".for",$new_dir."/".@fortran3[0].".for");
-  if (@msfi[1]=~MSF) {copy (@msfi[1],$new_dir."/".@msfi[1]); }     
+  if (@msfi[1]=~MSF) {copy (@msfi[1],$new_dir."/".@msfi[1]); }
   # include misc files (such as csv files mentioned in included .for files)
-  
+
   foreach(@include_files) {
     if (-e $_) {
       copy ($_,$new_dir."/".$_);
@@ -3229,18 +3252,18 @@ sub move_nm_files {
 
 sub get_nmq_name {
 ### Purpose : Return the name of an NMQual installation of NONMEM when supplied with the full path
-### Compat  : W+L+ 
+### Compat  : W+L+
   my $dir = shift;
   my @dirs = split (/\\/,win_path($dir));
   my $nmq_name = @dirs[@dirs-1];
-  $nmq_name =~ s/\\//g;  
+  $nmq_name =~ s/\\//g;
   return $nmq_name;
 }
 
 sub exec_run_pcluster { # (nm_inst, client)
 ### Purpose : Run a model on PCluseter (using nmfe-method)
 ### Compat  : W+L?
-  if ($setting{zink_host eq ""}) {
+  if ($setting{zink_host} eq "") {
     message ("Please specify a Zink-host under preferences, and try again.");
     return();
   }
@@ -3257,7 +3280,7 @@ sub exec_run_pcluster { # (nm_inst, client)
   print OUT "********************************************************************************\n";
   print OUT "*** NONMEM Cluster compilation log created by Piraña                         ***\n";
   print OUT "********************************************************************************\n";
-  
+
   my $rand_bat = &generate_random_string(4);
   chdir $cwd;
   for ($j=0;$j<@runs;$j++) {
@@ -3270,21 +3293,21 @@ sub exec_run_pcluster { # (nm_inst, client)
           $nm_dir =~ win_path($nm_dir);
           print OUT "Run  : ".$file;
           print OUT "date ";
-          print OUT "time "; 
+          print OUT "time ";
           status ("Starting compilation of nonmem.exe");
           if ($nm_type =~ m/nmq/i) {
             $nmq_parameters = $nmq_params_entry -> get();
-            $bat_file = compile_run_nmq ($nm_dir, $file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}, $nmq_parameters); 
+            $bat_file = compile_run_nmq ($nm_dir, $file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}, $nmq_parameters);
             system $bat_file.' >"'.win_path($base_dir."/log/compilation_NM.txt").'"';
           } else {
             print OUT win_path($nm_dir."/util/pirana_nmfe".$nm_vers{$nm_inst}."_compile.bat ".$file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}.' >"'.win_path($base_dir)."/log/compilation_NM.txt");
             system win_path($nm_dir."/util/pirana_nmfe".$nm_vers{$nm_inst}."_compile.bat ".$file.".".$setting{ext_ctl}." ".$file.".".$setting{ext_res}.' >"'.win_path($base_dir)."/log/compilation_NM.txt");
           }
         }
-        open (IN, "<".$base_dir."/log/compilation_NM.txt"); 
-        @NM_compile=<IN>; 
+        open (IN, "<".$base_dir."/log/compilation_NM.txt");
+        @NM_compile=<IN>;
         close IN;
-        print OUT @NM_compile; 
+        print OUT @NM_compile;
         if (-e "nonmem.exe") {
           $comp =~ s/\s+$//;  #remove trailing spaces
           open (BAT, ">nonmem.bat");
@@ -3297,7 +3320,7 @@ sub exec_run_pcluster { # (nm_inst, client)
           print OUT "Error: No NONMEM executable created, run aborted.\n"; ; $error_flag=1;};
           print OUT "********************************************************************************\n";
           if ($error_flag>0) {$comp_errors++};
-      }         
+      }
       print OUT "Finished copying runs to cluster. \n";
       close OUT;
       status ();
@@ -3325,7 +3348,7 @@ sub get_nmfe_number {
   return($max);
 }
 
-sub copy_dir_res { 
+sub copy_dir_res {
 ### Purpose : The dialog window to copy results and tab_files from selected dir ( calls copy_dir_res_function()  )
 ### Compat  : W+L+
   ($cwd, $dirs_ref) = @_;
@@ -3339,7 +3362,7 @@ sub copy_dir_res {
     push (@tab_all, @$tab_all_ref);
     push (@tab_all_loc, @$tab_all_loc_ref);
   }
-  chdir ($cwd); 
+  chdir ($cwd);
   if ((@lst_all+@tab_all)>0) {
     my $lst_files = join("\n",@lst_all_loc);
     my $tab_files = join("\n",@tab_all_loc);
@@ -3348,19 +3371,19 @@ sub copy_dir_res {
     center_window($copy_dir_res_window);
     $copy_dir_res_frame = $copy_dir_res_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
     $copy_dir_res_frame -> Label (-text=>"Copy files:",-font=>$font_normal,)->grid(-row=>1, -column=>1, -sticky=>"ne");
-    $copy_dir_res_text = $copy_dir_res_frame -> Scrolled ('Text', -font=>$font_normal,-width=>32, -height=>8, -scrollbars=>'e') 
+    $copy_dir_res_text = $copy_dir_res_frame -> Scrolled ('Text', -font=>$font_normal,-width=>32, -height=>8, -scrollbars=>'e')
       -> grid(-row=>1, -column=>2, -ipady=>5, -columnspan=>2);
     $copy_dir_res_text -> insert ("0.0", $lst_files."\n".$tab_files);
-    $copy_dir_res_text -> configure(state=>'disabled'); 
+    $copy_dir_res_text -> configure(state=>'disabled');
     $copy_res_to = $cwd;
     $copy_dir_res_frame -> Label (-text=>" ",-font=>$font_normal,)->grid(-row=>2, -column=>1, -sticky=>"ne");
     $copy_dir_res_frame -> Label (-text=>"To folder:",-font=>$font_normal,)->grid(-row=>3, -column=>1, -sticky=>"ne");
-    $copy_dir_res_text = $copy_dir_res_frame -> Entry (-textvariable => \$copy_res_to, -font=>$font_normal, -width=>32) 
+    $copy_dir_res_text = $copy_dir_res_frame -> Entry (-textvariable => \$copy_res_to, -font=>$font_normal, -width=>32)
       -> grid(-row=>3, -column=>2, -sticky=>'wns', -columnspan=>2);
     $copy_dir_res_frame -> Label (-text=>" ",-font=>$font_normal,)->grid(-row=>4, -column=>1, -sticky=>"ne");
     $copy_dir_res_frame -> Label (-justify=>'left',-text=>"NB: Copying will overwrite existing files\nin the destination folder",-font=>$font_normal,)->grid(-row=>5, -column=>2, -columnspan=>2,-sticky=>"nw");
     $copy_dir_res_frame -> Label (-text=>" ",-font=>$font_normal,)->grid(-row=>6, -column=>1, -sticky=>"ne");
-      
+
     $copy_dir_res_frame -> Button (-text=>"Copy", -width=>10, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       $i = 0;
       my $to_dir = $copy_dir_res_text -> get();
@@ -3387,10 +3410,10 @@ sub copy_dir_res {
       return();
     })->grid(-row=>7,-column=>2,-sticky=>'nwse');
   } else {message ("No result or \$TABLE files were found in this directory.")}
-}  
+}
 
 sub copy_dir_res_function {
-### Purpose : The function to copy results and tab_files from selected dir 
+### Purpose : The function to copy results and tab_files from selected dir
 ### Compat  : W+
   $sub = shift;
   my (@lst_all, @tab_all, @tab_all_loc, @lst_all_loc, @lst_loc, @tab_loc) =();
@@ -3398,17 +3421,17 @@ sub copy_dir_res_function {
     chdir ($sub);
     my @lst = <*.$setting{ext_res}>;
     foreach(@lst) {push (@lst_loc, $sub."/".$_)};
-    my @tab = <*.$setting{ext_tab}>;     
+    my @tab = <*.$setting{ext_tab}>;
     foreach(@tab) {push (@tab_loc, $sub."/".$_)};
     push (@lst_all, @lst);
-    push (@tab_all, @tab); 
+    push (@tab_all, @tab);
     push (@lst_all_loc, @lst_loc);
-    push (@tab_all_loc, @tab_loc); 
+    push (@tab_all_loc, @tab_loc);
     chdir ("..");
   }
   return (\@tab_all, \@tab_all_loc, \@lst_all, \@lst_all_loc);
 }
-  
+
 sub create_output_summary {
 ### Purpose : Loop over all NM results files, and put the resutls in a csv file
 ### Compat  : W+L?
@@ -3426,7 +3449,7 @@ sub create_output_summary {
         my $res_ref = extract_from_lst ($file);
         my %res = %$res_ref;
         my $model = $file;
-        $model =~ s/.$setting{ext_res}//i; 
+        $model =~ s/.$setting{ext_res}//i;
         status ("Reading file: ".$file."...");
         $models_notes{$model} =~ s/\n/\./g;
         $models_notes{$model} =~ s/,/;/g;
@@ -3434,9 +3457,9 @@ sub create_output_summary {
         ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime($models_dates_db{$model});
         $model_date = sprintf "%4d-%02d-%02d %02d:%02d:%02d", $year+1900,$mon+1,$mday,$hour,$min,$sec;
         ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime($models_resdates_db{$model});
-        $res_date = sprintf "%4d-%02d-%02d %02d:%02d:%02d", $year+1900,$mon+1,$mday,$hour,$min,$sec;  
-        @res_lst = ('="'.$model.'"', $models_ofv{$model}, $models_descr{$model}, $models_notes{$model}, 
-          $models_method {$model}, $models_suc{$model},  $res{feval}, $res{sig}, $res{cond_nr}, 
+        $res_date = sprintf "%4d-%02d-%02d %02d:%02d:%02d", $year+1900,$mon+1,$mday,$hour,$min,$sec;
+        @res_lst = ('="'.$model.'"', $models_ofv{$model}, $models_descr{$model}, $models_notes{$model},
+          $models_method {$model}, $models_suc{$model},  $res{feval}, $res{sig}, $res{cond_nr},
           $models_bnd{$model}, $models_cov{$model}, $model_date, $res_date);
         print CSV join (",", @res_lst);
         print CSV "\n";
@@ -3446,7 +3469,7 @@ sub create_output_summary {
 }
 
 sub frame_tab_show {
-### Purpose : Construct the frame showing the table/csv files 
+### Purpose : Construct the frame showing the table/csv files
 ### Compat  : W+L+
   if (@_[0]==1) {
   #our $frame2 = $mw -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>3,-ipadx=>'8', -ipady=>'0',-sticky=>'n');
@@ -3457,10 +3480,10 @@ sub frame_tab_show {
   }
   our $summary1,$summary2, $dvvspred, $wresvspred, $other;
   our $show_res = "all_output";
- 
+
  # result files
   if ($tab_frame) {
-  
+
   if ($make_listbox eq "yes") {
     if($res_listbox)  {$res_listbox->gridForget()};
     if($res_scrollbar) {$res_scrollbar->gridForget()};
@@ -3470,7 +3493,7 @@ sub frame_tab_show {
       -background=>'#FFFFFF',-selectbackground=>'#606060', -foreground=>"#000000", -selectforeground=>"#FFFFFF", -font=>$font_normal, -highlightthickness=>0)
       -> grid(-row=>4,-column=>2, -columnspan=>$cspan_res, -sticky => 'w');
     $res_listbox -> insert(0, @res_files_ofv);
-    
+
     $help->attach($res_listbox, -msg => "Output files\n  ()=objective function value\n  s=minimization successful\n  c=covariance step successful\n  b=boundaries");
     #$res_listbox->activate(0);
     $res_listbox->bind('<Button>', sub{
@@ -3538,9 +3561,9 @@ sub frame_tab_show {
             $note =~ s/\n/ /g;
             update_text_box(\$tab_file_note, $note);
         }
-      )->grid(-column => 1, -columnspan=>6, -row => 2, -rowspan=>3, -sticky=>'nswe', -ipady=>0);   
+      )->grid(-column => 1, -columnspan=>6, -row => 2, -rowspan=>3, -sticky=>'nswe', -ipady=>0);
     $help->attach($tab_hlist, -msg => "Data files\n*\\ = in alternate directory");
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal normal normal); 
+    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal normal normal);
     bind_tab_menu(\@tab_menu_enabled);
   }
   our $show_data="tab";
@@ -3555,7 +3578,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal normal normal); 
+    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal normal normal);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -sticky => 'we', -ipady=>0);
   $b++;
@@ -3565,7 +3588,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal normal normal normal normal normal); 
+    my @tab_menu_enabled = qw(normal normal normal normal normal normal normal normal normal);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -sticky => 'we', -ipady=>0);
   $b++;
@@ -3575,7 +3598,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled disabled disabled normal disabled disabled disabled normal normal); 
+    my @tab_menu_enabled = qw(disabled disabled disabled normal disabled disabled disabled normal normal);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -columnspan=>2, -ipady=>0, -sticky => 'we');
   $help->attach($show_xpose_button, -msg => "Show XPose data");
@@ -3595,34 +3618,34 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled normal disabled normal disabled disabled disabled disabled normal);       
+    my @tab_menu_enabled = qw(disabled normal disabled normal disabled disabled disabled disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -ipady=>0, -sticky => 'we');
   $b++;
   $help->attach($show_all_button, -msg => "Show all files in folder");
-   
+
   $tab_frame_info = $model_overview_frame -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>10, -rowspan=>1, -columnspan=>1, -ipady=>3,-sticky=>"nw");
   #$tab_frame_info -> Label(-text=>"  File:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
   $tab_frame_info -> Label(-text=>"  Size:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
   $tab_frame_info -> Label(-text=>"  Crtd:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"nw");
   $tab_frame_info -> Label(-text=>"  Note:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"nw");
   #our $tab_file_text = $tab_frame_info -> Text (
-  #    -width=>17, -relief=>'sunken', -border=>0, -height=>1, 
+  #    -width=>17, -relief=>'sunken', -border=>0, -height=>1,
   #    -font=>$font_small, -background=>"#f6f6e6", -state=>'normal'
   #)->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
   our $tab_file_size = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
   our $tab_file_mod = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>2,-sticky=>'nw', -ipadx=>0);
   our $tab_file_note = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>3,-sticky=>'nw', -ipadx=>0);
- 
+
   $show_ofv=0;
   $show_successful=0;
   $show_covar=0;
@@ -3641,7 +3664,7 @@ sub bind_tab_menu {
            if (-e $tab_file) {
              unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, $software{r_dir}, \$gif{r_in}, \$gif{close} );}
            }
-        }],       
+        }],
        [Button => " Open file in spreadsheet", -background=>$bgcol, -font=>$font_normal, -image=>$gif{spreadsheet},-compound=>"left", -state=>@tab_menu_enabled[0],-command => sub{
          if (-e $software{spreadsheet}) {
            my $tabsel = $tab_hlist -> selectionGet ();
@@ -3649,25 +3672,25 @@ sub bind_tab_menu {
            unless ($tab_file =~ m/.$setting{ext_csv}/i ) {
              tab2csv ($tab_file,$tab_file."_pirana.".$setting{ext_csv});
              start_command($software{spreadsheet},'"'.win_path($tab_file.'_pirana.'.$setting{ext_csv}).'"');
-           } else {start_command($software{spreadsheet},'"'.win_path($tab_file).'"'); } 
+           } else {start_command($software{spreadsheet},'"'.win_path($tab_file).'"'); }
          } else {message("Spreadsheet application not found. Please check settings.")};
-       }], 
+       }],
        [Button => " Open file in code editor",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{notepad},-compound=>"left", -state=>@tab_menu_enabled[1], -command => sub{
           my $tabsel = $tab_hlist -> selectionGet ();
           $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
           edit_model(unix_path(win_path($tab_file)));
-       }], 
+       }],
        [Button => " Convert CSV <-> TAB",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{notepad},-compound=>"left", -state=>@tab_menu_enabled[2],-command => sub{
           my $tabsel = $tab_hlist -> selectionGet ();
           my $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
           csv_tab_window ($tab_file);
-       }],      
+       }],
        [Button => " Delete file",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{trash},-compound=>"left", -state=>@tab_menu_enabled[3], -command => sub{
           my $tabsel = $tab_hlist -> selectionGet ();
           my $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
-          my $delete = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"Do you really want to delete ".$tab_file."?"); 
-          if( $delete eq "Yes") {unless(unlink (unix_path($cwd."/".$tab_file))) {message("For some reason, ".$tab_file." could not be deleted.\nCheck file/folder permissions.")} else {refresh_pirana($cwd, $filter,1)} };  
-       }],      
+          my $delete = $mw -> messageBox(-type=>'yesno', -icon=>'question', -message=>"Do you really want to delete ".$tab_file."?");
+          if( $delete eq "Yes") {unless(unlink (unix_path($cwd."/".$tab_file))) {message("For some reason, ".$tab_file." could not be deleted.\nCheck file/folder permissions.")} else {refresh_pirana($cwd, $filter,1)} };
+       }],
        [Button => " Check dataset", -background=>$bgcol, -font=>$font_normal, -image=>$gif{check},-compound=>"left", -state=>@tab_menu_enabled[4], -command => sub{
           my $tabsel = $tab_hlist -> selectionGet ();
           my $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
@@ -3688,7 +3711,7 @@ sub bind_tab_menu {
               print RPROF "csv <- data.frame(read.csv (file='".unix_path($script_file)."'))\n";
               close (RPROF);
               start_command($software{r_dir}.'/bin/rgui.exe');
-            } 
+            }
             if ($show_data eq "tab") {
               open (RPROF,">.Rprofile");
               # determine if tab has headers
@@ -3705,7 +3728,7 @@ sub bind_tab_menu {
               start_command($software{r_dir}.'/bin/rgui.exe');
             }
           }
-        }], 
+        }],
         [Button => " Open Xpose dataset", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{xpose},-compound=>"left", -state=>@tab_menu_enabled[7], -command => sub{
            if (-e $software{r_dir}."/bin/rgui.exe") {
            chdir($cwd);
@@ -3727,22 +3750,22 @@ sub bind_tab_menu {
              start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
           } else {message ("Select an Xpose dataset to load Xpose.")};
         } else {message ("R was not found. Please check software settings.")};
-        }],                
+        }],
         [Button => " Show/edit table or file info", -background=>$bgcol, -font=>$font_normal, -image=>$gif{edit_info_green},-compound=>"left", -state=>@tab_menu_enabled[8],-command => sub{
            my $tabsel = $tab_hlist -> selectionGet ();
            my $tab_file = win_path(@tabcsv_files[@$tabsel[0]]);
            if (-e $tab_file) {
               table_info_window($tab_file);
            }
-        }], 
-        
+        }],
+
     ]);
-    $tab_menu -> separator ( -background=>$bgcol) ; 
+    $tab_menu -> separator ( -background=>$bgcol) ;
     $tab_menu -> command (-label=> " Close this menu",  -image=>$gif{close}, -compound=>'left', -background=>$bgcol, -command => sub{
        $tab_menu -> unpost();
-    });   
+    });
     $tab_hlist -> bind("<Button-3>" => [ sub {
-       $tab_hlist -> focus; # focus on listbox widget 
+       $tab_hlist -> focus; # focus on listbox widget
        my($w, $x, $y) = @_;
        our $tabsel = $tab_hlist -> selectionGet ();
        if (@$tabsel >0) { $tab_menu -> post($x, $y) } else {
@@ -3751,12 +3774,12 @@ sub bind_tab_menu {
     }, Ev('X'), Ev('Y') ] );
 }
 
-sub show_links {  
+sub show_links {
   if ($tab_frame) {
   my $links_height = 24;
   our $frame_links = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>14, -columnspan=>3, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
   our $missing=0;
-  
+
   $frame_dir -> Label(-text=>'    Cmd:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>1, -column=>12, -sticky => 'ens');
   $frame_dir -> Label(-text=>'  Start:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>2, -column=>12, -sticky => 'ens');
   if ($os =~ m/MSWin/i) {
@@ -3764,8 +3787,8 @@ sub show_links {
   }
   our $frame_logo = $mw -> Frame(-background=>$bgcol)-> grid(-row=>0, -column=>1, -columnspan=>2, -sticky=>"ne", -ipadx=>10);
   our $pirana_logo = $frame_logo -> Label (-border=>0,-text=>"Pirana\nv".$version, -justify=>"right", -background=>$bgcol, -font=>$font_normal, -state=>"disabled")->grid(-row=>1, -column=>1, -columnspan=>10,-rowspan=>1, -sticky => 'en');
-    
-  $i=1; 
+
+  $i=1;
   $software{tty} =~ m/\.exe/i;
   my $pos = length $`;
   if (-e $software{calc}) {
@@ -3774,10 +3797,10 @@ sub show_links {
     })->grid(-row=>1,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($calc_button, -msg => "Open system calculator");
-  } 
+  }
 #  if (-e substr($software{tty}, 0, $pos+4)) {
     our $putty_button = $frame_links -> Button(-image=>$gif{putty},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
-      start_command(substr($software{tty}, 0, $pos+4), substr($software{tty},$pos+5, length($software{tty})-($pos+4)));  
+      start_command(substr($software{tty}, 0, $pos+4), substr($software{tty},$pos+5, length($software{tty})-($pos+4)));
     }) ->grid(-row=>1,-column=>$i,-sticky=>'news');
     $help->attach($putty_button, -msg => $software_descr{tty});
     $i++;
@@ -3788,13 +3811,13 @@ sub show_links {
     start_command($software{r_dir}.'/bin/rgui.exe', '--no-init-file');
     })->grid(-row=>1,-column=>$i,-sticky=>'news');
     $help->attach($r_button, -msg => "Open the R-GUI");
-    $i++; 
+    $i++;
   }
   if (-e $software{splus}) {
     $splus_button = $frame_links -> Button(-image=>$gif{splus}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     chdir ($cwd);
     start_command($software{splus});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news'); 
+    })->grid(-row=>1,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($splus_button, -msg => "Open S-Plus");
   }
@@ -3802,7 +3825,7 @@ sub show_links {
     $sas_button = $frame_links -> Button(-image=>$gif{sas}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     chdir ($cwd);
     start_command($software{sas});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news'); 
+    })->grid(-row=>1,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($sas_button, -msg => "Open SAS");
   }
@@ -3823,7 +3846,7 @@ sub show_links {
   if (-e $software{madonna}) {
     $madonna_button = $frame_links -> Button(-image=>$gif{madonna}, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
       start_command($software{madonna});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news'); 
+    })->grid(-row=>1,-column=>$i,-sticky=>'news');
     $help->attach($madonna_button, -msg => "Start Berkeley Madonna");
     $i++;
   }
@@ -3841,7 +3864,7 @@ sub show_links {
     $help->attach($extra2_button, -msg => $software_descr{extra2});
     $i++;
   }
-  
+
   #$frame_links -> Label(-text=>"Command: ",-font => $font_normal)
   #  ->grid(-row=>2,-column=>1,-sticky=>'nse');
   $command_entry = $frame_dir -> Entry(-textvariable=>\$run_command, -border=>2, -relief=>'groove',-font => $font_normal,-background=>'#FFFFEE')
@@ -3850,7 +3873,7 @@ sub show_links {
   $command_button = $frame_dir -> Button(-image=> $gif_shell,-border=>$bbw,-background=>$button,-activebackground=>$abutton, -command=> sub{
         run_command($command_entry -> get())
   })->grid(-row=>1,-columnspan=>1,-column=>15,-sticky=>'w'); # i-1
-  $command_entry->bind("<Return>", sub { 
+  $command_entry->bind("<Return>", sub {
      unless(($command_entry -> get()) eq "") {
         run_command($command_entry -> get())
      }
@@ -3859,14 +3882,14 @@ sub show_links {
    $help->attach($command_button, -msg => "Run command in a command-console (or TTY on linux-cluster)");
  } else {
    $help->attach($command_button, -msg => "Run command in a command-shell (or TTY on linux-cluster)");
- } 
+ }
   }
 }
 
 
 sub run_command {
 ### Purpose : Run a command, either using CMD.exe in windows, or using ssh on the cluster (when using the linux-cluster functionality and when the cluster is enabled)
-### Compat  : W+L? 
+### Compat  : W+L?
   my $com = shift;
   unless (($setting{cluster_type}!=0)&&($cluster_active==1)) {
     open (RUN, ">pirana_run_command.bat");
@@ -3879,7 +3902,7 @@ sub run_command {
   } else {  # on cluster using SSH
       @cur_dir = split('/',unix_path($cwd));
       shift(@cur_dir);
-      $cur_dir_unix = join('/',@cur_dir); 
+      $cur_dir_unix = join('/',@cur_dir);
       my $command = $setting{ssh_login}.' "cd ~/'.$cur_dir_unix.'; '.$com.'"';
       system "start ".$command."&";
       #open (OUT, ">".$base_dir."/internal/run_ssh_command.bat");
@@ -3899,16 +3922,16 @@ sub new_model_name {
   $num = ord($last_char);
   if ($num>47 && $num<59) { # numeric
     $suffix="A";
-    $new=$old.$suffix; 
+    $new=$old.$suffix;
     $success=1
   }
   if (($num>64 && $num<90) || ($num>96 && $num<122)) {  # A..Y or a..y
-    $suffix=chr($num+1); 
+    $suffix=chr($num+1);
     $new=substr($old,-length($old),(length($old)-1)).$suffix;
     $success=1;
   };
   if (($num==90) || ($num==122)) {  # Z or z
-    $suffix=chr(122).chr($num-25); 
+    $suffix=chr(122).chr($num-25);
     $new=substr($old,-length($old),(length($old)-1)).$suffix;
     $success=1;
   }
@@ -3954,9 +3977,9 @@ sub cluster_enable {
 }
 
 sub save_header_widths {
-### Purpose : Save the columnwidths of the main Listbox 
+### Purpose : Save the columnwidths of the main Listbox
 ### Compat  : W+L+?
-  my $x=0; 
+  my $x=0;
   foreach(@main_headers) {
     @header_widths[$x] = $models_hlist->columnWidth($x);
     $x++;
@@ -3973,9 +3996,9 @@ sub nmfe_run_window {
   my $modelfile = $model.".".$setting{ext_ctl};
   my $run_in_new_dir = 0;
   my $title = 'Run model using nmfe ' ;
-  if ($cluster_active == 1) {$title .= "(remotely through SSH)"};  
-  if ($cluster_active == 0) {$title .= "(locally)"};  
-  if ($cluster_active == 2) {$title .= "(remotely on PCluster)"};  
+  if ($cluster_active == 1) {$title .= "(remotely through SSH)"};
+  if ($cluster_active == 0) {$title .= "(locally)"};
+  if ($cluster_active == 2) {$title .= "(remotely on PCluster)"};
   my $nmfe_run_window = $mw -> Toplevel(-title=>$title);
   center_window($nmfe_run_window);
   $nmfe_run_window -> OnDestroy ( sub{
@@ -3984,10 +4007,10 @@ sub nmfe_run_window {
   my $nmfe_run_frame = $nmfe_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
   $nmfe_run_frame -> Label (-text=>"Model file:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
   $nmfe_run_frame -> Entry (-textvariable=>\$modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled') -> grid(-row=>1,-column=>2,-sticky=>"w");
-  
+
   $nmfe_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>2,-column=>1,-sticky=>"w");
   $nmfe_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>2,-column=>2,-sticky=>"w");
-  
+
   $nmfe_run_frame -> Label (-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
   my $dir = $cwd;
   my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>3,-column=>2,-sticky=>"w");
@@ -4000,20 +4023,20 @@ sub nmfe_run_window {
       #$dir = $cwd;
       #$run_directory -> configure(-state=>'normal', -textvariable=>\$dir);
       #$run_directory -> configure(-state=>'disabled');
-    }    
+    }
   }) -> grid(-row=>4,-column=>2,-sticky=>"w");
-  
+
   $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>5,-column=>1,-sticky=>"w");
 
   my $nm_installation_text;
-  if ($cluster_active == 0) {$nm_installation_text = "Local NM installation:"; }  
+  if ($cluster_active == 0) {$nm_installation_text = "Local NM installation:"; }
   if ($cluster_active == 1) {$nm_installation_text = "Remote NM installation:"; }
   $nmfe_run_frame -> Label (-text=>$nm_installation_text, -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
-  my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],-variable => \$nm_version_chosen, 
-      -border=>$bbw,       
+  my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],-variable => \$nm_version_chosen,
+      -border=>$bbw,
       -background=>$run_color,-activebackground=>$arun_color,
-      -font=>$font_normal, -background=>"#c0c0c0", 
-      -activebackground=>"#a0a0a0", -command=> sub{ 
+      -font=>$font_normal, -background=>"#c0c0c0",
+      -activebackground=>"#a0a0a0", -command=> sub{
         if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
@@ -4022,13 +4045,13 @@ sub nmfe_run_window {
   my $nm_dirs_ref; my $nm_vers_ref ;
   if ($cluster_active==0) { ($nm_dirs_ref, $nm_vers_ref) = read_ini ("nm_inst_local.ini");}
   if ($cluster_active==1) { ($nm_dirs_ref, $nm_vers_ref) = read_ini ("nm_inst_cluster.ini");}
-  my %nm_dirs_run = %$nm_dirs_ref; my %nm_vers_run = %$nm_vers_ref;  
+  my %nm_dirs_run = %$nm_dirs_ref; my %nm_vers_run = %$nm_vers_ref;
   @nm_installations = keys(%nm_dirs_run);
   foreach (@nm_installations) {
-    $_ = substr($_,0,13); 
+    $_ = substr($_,0,13);
   };
   if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [@nm_installations] )} ;
- 
+
   $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
 
   $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -border=>$bbw, -command=> sub {
@@ -4045,7 +4068,7 @@ sub nmfe_run_window {
             message ("Your current working directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.");
           }
       }
-      if ($cluster_active==0) { 
+      if ($cluster_active==0) {
         exec_run_nmfe ($nm_version_chosen, $method_chosen, $run_in_new_dir);
       }
     } else {
@@ -4055,7 +4078,7 @@ sub nmfe_run_window {
     $nmfe_run_window -> destroy();
   })-> grid(-row=>8, -column=>2,-sticky=>"wns");
   $help -> attach($nmfe_run_button, "Start run");
-  
+
 }
 
 sub update_psn_command_line {
@@ -4086,20 +4109,20 @@ sub psn_run_window {
   $psn_run_window -> OnDestroy ( sub{
       undef $unmfe_run_window; undef $nmfe_run_frame;
   });
-  
+
   my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
- 
+
   my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e',
-      -width=>70, -relief=>'sunken', -border=>0, -height=>16, 
+      -width=>70, -relief=>'sunken', -border=>0, -height=>16,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'normal'
   )->grid(-column=>1, -row=>0, -columnspan=>3, -sticky=>'nw', -ipadx=>0);
- 
+
   $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
   $psn_run_frame -> Label (-text=>"Model file:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>2,-column=>1,-sticky=>"w");
   $psn_run_frame -> Entry (-textvariable=>\$modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled') -> grid(-row=>2,-column=>2,-sticky=>"w");
   $psn_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
   $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>3,-column=>2,-sticky=>"w");
-  
+
   $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
 
   my $psn_command_line = $psn_option." ".$psn_parameters;
@@ -4116,43 +4139,43 @@ sub psn_run_window {
     $psn_command_line .= " ".$modelfile;
   }
   my $psn_command_line_entry = $psn_run_frame -> Text (
-      -width=>64, -relief=>'sunken', -border=>0, -height=>4, 
+      -width=>64, -relief=>'sunken', -border=>0, -height=>4,
       -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
   )->grid(-column=>1, -row=>9, -columnspan=>2, -sticky=>'nwe', -ipadx=>0);
   $psn_command_line_entry -> delete("1.0","end");
   $psn_command_line_entry -> insert("1.0",$psn_command_line);
-  
+
   $psn_run_window -> update();
   status ("Requesting NONMEM versions available in PsN...");
   my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software);
   %psn_nm_versions = %$psn_nm_versions_ref;
-  # bit of a workaround to get "default" option as first option...  
+  # bit of a workaround to get "default" option as first option...
   my %psn_nm_versions_copy = %psn_nm_versions;
   delete ($psn_nm_versions_copy {"default"});
   my @psn_nm_installations = keys(%psn_nm_versions_copy);
   unshift (@psn_nm_installations, "default");
   $psn_run_frame -> Label (-text=>"NM installation:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
-  
-  our $nm_versions_menu = $psn_run_frame -> Optionmenu(-options=>[@psn_nm_installations],-variable => \$nm_version_chosen, 
+
+  our $nm_versions_menu = $psn_run_frame -> Optionmenu(-options=>[@psn_nm_installations],-variable => \$nm_version_chosen,
       -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
-      -font=>$font_normal, -background=>"#c0c0c0", 
-      -activebackground=>"#a0a0a0", -command=> sub{ 
+      -font=>$font_normal, -background=>"#c0c0c0",
+      -activebackground=>"#a0a0a0", -command=> sub{
         if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
         unless ($psn_option eq "sumo") {
-          $psn_command_line = update_psn_command_line ($psn_command_line, "-nm_version", $nm_version_chosen, 1); 
+          $psn_command_line = update_psn_command_line ($psn_command_line, "-nm_version", $nm_version_chosen, 1);
         }
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0",$psn_command_line);
   })-> grid(-row=>7,-column=>2,-sticky => 'wns');
- 
+
   $psn_run_frame -> Label (-text=>"\nPsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
   $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 
   $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -command=> sub {
-      my $files = ""; 
+      my $files = "";
       $psn_command_line = $psn_command_line_entry -> get("0.0","end");
       $psn_command_line =~ s/\n//g;
       $psn_params = $psn_command_line;
@@ -4165,18 +4188,18 @@ sub psn_run_window {
       if ($cluster_active == 0) {
         status ("Starting run(s) locally using PsN");
         my $psn_command = os_specific_path($software{psn_toolkit})."/".$psn_command_line;
-        if($os =~ m/MSWin/) {        
+        if($os =~ m/MSWin/) {
           system "start ".$psn_command;
         } else {
           if ($setting{terminal} ne "") {
             if ($setting{quit_shell}==0) { # don't close terminal window after completion
               $psn_command .= ';read -n1';
-				}            
+				}
             system $setting{terminal}.' -e "'.$psn_command.'" &';
           } else {
             system $psn_command.' &';
-          }        
-        }        
+          }
+        }
         db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "local", $psn_command, $setting{username});
         #if ($stdout) {$stdout -> insert('end', "\n".$psn_command);}
         status ();
@@ -4185,21 +4208,21 @@ sub psn_run_window {
         if (lcase(substr($cwd,0,1)) eq lcase(substr($setting{cluster_drive},0,1))) {
           @cur_dir = split('/',unix_path($cwd));
           shift(@cur_dir);
-          $cur_dir_unix = join('/',@cur_dir); 
+          $cur_dir_unix = join('/',@cur_dir);
           status ("Starting PsN command on cluster");
           my $psn_command = $setting{ssh_login}.' "cd ~/'.$cur_dir_unix.'; '.$software{psn_on_mosix}.$psn_command_line.' &"';
-          if($os =~ m/MSWin/) {        
+          if($os =~ m/MSWin/) {
             system "start ".$psn_command;
           } else {
             if ($setting{terminal} ne "") {
               if ($setting{quit_shell}==0) { # don't close terminal window after completion
                 $psn_command .= ';read -n1';
-  				  }      
+  				  }
               system $setting{terminal}.' -e "'.$psn_command.'" &';
             } else {
               system $psn_command.' &';
-            }           
-          }  
+            }
+          }
           db_log_execution (@ctl_show[@runs[0]].".".$setting{ext_ctl}, $models_descr{@ctl_show[@runs[0]]}, "PsN", "LinuxCluster", $psn_command, $setting{username});
             #if ($stdout) {$stdout -> insert('end', "\n".$psn_command);}
         } else {  message ("Your current directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.")};
@@ -4215,15 +4238,15 @@ sub psn_run_window {
       status ();
       #if ($stdout) {$stdout -> yview (scroll=>1, units);}
       chdir ($cwd);
-      $help -> detach($psn_run_button);   
+      $help -> detach($psn_run_button);
       $psn_run_window -> destroy();
   })-> grid(-row=>9, -column=>3,-sticky=>"wns");
   $help -> attach($psn_run_button, "Start run");
   $psn_run_window -> update();
   status ("Requesting PsN command information...");
-  my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}); 
+  my $psn_text = get_psn_info($psn_option, $software{psn_toolkit});
   if ($psn_text eq "") {
-    $psn_text = "PsN was not found. Please check your installation!"; 
+    $psn_text = "PsN was not found. Please check your installation!";
     $psn_run_button -> configure(-state=>'disabled');
   }
   $psn_run_text -> insert("0.0", $psn_text);
@@ -4232,7 +4255,7 @@ sub psn_run_window {
 
 sub models_hlist_action {
  @sel = $models_hlist -> selectionGet ();
-          foreach (@sel) { 
+          foreach (@sel) {
             if ( @file_type_copy[$_] == 2) {
               edit_model(unix_path($cwd."\\".@ctl_show[$_].".".$setting{ext_ctl}));
             } else {  # change directory
@@ -4247,14 +4270,14 @@ sub models_hlist_action {
 sub frame_models_show {
 ### Purpose : Create the frame and the HList object that show the models
 ### Compat  : W+L+
-### Notes   : needs some os-specifics to make the HList look okay. 
+### Notes   : needs some os-specifics to make the HList look okay.
   if (@_[0]==1) {
   unless($model_overview_frame) {
     our $model_overview_frame = $mw-> Frame(-background=>"$bgcol")->grid(-row=>2,-column=>1,-columnspan=>1,-sticky=>'nwe',-ipadx=>5,-ipady=>0);
     ### Status bar:
     $model_overview_frame-> Label(-text=>"Models:", -font=>$font_normal)->
     grid(-row=>2,-columnspan=>1,-column=>2, -sticky=>"w");
-  }      
+  }
   @models_hlist_headers = (" #", "Ref#","Description", "Method", "OFV","dOFV","S","C","B","Sig","Notes");
   @models_hlist_widths = split (";", $setting{header_widths});
 
@@ -4300,11 +4323,11 @@ sub frame_models_show {
           if ((Time::HiRes::time - $hires_time)<0.25) {
             models_hlist_action();
           }
-        }      
-        our $hires_time = Time::HiRes::time;  
+        }
+        our $hires_time = Time::HiRes::time;
       })  ;
     }
-    
+
     our $models_menu = $models_hlist->Menu(-tearoff => 0, -background=>$bgcol, -title=>'None');
     $models_menu -> command (-label=> " Run (nmfe)", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        nmfe_command();
@@ -4323,13 +4346,13 @@ sub frame_models_show {
        psn_command("bootstrap");
     });
     $models_menu_psn -> command (-label=> " cdd", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("cdd");    
+       psn_command("cdd");
     });
     $models_menu_psn -> command (-label=> " llp", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("llp");  
+       psn_command("llp");
     });
     $models_menu_psn -> command (-label=> " sse", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
-       psn_command("sse");    
+       psn_command("sse");
     });
     $models_menu_psn -> command (-label=> " sumo", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
@@ -4341,9 +4364,9 @@ sub frame_models_show {
          });
       $models_menu_wfn -> command (-label=> " NMBS", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
            wfn_command("NMBS");
-         });         
+         });
     }
-    $models_menu -> separator (-background=>$bgcol) ; 
+    $models_menu -> separator (-background=>$bgcol) ;
     $models_menu -> command (-label=>" Model properties...", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
            properties_command ();
          });
@@ -4362,8 +4385,8 @@ sub frame_models_show {
     $models_menu -> command (-label=> " Delete model(s) / result(s)",  -image=>$gif{trash}, -compound=>'left', -background=>$bgcol, -command => sub{
            delete_models_command();
          });
-         
-    $models_menu -> separator ( -background=>$bgcol) ; 
+
+    $models_menu -> separator ( -background=>$bgcol) ;
     $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_report_command();
          });
@@ -4372,14 +4395,14 @@ sub frame_models_show {
          });
     $models_menu -> command (-label=> " View NM output file",  -image=>$gif{notepad}, -compound=>'left', -background=>$bgcol, -command => sub{
            view_outputfile_command();
-         }); 
-    $models_menu -> separator ( -background=>$bgcol) ; 
+         });
+    $models_menu -> separator ( -background=>$bgcol) ;
     $models_menu -> command (-label=> " Close this menu",  -image=>$gif{close}, -compound=>'left', -background=>$bgcol, -command => sub{
        $models_menu -> unpost();
-    });   
-  
+    });
+
     $models_hlist -> bind("<Button-3>" => [ sub {
-         $models_hlist -> focus; # focus on listbox widget 
+         $models_hlist -> focus;
          my($w, $x, $y) = @_;
          our $modsel = $models_hlist -> selectionGet ();
          if ((@$modsel >0)&&($models_menu)) { $models_menu -> post($x, $y) } else {
@@ -4393,15 +4416,15 @@ sub frame_models_show {
   our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);
   our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'w', -pady => 0, -padx => 2, -font => $font_normal );
   our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'e', -pady => 0, -padx => 2, -font => $font_normal );
-  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#008800', -background=>'white',-font => $font_fixed); 
-  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#990000', -background=>'white',-font => $font_fixed); 
-  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#888800', -background=>'white',-font => $font_fixed); 
-  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed); 
+  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#008800', -background=>'white',-font => $font_fixed);
+  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#990000', -background=>'white',-font => $font_fixed);
+  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#888800', -background=>'white',-font => $font_fixed);
+  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'w',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#d0d0ff', -font => $font_normal);
-  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#e5e5ff', -font => $font_normal);  
-  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#ffffe5', -font => $font_normal);  
+  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#e5e5ff', -font => $font_normal);
+  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#ffffe5', -font => $font_normal);
 
   # headers of model list
   our @main_headers;
@@ -4415,21 +4438,21 @@ sub frame_models_show {
   if ($os =~ m/MSWin32/i) {$font = $font_normal};
   foreach my $x ( 0 .. $#models_hlist_headers ) {
         if (($x == 3)||($x == 7)) {$style = $header_right} else {$style = $header_left};
-        @main_headers[$x] = $models_hlist-> HdrResizeButton( 
+        @main_headers[$x] = $models_hlist-> HdrResizeButton(
           -text => $models_hlist_headers[$x], -relief => 'flat', -font=>$font,
-          -background=>$button, -activebackground=>$abutton, -activeforeground=>'black', 
+          -background=>$button, -activebackground=>$abutton, -activeforeground=>'black',
           -border=> 0, -pady => $header_pad, -resizerwidth => 2, -minwidth=>1,
           -column => $x
         );
-        $models_hlist -> header('create', $x, 
+        $models_hlist -> header('create', $x,
           -itemtype => 'window', -style => $headerstyle,
           -widget => @main_headers[$x]
         );
         $models_hlist -> columnWidth($x, @models_hlist_widths[$x]);
   }
-  $model_overview_frame -> bind('<Leave>' => sub {save_header_widths();}); 
+  $model_overview_frame -> bind('<Leave>' => sub {save_header_widths();});
   $models_hlist -> update();
-  
+
   $mod_buttons = $model_overview_frame -> Frame(-background=>$bgcol) ->grid(-row=>0,-column=>1,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'w');
 
   if ($models_view eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
@@ -4456,13 +4479,13 @@ sub frame_models_show {
   $help->attach($new_button, -msg => "New model");
 
   $mod_buttons -> Label (-text=>"       ", -background=>$bgcol)->grid(-row=>1,-column=>4,-sticky=>'we');
-  
+
   my $show_execution_log = $mod_buttons -> Button (-image=>$gif{log}, -background=>$button,-activebackground=>$abutton, -border=>0,
 	  -command=>sub {
       show_exec_runs_window();
     })->grid(-row=>1,-column=>6,-sticky=>'wens');
   $help->attach($show_execution_log, -msg => "Show parameter estimates from runs");
-  
+
   our $show_estim_button = $mod_buttons->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
         my $lst = @lst[0].".".$setting{ext_res};
@@ -4470,7 +4493,7 @@ sub frame_models_show {
         $estim_window -> raise();
       })->grid(-row=>1,-column=>7,-sticky=>'wens');
   $help->attach($show_estim_button, -msg => "Show parameter estimates from runs");
-  
+
   our $show_inter_button = $mod_buttons->Button(-image=>$gif{edit_inter},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
       chdir($cwd);
@@ -4487,13 +4510,13 @@ sub frame_models_show {
     status ();
   }) ->grid(-row=>1,-column=>9,-columnspan=>1,-sticky=>'wens');
   $help->attach($sum_list_button, -msg => "Generate summary (csv-file) of all NONMEM output files");
-  
+
   our $tree_txt_button = $mod_buttons -> Button(-image=>$gif{treeview2}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
     my($tree_models_ref, $tree_text) = tree_models();
     text_window($tree_text, "Model tree");
   }) ->grid(-row=>1,-column=>10,-columnspan=>1,-sticky=>'wens');
   $help->attach($tree_txt_button, -msg => "Generate run record as tree");
-  
+
   $mod_buttons -> Label (-text=>"       ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
   my $cluster_label = $mod_buttons -> Label (-text=>"  Local mode", -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>15,-sticky=>'we');
   $enable_local_button = $mod_buttons -> Button (-image=>$gif{local_active}, -border=>$bbw, -width=>30, -height=>22, , -background=>$bgcol,-activebackground=>$abutton,-command=>sub{
@@ -4504,30 +4527,30 @@ sub frame_models_show {
      $cluster_label -> configure(-text=>" Local");
   })->grid(-row=>1,-column=>12,-sticky => 'wns');
   $help -> attach($enable_local_button, -msg => "Run NONMEM locally");
-  if ($os =~ m/MSWin/i) {  
+  if ($os =~ m/MSWin/i) {
     $enable_pcluster_button = $mod_buttons -> Button (-image=>$gif{pcluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
        if (($cluster_active == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
        $cluster_active = 2;
        if (($cluster_active==1)&&($setting{cluster_type}!=0)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
        $command_button -> configure(-image=>$gif_shell);
        cluster_active($cluster_active);
-       $cluster_label -> configure(-text=>" PCluster"); 
+       $cluster_label -> configure(-text=>" PCluster");
     })->grid(-row=>1,-column=>14,-sticky => 'wns');
     $help -> attach($enable_pcluster_button, -msg => "Run on PCluster");
-  }  
+  }
   $enable_mconnect_button = $mod_buttons -> Button (-image=>$gif{cluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
      if (($cluster_active == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
      $cluster_active = 1;
      if (($cluster_active==1)&&($setting{cluster_type}!=0)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
      $command_button -> configure(-image=>$gif_shell);
      cluster_active($cluster_active);
-     $cluster_label -> configure(-text=>" Remote cluster"); 
+     $cluster_label -> configure(-text=>" Remote cluster");
   })->grid(-row=>1,-column=>13,-sticky => 'wns');
   $help -> attach($enable_mconnect_button, -msg => "SSH remote cluster");
   $cluster_active = $setting{cluster_default};
   cluster_active($cluster_active);
- 
-  
+
+
    $copy_dir_res_button = $mod_buttons->Button(-image=>$gif{folderout},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
       $test_dirs = 0;
@@ -4542,20 +4565,20 @@ sub frame_models_show {
       }
     })->grid(-row=>1,-column=>9,-sticky=>'wens');
   $help->attach($copy_dir_res_button, -msg => "Copy results files and \$TABLE files from a subfolder to the current folder");
-  
+
   $filter_buttons = $model_overview_frame -> Frame(-background=>$bgcol) ->grid(-row=>0,-column=>3,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'e');
-  
+
   our $psn_dir_filter = 0;
   $filter_buttons -> Label(-text=>"Folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'e');
- 
+
   $filter_psn_button = $filter_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -activebackground=>$bgcol,-command=>sub{
-     read_curr_dir($cwd, $filter, 0);
+     read_curr_dir($cwd, $filter, 1);
      status();
   })->grid(-row=>1,-column=>2,-sticky=>'w', -ipady=>0, -ipadx=>0);
   $help->attach($filter_psn_button, -msg => "Filter out PsN-generated directories");
   our $nmfe_dir_filter = 0;
   $filter_nmfe_button = $filter_buttons ->Checkbutton(-text=>"nmfe",-background=>$bgcol, -font=>$font_normal, -variable=>\$nmfe_dir_filter, -activebackground=>$bgcol,-command=>sub{
-     read_curr_dir($cwd, $filter, 0);
+     read_curr_dir($cwd, $filter, 1);
      status();
   })->grid(-row=>1,-column=>3,-sticky=>'w', -ipady=>0, -ipadx=>0);
   $help->attach($filter_nmfe_button, -msg => "Filter out nmfe run directories");
@@ -4577,10 +4600,10 @@ sub show_run_frame {
           read_log();
   }
   $run_frame = $model_overview_frame -> Frame(-background=>$bgcol)->grid(-row=>4,-column=>1,-columnspan=>3,-sticky => 'wns', -ipady=>0);
-    
+
   # spacer
   # $run_frame -> Label(-text=>" ", -font=>'Verdana 1', -width=>10) -> grid(-sticky=>'we',-row=>3,-column=>1,-ipady=>0);
-  our $run_color=$lightblue; our $arun_color=$darkblue;  
+  our $run_color=$lightblue; our $arun_color=$darkblue;
 
   if ($setting{default_method} =~ m/nmq/gi) {$run_method = "NONMEM"};
   if ($setting{default_method} =~ m/psn/gi) {$run_method = "PsN"; $nm_version_chosen = "default"};
@@ -4594,37 +4617,37 @@ sub show_run_frame {
   if ($os =~ m/MSWin/i) {$spacer = 14; };
   $run_frame -> Label(-text=>"", -width=>$spacer, -font=>"Courier 1", -background=>$bgcol)->grid(-column=>6, -row=>1);  #spacer
   if ($setting{font_size} == 2) {$note_width=40} else {$note_width = 29};
-  
+
   $run_info_frame = $run_frame -> Frame(-background=>$bgcol)->grid(-row=>1, -column=>7, -rowspan=>2, -ipady=>3, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"Model file:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"  Description:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>2, -column=>3, -sticky=>"nwe");
   $run_info_frame -> Button (-image=>$gif{edit_info}, -width=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=> sub{
-    properties_command();  
+    properties_command();
   }) -> grid(-row=>3, -column=>3, -sticky=>"ens");
-  
+
   $run_info_frame -> Label(-text=>"Last modified:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"Dataset:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"es");
   $run_info_frame -> Label (-text=>"  Coloring:", -font=>$font_normal, -background=>$bgcol )->grid(-column=>3,-row=>1,-sticky=>"ens");
-  
+
   if ($full_screen==0) {$entry_width = 36};
   our $notes_text = $run_info_frame -> Text (
-      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>4, -row=>2,-sticky=>'nws', -ipadx=>0);
   our $model_info_no = $run_info_frame -> Text (
-      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
   our $model_info_dataset = $run_info_frame -> Text (
-      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>3, -sticky=>'ws', -ipadx=>0);
   our $model_info_modified = $run_info_frame -> Text (
-      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1, 
+      -width=>$entry_width, -relief=>'sunken', -border=>0, -height=>1,
       -font=>$font_small, -background=>"#f6f6e6", -state=>'disabled'
   )->grid(-column=>2, -row=>2, -sticky=>'nws', -ipadx=>0);
-  
-  my $colorbox_width = 1; 
+
+  my $colorbox_width = 1;
   if($os =~ m/MSWin/i) { $colorbox_width=4;};
   $colors_frame = $run_info_frame -> Frame (-background=>$bgcol)->grid(-column=>4, -row=>1, -rowspan=>1,-sticky=>'wns', -ipady=>0);
 
@@ -4662,7 +4685,7 @@ sub show_run_frame {
 }
 
 sub table_info_window {
-### Purpose : Open a dialog window in which table/file info (size / notes) are shown and can be edited 
+### Purpose : Open a dialog window in which table/file info (size / notes) are shown and can be edited
 ### Compat  : W+L+?
   my $file = shift; my $mod; my $file_descr=$table_descr{$file};
   my $file_notes = $table_note{$file}; my $creator=$table_creator{$file};
@@ -4680,12 +4703,12 @@ sub table_info_window {
 
   $table_info_frame -> Label (-text=>"Description:\n") -> grid(-row=>5, -column=>1, -sticky=>"en");
   $table_info_frame -> Entry (-textvariable=> \$file_descr, -font=>$font_normal, -width=>45, -state=>'normal',-relief=>'sunken', -border=>0, -background=>'white') -> grid(-row=>5, -column=>2,-sticky=>"wn");
-  
+
   $table_info_frame -> Label (-text=>"Notes:\n") -> grid(-row=>8, -column=>1, -sticky=>"en");
   $table_info_notes = $table_info_frame -> Text (-width=>45, -font=>$font_normal, -height=>10, -state=>'normal',-relief=>'sunken', -border=>0, -background=>'white') -> grid(-row=>8, -column=>2,-sticky=>"wn");
   $table_info_notes -> insert('end', $file_notes);
   $table_info_frame -> Label (-text=>" ") -> grid(-row=>9, -column=>3, -sticky=>"en");
-  
+
   $table_info_frame -> Button (-text=>"Save and close", -width=>15, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
     $file_notes = $table_info_notes -> get("0.0", "end");
     my $update = 0;
@@ -4708,7 +4731,7 @@ sub table_info_window {
 }
 
 sub model_properties_window {
-### Purpose : Open a dialog window in which model properties are shown and can be edited 
+### Purpose : Open a dialog window in which model properties are shown and can be edited
 ### Compat  : W+L+?
   my ($model_id, $idx) = @_;
   my $model_info_db = db_read_model_info ($model_id);
@@ -4718,7 +4741,7 @@ sub model_properties_window {
   my $model_prop_window = $mw -> Toplevel(-title=>'Model properties');
   $model_prop_window -> resizable( 0, 0 );
   center_window($model_prop_window);
-  
+
   my $model_prop_frame = $model_prop_window -> Frame(-relief=>'groove', -background=>$bgcol, -border=>0, -padx=>7, -pady=>7)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $model_prop_frame -> Label (-text=>"Model no:\n",-background=>$bgcol) -> grid(-row=>1, -column=>1,-sticky=>"en");
   $model_prop_frame -> Entry (-text=>$model_id, -background=>$bgcol, -font=>$font_normal, -width=>15, -state=>'disabled', -disabledforeground=>'#727272',-relief=>'sunken', -border=>0, -background=>$button) -> grid(-row=>1, -column=>2,-sticky=>"wn");
@@ -4760,7 +4783,7 @@ sub model_properties_window {
 }
 
 sub update_text_box {
-### Purpose : Update the specified text-box with text (used for updating information boxes about model / table-file info) 
+### Purpose : Update the specified text-box with text (used for updating information boxes about model / table-file info)
 ### Compat  : W+L+
   my($obj_ref, $text) = @_;
   $obj = $$obj_ref;
@@ -4776,13 +4799,13 @@ sub note_color {
   my $color = shift;
   my $style_color = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$color, -font=>$font_normal);
   my $style_color_small = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$color, -font=>"Verdana 8");
-  
+
   my @sel = $models_hlist -> selectionGet ();
   foreach my $no (@sel) {
     if ($file_type{@ctl_show[$no]} == 2) {
       $models_colors {$no} = $color;
       # determine style colors
-      $runno = @ctl_show[$no]; 
+      $runno = @ctl_show[$no];
       $mod_background = $color;
       $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$mod_background, -font => $font_normal);;
       our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$mod_background, -foreground=>'#008800',-font => "Courier 9 bold");
@@ -4791,8 +4814,8 @@ sub note_color {
         my $ofv_diff = $res_ofv{$models_refmod{$runno}} - $res_ofv{$runno} ;
         if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
         if ($ofv_diff < 0) { $style_ofv = $style_red; }
-        if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) { 
-          $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => "Courier 8 bold"); 
+        if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
+          $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => "Courier 8 bold");
         }
       } else {$style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => "Courier 8 bold");}
       if ($res_success{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
@@ -4800,7 +4823,7 @@ sub note_color {
       $models_hlist -> itemConfigure($no, 0, -style => $style_color);
       $models_hlist -> itemConfigure($no, 1, -style => $style_color_small);
       $models_hlist -> itemConfigure($no, 2, -style => $style_color);
-      $models_hlist -> itemConfigure($no, 3, -style => $style_color_small);          
+      $models_hlist -> itemConfigure($no, 3, -style => $style_color_small);
       $models_hlist -> itemConfigure($no, 4, -style => $style_ofv);
       $models_hlist -> itemConfigure($no, 5, -style => $style_ofv);
       $models_hlist -> itemConfigure($no, 6, -style => $style_success);
@@ -4825,7 +4848,7 @@ sub exec_run_wfn {
         print $total;
         $per_run = $total / $no_threads;
         $i=0; while ($i < $no_threads) {
-          @idx[$i] = (1 + $per_run*$i); 
+          @idx[$i] = (1 + $per_run*$i);
           $i++;
         }
       }
@@ -4857,13 +4880,13 @@ sub exec_run_wfn {
         print BAT "CALL ".win_path($wfn_dir."/bin/wfn.bat ").$wfn_parameters."\n";
         print BAT "CALL ".win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters)."\n";
         close BAT;
-        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );    
+        db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );
         if ($cluster_active == 1) {
           if (generate_zink_file($setting{zink_host}, $setting{cluster_drive},"Bootstrap ".$file, 3, win_path($cwd), "CALL ".win_path($cwd."\\".$rand_filename).".bat\n", "") == 1) {
             message ("WFN job scheduled.");
             db_log_execution ($file, @ctl_descr[$file], "WFN", "PCluster", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );
           };
-        } 
+        }
       }
   status ();
   unless ($cluster_active == 1) {
@@ -4931,7 +4954,7 @@ sub get_nm_installations {
       return keys(%nm_nmfe);
 }
 
-sub update_new_dir { 
+sub update_new_dir {
 ### Purpose : generate a new dir number for nmfe-runs
 ### Compat  : W+L+
    my $file = shift;
@@ -4943,7 +4966,7 @@ sub update_new_dir {
 }
 
 sub enable_run_new_dir_checkbox {
-### Purpose : Set the checkbox for "start in new dir" to a state 
+### Purpose : Set the checkbox for "start in new dir" to a state
 ### Compat  : W+L+
   $checked = shift;
   if ($checked==0) {
@@ -4954,7 +4977,7 @@ sub enable_run_new_dir_checkbox {
 }
 
 sub update_psn_lst_param {
-### Purpose : Update '-outputfile=xxx.lst' with current model number in the psn parameter entry 
+### Purpose : Update '-outputfile=xxx.lst' with current model number in the psn parameter entry
 ### Compat  : W+L+
     if ($psn_command_entry) {$psn_parameters = $psn_command_entry -> get();}
     update_psn_params_function ("outputfile");
@@ -4983,23 +5006,23 @@ sub update_psn_params_function {
 sub project_optionmenu {
 ### Purpose : Create the optionmenu showing the different projects
 ### Compat  : W+L+
-    @projects = keys(%project_dir); 
-    if ($project_optionmenu) {$project_optionmenu -> destroy();}  
-    our $project_optionmenu = $frame_dir -> Optionmenu(-options => [sort (@projects)], -width=>38, -border=>$bbw,  
+    @projects = keys(%project_dir);
+    if ($project_optionmenu) {$project_optionmenu -> destroy();}
+    our $project_optionmenu = $frame_dir -> Optionmenu(-options => [sort (@projects)], -width=>38, -border=>$bbw,
         -variable => \$active_project,-background=>"#202099",-activebackground=>"#5050aa",-font=>$font_bold, -foreground=>'white', -activeforeground=>'white')
      -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky=>'we');
      $frame_dir -> update();
      $project_optionmenu -> configure (-command=>sub{
-        $cwd = $project_dir{$active_project}; 
+        $cwd = $project_dir{$active_project};
         $dir_entry -> configure(-text=>$cwd);
         save_log();
         $frame_dir -> update();
         refresh_pirana($cwd);
      });
-    $cwd = $project_dir{$active_project}; 
-    $dir_entry -> configure(-text=>$cwd);  
+    $cwd = $project_dir{$active_project};
+    $dir_entry -> configure(-text=>$cwd);
     $project_optionmenu -> configure(-state=>'disabled');
-    return($project_optionmenu);  
+    return($project_optionmenu);
 }
 
 sub project_buttons_show {
@@ -5009,7 +5032,7 @@ sub project_buttons_show {
   $frame_dir -> Label(-text=>'Folder:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>2,-column=>1, -sticky => 'e');
   $dir_entry = $frame_dir -> Entry(-width=>44, -textvariable=>\$cwd, -border=>2, -relief=>'groove', -background=>'#FFFFEE',-font=>$font_normal)
     -> grid(-row=>2,-column=>2, -sticky => 'wens',-columnspan=>4);
-  $dir_entry->bind("<Return>", sub { 
+  $dir_entry->bind("<Return>", sub {
      $cwd = $dir_entry -> get();
      unless (-d $cwd) {
        $cwd = substr($cwd,0,2)."/";
@@ -5024,7 +5047,7 @@ sub project_buttons_show {
       refresh_pirana($cwd);
     })->grid(-row=>2, -column=>6, -rowspan=>1, -sticky => 'nwse');
   $help->attach($browse_button, -msg => "Browse filesystem");
-  
+
   #$frame_dir -> Label (-text=>"  ", -background=>$bgcol, -width=>36)->grid(-row=>1,-column=>2, -sticky => 'wens');
   our $save_button = $frame_dir -> Button(-image=>$gif{save}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
     save_project($cwd) })
@@ -5039,7 +5062,7 @@ sub project_buttons_show {
     ->grid(-row=>1,-column=>5, -rowspan=>1, -sticky => 'we');
   $help->attach($delete_button, -msg => "Delete project");
   our $reload_button = $frame_dir -> Button(-image=>$gif{reload}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
-    refresh_pirana($cwd)
+      refresh_pirana($cwd);
     })
     ->grid(-row=>1,-column=>6, -rowspan=>1, -sticky => 'we');
   $help->attach($reload_button, -msg => "Refresh directory");
@@ -5053,38 +5076,38 @@ sub show_exec_runs_window {
     our $exec_runs_window = $mw -> Toplevel(-title=>'Execution log in '.$cwd);
     $exec_runs_window -> resizable( 0, 0 );
     $exec_runs_window -> OnDestroy ( sub{
-      undef $exec_runs_window; undef $exec_runs_window_frame; 
+      undef $exec_runs_window; undef $exec_runs_window_frame;
     });
     $exec_runs_window_frame = $exec_runs_window -> Frame(-background=>$bgcol)->grid(-column=>1, -row=>1, -ipadx=>10,-ipady=>10);
-    our $exec_runs_hlist = $exec_runs_window_frame ->Scrolled('HList', -head => 1, 
+    our $exec_runs_hlist = $exec_runs_window_frame ->Scrolled('HList', -head => 1,
         -columns    => 7, -scrollbars => 'e', -highlightthickness => 0,
-        -height     => 30, -border     => 0, 
+        -height     => 30, -border     => 0,
         -width      => 140, -background => 'white',
         -selectbackground => $pirana_orange,
         -browsecmd => sub{
           my @run_info = $exec_runs_hlist -> infoSelection();
         }
-    )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");   
+    )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
     my @headers = ( "Run", "Description", "Date/time", "NM", "Location", "Researcher", "Command");
     my @headers_widths = (80, 160, 130, 40, 40,50,600);
     my $headerstyle = $models_hlist->ItemStyle('window', -padx => 0);
     foreach my $x ( 0 .. $#headers ) {
         @exec_runs_headers[$x] = $exec_runs_hlist -> HdrResizeButton(
           -text=> $headers[$x], -relief=>'groove', -column=>$x,
-          -background=>$button, -activebackground=>$abutton, -activeforeground=>'black', 
+          -background=>$button, -activebackground=>$abutton, -activeforeground=>'black',
           -border=>0, -pady =>$header_pad, -resizerwidth => 2);
-        $exec_runs_hlist->header('create', $x, 
+        $exec_runs_hlist->header('create', $x,
           -itemtype => 'window', -style=> $headerstyle,
           -widget => @exec_runs_headers[$x]
         );
         $exec_runs_hlist -> columnWidth($x, @headers_widths[$x]);
-    } 
+    }
   }
-  $db_results = db_read_exec_runs(); 
+  $db_results = db_read_exec_runs();
   my $i=0;
   $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);;
   foreach my $row (@$db_results) {
-    my ($model, $descr, $date_execute, $name_modeler, $nm_version, $method, 
+    my ($model, $descr, $date_execute, $name_modeler, $nm_version, $method,
       $exec_where, $command) = @$row;
     $exec_runs_hlist -> add($i);
     $exec_runs_hlist -> itemCreate($i, 0, -text => $model, -style=>$style);
@@ -5115,7 +5138,7 @@ sub show_inter_window {
       our $inter_window = $mw -> Toplevel(-title=>'Progress of runs in '.$cwd, -background=>$bgcol);
       $inter_window -> resizable( 0, 0 );
       $inter_window -> OnDestroy ( sub{
-        undef $inter_window; undef $inter_window_frame; 
+        undef $inter_window; undef $inter_window_frame;
       });
       $inter_window -> iconimage($gif{network}); # doesn't work properly for some reaseon
       $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>0);
@@ -5133,7 +5156,7 @@ sub show_inter_window {
       }) -> grid(-column => 1, -row=>1, -sticky=>"wns");
       $inter_frame_buttons -> Button (-text=>'Open intermediate files',  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
          @info = $grid->infoSelection();
-         foreach (@info) { 
+         foreach (@info) {
            my $dir = $_;
            if ($dir ne "") {
              if (-e $cwd."/".$dir."/OUTPUT") {edit_model(unix_path($cwd."/".$dir."/OUTPUT"));}
@@ -5143,49 +5166,49 @@ sub show_inter_window {
          }
       }) -> grid(-column => 2, -row=>1, -sticky=>"w");
       $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-       #get all 
+       #get all
          foreach (@inter_dirs) { };
          @info = $grid->infoSelection();
          $grid_inter -> delete("all");
          inter_results ($cwd."/".@info[0]);
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
-      
-      ## Stop run functionality: not yet implemented (has issues) 
+
+      ## Stop run functionality: not yet implemented (has issues)
       #$inter_frame_buttons -> Button (-text=>'Stop run', -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       #   @info = $grid->infoSelection();
       #   foreach (@info) {
       #     ;
       #   }
       #}) -> grid(-column => 3, -row=>1, -sticky=>"w");
-            
+
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
       $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nws");
       $inter_intermed_frame -> Label (
-        -text=>"\nNote: to obtain intermediate estimates from runs, the specification\nof MSF files are needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the $EST block.", 
+        -text=>"\nNote: to obtain intermediate estimates from runs, the specification\nof MSF files are needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the $EST block.",
         -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
       $inter_intermed_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>3, -sticky=>"w");
     } else {$inter_window -> focus};
     inter_status ("Searching sub-directories for active runs...");
     chdir ($cwd);
-      
+
     my @headers = ( "MSF", "Iterations","OFV");
     my @headers_widths = (60, 60, 60, 160,240);
-    
-    our $grid = $inter_window_frame ->Scrolled('HList', -head => 1, 
+
+    our $grid = $inter_window_frame ->Scrolled('HList', -head => 1,
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
         -height     => 6, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 110, -background => 'white'
-    )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");   
-    
+    )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
+
     my @headers_inter = (" ","Theta", "Omega","Sigma", "Gradients", " ");
     my @headers_inter_widths = (24, 54, 54, 54, 54);
 
-    our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1, 
+    our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1,
         -columns    => 6, -scrollbars => 'e', -highlightthickness => 0,
         -height     => 18, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 45, -background => 'white',
-    )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");   
+    )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
         $grid -> columnWidth($x, @headers_widths[$x]);
@@ -5194,42 +5217,42 @@ sub show_inter_window {
     $grid -> header('create', 4, -text=> "Description", -style=> $header_left, -headerbackground => 'gray');
     $grid -> columnWidth(3, @headers_widths[3]);
     $grid -> columnWidth(4, @headers_widths[4]);
-     
+
     $x=0; foreach (@headers_inter) {
       if ($x==5) {$style = $header_left} else {$style = $header_right};
       $grid_inter -> header('create', $x, -text=> $headers_inter[$x], -style=> $style, -headerbackground => 'gray');
       $grid_inter -> columnWidth($x, @headers_inter_widths[$x]);
       $x++;
     }
-    
+
    # create the gradient plot
-   $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe'); 
+   $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe');
    my @plot_title = ("",20);
    @border = (8,55,40,52); # top, right, bottom, lef
    our $gradients_plot = $plot_frame -> PlotDataset
     ( -width => 360, -height => 300,
       -background => $bgcol, -border=> \@border,
-      -plotTitle => \@plot_title, 
+      -plotTitle => \@plot_title,
       -xlabel => "Iteration", -ylabel => "Gradient",
       -y1label => 'OFV', -xType => 'linear', -yType => 'linear',
-      -y1TickFormat => "%d", -xTickFormat => "%g", -yTickFormat => "%d" 
+      -y1TickFormat => "%d", -xTickFormat => "%g", -yTickFormat => "%d"
     ) -> grid(-column=>2, -row=>1);
    $gradients_plot -> configure (-fonts =>
      ['Arial 7',   # axes ticks
       'Arial 8 italic', # axes labels
       'Arial 9 bold',  # title
       'Arial 7' # legend
-      ]);         
+      ]);
    $grid_inter -> update();
    $grid -> configure(-browsecmd => sub{ # can only be implemented at the end of the subroutine
           # this is a workaround to avoid difficulties induced by the Hlist widget (browsecmd is issued twice)
           # still sometimes, an error occurs (may be a bug in Tk::PlotDataset)
-          $diff = str2time(localtime()) - $last_time;  
+          $diff = str2time(localtime()) - $last_time;
           our $last_time = str2time(localtime());
           my @info = $grid->infoSelection();
-          
+
           if (($diff > 0)||($last_chosen ne @info[0])) {
-            our $last_chosen = @info[0];  
+            our $last_chosen = @info[0];
             chdir ("./".@info[0]);
             my ($sub_iter, $sub_ofv, $descr, $minimization_done) = get_run_progress();
             chdir ($cwd);
@@ -5246,7 +5269,7 @@ sub show_inter_window {
               }
             }
             my $ofv_line = update_ofv_plot($sub_iter);
-            unless ($ofv_line == 0) {    
+            unless ($ofv_line == 0) {
               if ($ofv_line =~ m/linegraph/i) { # test if correct Tk format
                 $gradients_plot -> addDatasets($ofv_line);
               }
@@ -5265,7 +5288,7 @@ sub update_gradient_plot {
   my @x_all; my @y_all;
   for (my $n_iter=1; $n_iter <= $sub_iter; $n_iter++) {
      for (my $n_grad=1; $n_grad <= @gradients; $n_grad++) {
-       my $gradient = shift (@all_gradients); 
+       my $gradient = shift (@all_gradients);
        if (!($gradient =~ m/na/i)) {
          my $x_ref = @x_all[$n_grad];
          my $y_ref = @y_all[$n_grad];
@@ -5277,7 +5300,7 @@ sub update_gradient_plot {
          @y_all[$n_grad] = \@y;
        };
      }
-  } 
+  }
   my @lines;
   my $i=0;
   foreach (@x_all) {
@@ -5299,7 +5322,7 @@ sub update_gradient_plot {
   }
   if(@lines>0) {
     return(\@lines)
-  } else {return(0)};   
+  } else {return(0)};
 }
 
 sub update_ofv_plot {
@@ -5322,7 +5345,7 @@ sub update_ofv_plot {
 }
 
 sub inter_status {
-### Purpose : Change the status text in the intermediate-results window 
+### Purpose : Change the status text in the intermediate-results window
 ### Compat  : W+L+
   my $status_text_inter = shift;
   if ($status_text_inter eq "") {$status_text_inter = "Idle"};
@@ -5343,7 +5366,7 @@ sub inter_window_add_item {
     if ($minimization_done == 1) { # make green, probably busy doing the covariance step
       $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>$lightgreen, -font => $font_normal);
       $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$lightgreen, -font => $font_normal);
-    } 
+    }
     unless ($item =~ m/HASH/) {  # for some reason this sometimes is necessary.
         $grid->add($item);
         $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right_style);
@@ -5360,12 +5383,12 @@ sub inter_window_add_item {
 }
 
 sub get_runs_in_progress {
-### Purpose : return a hash of runs that are currently in progress in the current directory, or in PsN/nmfe directories below 
-### Compat  : W+L? 
+### Purpose : return a hash of runs that are currently in progress in the current directory, or in PsN/nmfe directories below
+### Compat  : W+L?
   $dir = fastgetcwd()."/";
   @dirs = read_dirs_win();
   %dir_results = new ;
-  %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {}; 
+  %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
   # First check main directory
   inter_status ("Searching / for active runs...");
     if ((-e "nonmem.exe")||(-e "nonmem")) {  # check for nmfe runs
@@ -5377,7 +5400,7 @@ sub get_runs_in_progress {
           inter_window_add_item("/", $minimization_done);
         }
       #}
-    }  
+    }
   # check directories
   foreach (@dirs) {
     chdir($_);
@@ -5443,7 +5466,7 @@ sub get_run_progress {
   @lines = <OUT>;
   close OUT;
   undef our @gradients;      # global variable, bad design, but for some reason local variables are not transferred correctly
-  undef our @all_gradients; 
+  undef our @all_gradients;
   undef our @all_ofv;
   undef our $sub_iter;
   undef our $sub_ofv;
@@ -5470,7 +5493,7 @@ sub get_run_progress {
            $_ =~ s/\s//g;
            push(@gradients, rnd($_,6));
          }
-       }  
+       }
      }
     if (($line =~ /MINIMIZATION/)||($line =~ m/OBJECTIVE FUNCTION IS TO BE EVALUATED/)) {
       $minimization_done = 1;
@@ -5493,7 +5516,7 @@ sub inter_results {
 ### Compat  : W+L+
   my $dir = shift;
   ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
-  my @thetas = @$thetas_ref; 
+  my @thetas = @$thetas_ref;
   my @omegas = @$omegas_ref;
   my @sigmas = @$sigmas_ref;
   $inter_window -> update();
@@ -5535,12 +5558,12 @@ sub inter_results {
     if ($_ == 0) {
       $style = $align_right_red
     } else {
-      $style = $align_right;  
+      $style = $align_right;
     }
     $grid_inter->itemCreate($i, 4, -text => $_, -style=>$style);
     $i++;
   }
-} 
+}
 
 sub extract_inter {
 ### Purpose : extract intermediate results from files in a folder
@@ -5565,8 +5588,8 @@ sub extract_inter {
     my $last_iter=0;
     while (($no_lines>0) && ($last_iter<2)) {  # get last iteration line no
       $no_lines = $no_lines-1;
-      if (@inter[$no_lines] =~ m/ITERATION/) {$last_iter++;} 
-    }  
+      if (@inter[$no_lines] =~ m/ITERATION/) {$last_iter++;}
+    }
 
     ### Gather THETA's
     my $theta_line_no = 4;
@@ -5574,7 +5597,7 @@ sub extract_inter {
     if (@inter[$no_lines+$theta_line_no+1] =~ m/TH/g) { $theta_line_extra=1};
     my $theta_line = @inter[$no_lines+$theta_line_no+2+$theta_line_extra];
     if($theta_line_extra == 1) { # 2 lines of THETAs
-      
+
       $theta_line .= @inter[$no_lines+$theta_line_no+2+$theta_line_extra*2];
     }
     my @theta_arr = split(/\s/,$theta_line);
@@ -5583,7 +5606,7 @@ sub extract_inter {
       $_ = rnd($_, 6)
     };
     my @thetas = @theta_arr;
-    
+
     ### Gather ETA's
     my $eta_line_no = $theta_line_no+5;
     if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
@@ -5591,7 +5614,7 @@ sub extract_inter {
     if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
     my $curr_lineno = $no_lines + $eta_line_no + 2;
     my @etas = ();
-    
+
     until ((@inter[$curr_lineno] =~ m/SIGMA/)||($curr_lineno>@inter)) {
       if ((@inter[$curr_lineno] =~ m/ET/) && (@inter[$curr_lineno+1] ne "")) { # read ETA from subsequent lines
         $eta_line = @inter[$curr_lineno+1];
@@ -5605,11 +5628,11 @@ sub extract_inter {
         @eta_arr = grep /\S/, @eta_arr;
         my $eta;
         if (@eta_arr>0) {$eta = rnd(@eta_arr[@eta_arr-1],5)} else {$eta = ""};
-        push (@etas, $eta);        
+        push (@etas, $eta);
       }
       $curr_lineno++;
-    } 
-    my @epss = ();   
+    }
+    my @epss = ();
     if (@inter[$curr_lineno] =~ m/SIGMA/) {
       while (($curr_lineno < @inter)&&!(@inter[$curr_lineno] =~ m/ITERATION/gi)) {
         if (@inter[$curr_lineno] =~ m/\./) {
@@ -5620,16 +5643,16 @@ sub extract_inter {
           push (@epss,$eps);
         }
         $curr_lineno++;
-      }        
+      }
     }
-    return \@thetas, \@etas, \@epss; 
+    return \@thetas, \@etas, \@epss;
   } else {return (0)}
 }
-  
+
 sub combine_wfn_bootstraps {
 ### Purpose : Combine WFN bootstrap results into a combined file
 ### Compat  : W+L+
-### Notes   : beta 
+### Notes   : beta
   my @bs_dirs = <*_bs*>;  # get all possible bootstrap dirs
   foreach (@bs_dirs) {    # check if it is a directory
     my $file = $_;
@@ -5645,7 +5668,7 @@ sub combine_wfn_bootstraps {
       if ((substr($_,0,1) ne "#")||($flag==0)) {push (@all_runs, $_)};
       if (substr($_,0,1) eq "#") {$flag = 1};
     }
-    close BS; 
+    close BS;
   }
   open (ALL, ">bs.txt");
   print ALL @all_runs;
@@ -5656,7 +5679,7 @@ sub combine_wfn_bootstraps {
 }
 
 
-sub create_duplicates_window { 
+sub create_duplicates_window {
 ### Purpose : Create dialog window for making n duplicates from model(s)
 ### Compat  : W+L+
     my @models = $models_hlist -> selectionGet ();
@@ -5676,10 +5699,10 @@ sub create_duplicates_window {
     $duplicates_frame -> Label (-background=>$bgcol, -text=>"Number of duplicates:",-font=>$font_normal,)->grid(-row=>5, -column=>1, -sticky=>"ns");
     $duplicates_frame -> Entry (-textvariable=>\$no_duplicates,-font=>$font_normal,-width=>8, -background=>'white')->grid(-row=>5, -column=>2, -sticky=>"nws");
     $duplicates_frame -> Label (-background=>$bgcol, -justify=>'left',-text=>" ",-font=>$font_normal)->grid(-row=>6, -column=>1, -columnspan=>2,-sticky=>"nw");
-    $duplicates_frame -> Checkbutton (-background=>$bgcol, -text=>"Change run-numbers in ouput/tables?",-activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>7,-column=>2,-sticky=>'w');  
-    $duplicates_frame -> Checkbutton (-background=>$bgcol, -text=>"Use final parameter estimates from reference model?",-activebackground=>$bgcol,-variable=>\$est_as_init)->grid(-row=>8,-column=>2,-sticky=>'w');  
+    $duplicates_frame -> Checkbutton (-background=>$bgcol, -text=>"Change run-numbers in ouput/tables?",-activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>7,-column=>2,-sticky=>'w');
+    $duplicates_frame -> Checkbutton (-background=>$bgcol, -text=>"Use final parameter estimates from reference model?",-activebackground=>$bgcol,-variable=>\$est_as_init)->grid(-row=>8,-column=>2,-sticky=>'w');
     $duplicates_frame -> Label (-background=>$bgcol, -justify=>'left',-text=>" ",-font=>$font_normal,)->grid(-row=>9, -column=>1, -columnspan=>2,-sticky=>"nw");
-    $duplicates_text = $duplicates_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e') 
+    $duplicates_text = $duplicates_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e')
       -> grid(-row=>3, -column=>2, -ipady=>5, -columnspan=>2,-sticky=>"nws");
     my $models_text = "";
     foreach (@models) {
@@ -5711,7 +5734,7 @@ sub create_duplicates_window {
       $duplicates_window -> destroy;
       return();
     })->grid(-row=>10, -column=>1,-sticky=>'nes');
-}  
+}
 
 sub batch_replace_block { # change block in models
 ### Purpose : Create dialog for replacing code in batch of files
@@ -5726,7 +5749,7 @@ sub batch_replace_block { # change block in models
     $replace_block_window -> resizable( 0, 0 );
     center_window($replace_block_window);
     $replace_block_frame = $replace_block_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
-    my $block = "\$TABLE";      
+    my $block = "\$TABLE";
     $replace_block_frame -> Label (-text=>"This will replace the specified block with a new one.\n",
         -font=>$font_normal,-justify=>"left", -background=>$bgcol)
       ->grid(-row=>1, -column=>1, -columnspan=>2,-sticky=>"nw");
@@ -5736,10 +5759,10 @@ sub batch_replace_block { # change block in models
       ->grid(-row=>3, -column=>2, -sticky=>"nws");
     $replace_block_frame -> Label (-text=>"and replace with:",-font=>$font_normal, -background=>$bgcol)
       ->grid(-row=>5, -column=>1, -sticky=>"ne");
-    my $block_replace = $replace_block_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal, -width=>50, -height=>12, -scrollbars=>'e') 
+    my $block_replace = $replace_block_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal, -width=>50, -height=>12, -scrollbars=>'e')
       -> grid(-row=>5, -column=>2, -ipady=>5, -columnspan=>2, -sticky=>"nwse");
     $replace_block_frame -> Label (-text=>"Models:",-font=>$font_normal, -background=>$bgcol)->grid(-row=>7, -column=>1, -sticky=>"ne");
-    $replace_block_text = $replace_block_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e') 
+    $replace_block_text = $replace_block_frame -> Scrolled ('Text', -background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e')
       -> grid(-row=>7, -column=>2, -ipady=>5, -columnspan=>2, -sticky=>"nws");
     $replace_block_frame -> Label (-justify=>'left',-text=>" ",-font=>$font_normal, -background=>$bgcol)->grid(-row=>4, -column=>1, -columnspan=>2,-sticky=>"nw");
     $replace_block_frame -> Label (-justify=>'left',-text=>" ",-font=>$font_normal, -background=>$bgcol)->grid(-row=>6, -column=>1, -columnspan=>2,-sticky=>"nw");
@@ -5753,7 +5776,7 @@ sub batch_replace_block { # change block in models
       }
     };
     $replace_block_text -> insert ("0.0", $models_text);
-    $replace_block_text -> configure(state=>'disabled'); 
+    $replace_block_text -> configure(state=>'disabled');
     $replace_block_frame -> Button (-text=>"Do", -width=>10, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       my $replace_with = $block_replace -> get("0.0", "end");
       my $no_changed = replace_block(\@batch, $block, $replace_with);
@@ -5765,8 +5788,8 @@ sub batch_replace_block { # change block in models
       $replace_block_window -> destroy;
       return();
     })->grid(-row=>10,-column=>1,-sticky=>'nes');
-}  
-sub add_code { 
+}
+sub add_code {
 ### Purpose : Create dialog for adding code to files in batch mode
 ### Compat  : W+L+
     my @models = $models_hlist -> selectionGet ();
@@ -5779,16 +5802,16 @@ sub add_code {
     $add_code_window -> resizable( 0, 0 );
     center_window($add_code_window);
     $add_code_frame = $add_code_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
-    my $block = "\$TABLE";      
+    my $block = "\$TABLE";
     $add_code_frame -> Label (-text=>"This will add the specified code at the end\nof the selected model files.\n",
         -font=>$font_normal,-justify=>"left", -background=>$bgcol)
       ->grid(-row=>1, -column=>1, -columnspan=>2,-sticky=>"nw");
     $add_code_frame -> Label (-text=>"Code:",-font=>$font_normal, -background=>$bgcol)
       ->grid(-row=>5, -column=>1, -sticky=>"ne");
-    my $code_entry = $add_code_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal, -width=>30, -height=>8, -scrollbars=>'e') 
+    my $code_entry = $add_code_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal, -width=>30, -height=>8, -scrollbars=>'e')
       -> grid(-row=>5, -column=>2, -ipady=>5, -columnspan=>2, -sticky=>"nwse");
     $add_code_frame -> Label (-text=>"Models:",-font=>$font_normal, -background=>$bgcol)->grid(-row=>7, -column=>1, -sticky=>"ne");
-    $add_code_text = $add_code_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e') 
+    $add_code_text = $add_code_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e')
       -> grid(-row=>7, -column=>2, -ipady=>5, -columnspan=>2, -sticky=>"nws");
     $add_code_frame -> Label (-justify=>'left',-text=>" ",-font=>$font_normal, -background=>$bgcol)->grid(-row=>4, -column=>1, -columnspan=>2,-sticky=>"nw");
     $add_code_frame -> Label (-justify=>'left',-text=>" ",-font=>$font_normal, -background=>$bgcol)->grid(-row=>6, -column=>1, -columnspan=>2,-sticky=>"nw");
@@ -5803,7 +5826,7 @@ sub add_code {
       }
     };
     $add_code_text -> insert ("0.0", $models_text);
-    $add_code_text -> configure(state=>'disabled'); 
+    $add_code_text -> configure(state=>'disabled');
     $add_code_frame -> Button (-text=>"Do", -width=>16, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       my $code = $code_entry -> get("0.0", "end");
       my $no_changed = 0;
@@ -5821,7 +5844,7 @@ sub add_code {
       $add_code_window -> destroy;
       return();
     })->grid(-row=>10,-column=>1,-sticky=>'nes');
-}  
+}
 
 sub random_sim_block_window {
 ### Purpose : Create a dialog to change the seed in SIM to a random number (invoke change seed)
@@ -5842,7 +5865,7 @@ sub random_sim_block_window {
     $sim_seed_frame -> Label (-text=>"This will change the seeds in the \$SIMULATION block\nto a random number. Other specifications such as\nUNIFORM/NEW/NONPARAMETRIC are kept.\n",
       -font=>$font_normal,-justify=>"left", -background=>$bgcol)->grid(-row=>1, -column=>1, -columnspan=>2,-sticky=>"nw");
     $sim_seed_frame -> Label (-text=>"Change seeds in:",-font=>$font_normal, -background=>$bgcol)->grid(-row=>2, -column=>1, -sticky=>"ne");
-    my $sim_seed_text = $sim_seed_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e') 
+    my $sim_seed_text = $sim_seed_frame -> Scrolled ('Text', background=>'white', -font=>$font_normal,-width=>18, -height=>8, -scrollbars=>'e')
       -> grid(-row=>2, -column=>2, -ipady=>5, -columnspan=>2);
     my $models_text = "";
     my @batch;
@@ -5853,7 +5876,7 @@ sub random_sim_block_window {
       }
     };
     $sim_seed_text -> insert ("0.0", $models_text);
-    $sim_seed_text -> configure(state=>'disabled'); 
+    $sim_seed_text -> configure(state=>'disabled');
     $sim_seed_frame -> Label (-justify=>'left',-text=>" ",-font=>$font_normal, -background=>$bgcol)->grid(-row=>3, -column=>1, -columnspan=>2,-sticky=>"nw");
     $sim_seed_frame -> Button (-text=>"Do", -width=>10, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       my $no_changed = 0;
@@ -5869,6 +5892,6 @@ sub random_sim_block_window {
       $sim_seed_window -> destroy;
       return();
     })->grid(-row=>7,-column=>1,-sticky=>'nes');
-}  
+}
 
 
