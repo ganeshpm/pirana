@@ -110,7 +110,7 @@ sub redraw_screen {
     populate_tab_hlist ($tab_hlist);
   }
   frame_models_show(1);
-  populate_models_hlist ($setting{models_view});
+  populate_models_hlist ($setting{models_view}, $condensed_model_list);
 }
 
 sub nmfe_command {
@@ -241,12 +241,19 @@ sub create_menu_bar {
        message ($m);
     });
   }
+  $mbar_NM_run_mode = $mbar_NM -> cascade (-label => "Run mode", -background=>$bgcol, -tearoff=>0);
+  $mbar_NM_run_mode -> command(-label => "Local mode", -background=>$bgcol,
+    -command=> sub {});
+  $mbar_NM_run_mode -> command(-label => "Remote mode", -background=>$bgcol,
+    -command=> sub {});
+  $mbar_NM_run_mode -> command(-label => "PCluster mode", -background=>$bgcol,
+    -command=> sub {});
 
 
   our $mbar_model = $mbar -> cascade(-label =>"Model", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_model -> command(-label => "Run (nmfe)", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
 		  -command=> sub { nmfe_command() });
-  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
+  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol, -tearoff=>0);
   $mbar_model_psn -> command (-label=> " execute", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
@@ -274,6 +281,12 @@ sub create_menu_bar {
 
   if ($os =~ m/MSWin/i) {
     $mbar_model_wfn = $mbar_model -> cascade(-label => "WFN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
+    $mbar_model_wfn -> command (-label=> " NMGO", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+        wfn_command("NMGO");
+    });
+    $mbar_model_wfn -> command (-label=> " NMBS", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+        wfn_command("NMBS");
+    });
   }
   $mbar_model -> separator ;
   $mbar_model -> command(-label => "Properties", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol,-underline=>0,
@@ -375,19 +388,21 @@ sub create_menu_bar {
   our $show_tab_list = 1;
   our $mbar_view = $mbar -> cascade(-label =>"View", -background=>$bgcol,-underline=>0, -tearoff => 0);
   #if ($os =~ m/MSWin/i) {
-    $mbar_view -> checkbutton (-variable=>\$full_screen, -label => "Full screen", -background=>$bgcol,-underline=>0, -command=>sub{
+    $mbar_view -> checkbutton (-variable=>\$full_screen, -image=>$gif{full_screen}, -compound=>'left', -label => "    Full screen", -background=>$bgcol, -command=>sub{
       redraw_screen($full_screen, $show_tab_list);
     });
   #}
-  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -label=>"Show tables & files", , -background=>$bgcol,-underline=>0, -command=>sub{
+  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -image=>$gif{split_vertical}, -label=>"    Show tables & files", -compound=>'left', -background=>$bgcol, -command=>sub{
     redraw_screen($full_screen, $show_tab_list);
   });
-
-  $mbar_view -> command (-label => "Execution log", -image=>$gif{log}, -compound=>'left',-background=>$bgcol,-underline=>1,
+  $mbar_view -> checkbutton (-variable=>\$condensed_model_list, -image=>$gif{binocular}, -label => "    Condensed view", -compound=>'left', -background => $bgcol,  -command=>sub{
+      populate_models_hlist ($models_view, $condensed_model_list);
+  });
+  $mbar_view -> command (-label => "    Execution log", -image=>$gif{log}, -compound=>'left',-background=>$bgcol,
 	  -command=>sub {
       show_exec_runs_window();
     });
-  $mbar_view -> command(-label => "PCluster monitor", -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol,-underline=>1,
+  $mbar_view -> command(-label => "PCluster monitor", -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol,
 		  -command=>sub {cluster_monitor()});
 
   our $process_monitor = 0;
@@ -395,14 +410,14 @@ sub create_menu_bar {
  #  -command=>sub {
  #     show_console_output();
  #   });
-  $mbar_view -> command (-label => "Show parameter estimates",-image=>$gif{estim}, -compound=>'left', -background=>$bgcol,-underline=>1,
+  $mbar_view -> command (-label => "    Show parameter estimates",-image=>$gif{estim}, -compound=>'left', -background=>$bgcol,
 	  -command=>sub {
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
         my $lst = @lst[0].".".$setting{ext_res};
         show_estim_window ($lst);
         $estim_window -> raise();
     });
-  $mbar_view -> command (-label => "Intermediate results of active runs", -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol,-underline=>1,
+  $mbar_view -> command (-label => "    Intermediate results of active runs", -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol,
 	  -command=>sub {
     $cwd = $dir_entry -> get();
       chdir($cwd);
@@ -420,20 +435,20 @@ sub create_menu_bar {
       start_command($software{browser},unix_path($nm_dirs{@nm_keys[0]}."/html/index.htm")) }
     );
   }
-  $mbar_help -> command(-label => "NM UsersNet", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
-  $mbar_help_psn = $mbar_help -> cascade(-label => "PsN", -background=>$bgcol,-underline=>2);
-  $mbar_help_psn -> command(-label => "PsN manual", -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
-  $mbar_help_psn -> command(-label => "execute", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("execute", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "vpc", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("vpc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "npc", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("npc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "bootstrap", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("bootstrap", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "llp", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sse", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sumo", -background=>$bgcol,-underline=>0,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help -> command(-label => "NM UsersNet", -background=>$bgcol,,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
+  $mbar_help_psn = $mbar_help -> cascade(-label => "PsN", -background=>$bgcol, -tearoff=>0);
+  $mbar_help_psn -> command(-label => "PsN manual", -background=>$bgcol,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
+  $mbar_help_psn -> command(-label => "execute", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("execute", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "vpc", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("vpc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "npc", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("npc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "bootstrap", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("bootstrap", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "llp", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sse", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sumo", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
 
-  $mbar_help -> command(-label => "Xpose", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
-  $mbar_help -> command(-label => "WFN", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
-  $mbar_help -> command(-label => "About Piraña", -background=>$bgcol,-underline=>0, -command=>sub {
+  $mbar_help -> command(-label => "Xpose", -background=>$bgcol,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
+  $mbar_help -> command(-label => "WFN", -background=>$bgcol,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
+  $mbar_help -> command(-label => "About Piraña", -background=>$bgcol, -command=>sub {
   $mw -> messageBox(-type=>'ok',	-message=>"Piraña (version ".$version.")\n   Created by Ron Keizer.\n   Department of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by the Uppsala PM group,\nand several other modelers.\n\nhttp://pirana.sf.net\n");
   });
 }
@@ -2704,7 +2719,7 @@ sub read_curr_dir {
       $i++;
     }
   }
-  populate_models_hlist ($models_view);
+  populate_models_hlist ($models_view, $condensed_model_list);
   status ();
 }
 
@@ -2730,7 +2745,11 @@ sub update_model_info {
 sub populate_models_hlist {
 ### Purpose : To put all the NM model files and directories found in the current working directory in the main overview table
 ### Compat  : W+
-  my $order = shift;
+  my ($order, $condensed) = @_;
+  my $add_condensed = "";
+  if ($condensed == 0 ) {
+      $add_condensed = "\n\n";
+  }
   undef @ctl_show;
   if ($order eq "tree") {
     my ($ctl_show_ref, $tree_text) = tree_models();
@@ -2761,20 +2780,19 @@ sub populate_models_hlist {
            if ($models_colors {$runno} ne "") {
              $mod_background = $models_colors{$runno};
            }
-           $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$mod_background, -font => $font_normal);;
-           $style_small = $models_hlist-> ItemStyle( 'text', -anchor => 'w', -padx => 5, -background=>$mod_background, -font => $font_small);;
-
-           our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'e', -background=>$mod_background, -foreground=>'#008800',-font => $font_fixed);
-           our $style_red = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'e', -background=>$mod_background, -foreground=>'#990000', -font => $font_fixed);
+           $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);;
+           $style_small = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -background=>$mod_background, -font => $font_small);;
+           our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_fixed);
+           our $style_red = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_fixed);
            if (($models_ofv{$runno} ne "")&&($models_ofv{$models_refmod{$runno}} ne "")) {
              $ofv_diff = $models_ofv{$models_refmod{$runno}} - $models_ofv{$runno} ;
              if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
              if ($ofv_diff < 0) { $style_ofv = $style_red; }
              if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
-               $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_fixed);
+               $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_fixed);
              }
              $ofv_diff = rnd(-$ofv_diff,3); # round before printing
-            } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_fixed);}
+            } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_fixed);}
           if ($models_suc{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
           if ($models_cov{$runno} eq "C") {$style_cov = $style_green} else {$style_cov = $style_red};
           my $runno_text = "";
@@ -2784,7 +2802,7 @@ sub populate_models_hlist {
           if (($models_ofv{$runno} eq "")||($models_ofv{$models_refmod{$runno}} eq "")) {
             $models_dofv{$runno} = "";
           }
-          $models_hlist -> itemCreate($i, 0, -text => $runno_text, -style=>$style);
+          $models_hlist -> itemCreate($i, 0, -text => $runno_text.$add_condensed, -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $models_refmod{$runno}, -style=>$style_small);
           $models_hlist -> itemCreate($i, 2, -text => $models_descr{$runno}, -style=>$style );
           $models_hlist -> itemCreate($i, 3, -text => $models_method{$runno}, -style=>$style_small);
@@ -2795,7 +2813,7 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 8, -text => $models_bnd{$runno}, -style=>$style_red);
           $models_hlist -> itemCreate($i, 9, -text => $models_sig{$runno}, -style=>$style);
           my $note = $models_notes{$runno};
-          $note =~ s/\n/\ /g;
+	  if ($condensed == 1) {$note =~ s/\n/\ /g;}
           $models_hlist -> itemCreate($i, 10, -text => $note, -style=>$style);
         };
       }
@@ -2958,7 +2976,7 @@ sub populate_tab_hlist {
   foreach (@tabcsv_files) {
     if($hlist) {
       $hlist -> add($i);
-      my $style = $hlist-> ItemStyle('text', -anchor => 'w',-padx => 5, -background=> $tab_hlist_color, -font => $font_normal);
+      my $style = $hlist-> ItemStyle('text', -anchor => 'nw',-padx => 5, -background=> $tab_hlist_color, -font => $font_normal);
       $hlist -> itemCreate($i, 0, -text => $_, -style=>$style);
       $i++;
     }
@@ -3213,7 +3231,7 @@ sub move_nm_files {
   $fortran2 = pop (@fortran1);
   @fortran2 = split ("=", $fortran2);
   $fortran3 = pop (@fortran2);
-  @fortran3 = split /\./, $fortran3;
+  @fortran3 = split (/\./, $fortran3);
   @msfi = split (" ", $msfi);
   print $include."\n";
   @include = split ("=", $include);
@@ -4332,7 +4350,7 @@ sub frame_models_show {
     $models_menu -> command (-label=> " Run (nmfe)", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        nmfe_command();
     });
-    our $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol);
+    our $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
     $models_menu_psn -> command (-label=> " execute", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
@@ -4358,7 +4376,7 @@ sub frame_models_show {
        psn_command("sumo");
     });
     if ($os =~ m/MSWin/i) {
-      our $models_menu_wfn = $models_menu -> cascade (-label=> " WFN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol);
+      our $models_menu_wfn = $models_menu -> cascade (-label=> " WFN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
       $models_menu_wfn -> command (-label=> " NMGO", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
            wfn_command("NMGO");
          });
@@ -4410,21 +4428,21 @@ sub frame_models_show {
          }
      }, Ev('X'), Ev('Y') ] );
 
-  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'#ffffe0', -font => $font_normal);
-  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'white', -font => $font_normal);
-  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'red', -font => $font_normal);
-  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);
-  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'w', -pady => 0, -padx => 2, -font => $font_normal );
-  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'e', -pady => 0, -padx => 2, -font => $font_normal );
-  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#008800', -background=>'white',-font => $font_fixed);
-  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#990000', -background=>'white',-font => $font_fixed);
-  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#888800', -background=>'white',-font => $font_fixed);
-  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'w',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#d0d0ff', -font => $font_normal);
-  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#e5e5ff', -font => $font_normal);
-  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'e', -background=>'#ffffe5', -font => $font_normal);
+  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#ffffe0', -font => $font_normal);
+  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'white', -font => $font_normal);
+  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'red', -font => $font_normal);
+  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font_normal);
+  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => 0, -padx => 2, -font => $font_normal );
+  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => 0, -padx => 2, -font => $font_normal );
+  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#008800', -background=>'white',-font => $font_fixed);
+  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#990000', -background=>'white',-font => $font_fixed);
+  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#888800', -background=>'white',-font => $font_fixed);
+  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#d0d0ff', -font => $font_normal);
+  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#e5e5ff', -font => $font_normal);
+  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#ffffe5', -font => $font_normal);
 
   # headers of model list
   our @main_headers;
@@ -4455,6 +4473,15 @@ sub frame_models_show {
 
   $mod_buttons = $model_overview_frame -> Frame(-background=>$bgcol) ->grid(-row=>0,-column=>1,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'w');
 
+  our $condensed_view_button = $mod_buttons -> Button (
+       -image=>$gif{binocular}, -background => $button, -border=>$bbw, -activebackground=>$abutton,
+       -width=>26, -height=>22,
+       -command=>sub{
+           $condensed_model_list = 1 - $condensed_model_list;
+	   populate_models_hlist ($models_view, $condensed_model_list);
+      })->grid(-row=>1,-column=>1,-sticky=>'we');
+  $help->attach($condensed_view_button, -msg => "Show condensed or expanded view of models (allowing for room for notes etc.");
+
   if ($models_view eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
   our $sort_button = $mod_buttons->Button(-image=>$listimage, -width=>26, -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     if ($models_view eq "tree") {
@@ -4465,20 +4492,20 @@ sub frame_models_show {
        $listimage = $gif{treeview};
     }
     $sort_button -> configure (-image=>$listimage);
-    populate_models_hlist($models_view);
-  })->grid(-row=>1,-column=>1,-sticky=>'we');
+    populate_models_hlist($models_view, $condensed_model_list);
+  })->grid(-row=>1,-column=>2,-sticky=>'we');
   $help->attach($sort_button, -msg => "Show models as list or as tree structure, based on their reference model");
 
   our $new_button = $mod_buttons->Button(-image=>$gif{newfolder}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     new_dir();})
-    ->grid(-row=>1,-column=>2,-sticky=>'we');
+    ->grid(-row=>1,-column=>3,-sticky=>'we');
   $help->attach($new_button, -msg => "New folder");
   our $new_button = $mod_buttons->Button(-image=>$gif{new}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     new_ctl();})
-    ->grid(-row=>1,-column=>3,-sticky=>'we');
+    ->grid(-row=>1,-column=>4,-sticky=>'we');
   $help->attach($new_button, -msg => "New model");
 
-  $mod_buttons -> Label (-text=>"       ", -background=>$bgcol)->grid(-row=>1,-column=>4,-sticky=>'we');
+  $mod_buttons -> Label (-text=>"       ", -background=>$bgcol)->grid(-row=>1,-column=>5,-sticky=>'we');
 
   my $show_execution_log = $mod_buttons -> Button (-image=>$gif{log}, -background=>$button,-activebackground=>$abutton, -border=>0,
 	  -command=>sub {
@@ -4517,41 +4544,37 @@ sub frame_models_show {
   }) ->grid(-row=>1,-column=>10,-columnspan=>1,-sticky=>'wens');
   $help->attach($tree_txt_button, -msg => "Generate run record as tree");
 
-  $mod_buttons -> Label (-text=>"       ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
+  $mod_buttons -> Label (-text=>"   ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
   my $cluster_label = $mod_buttons -> Label (-text=>"  Local mode", -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>15,-sticky=>'we');
   $enable_local_button = $mod_buttons -> Button (-image=>$gif{local_active}, -border=>$bbw, -width=>30, -height=>22, , -background=>$bgcol,-activebackground=>$abutton,-command=>sub{
      $cluster_active = 0;
      $gif_shell=$gif{shell};
      $command_button -> configure(-image=>$gif_shell);
      cluster_active($cluster_active);
-     $cluster_label -> configure(-text=>" Local");
+     $cluster_label -> configure(-text=>" Local mode");
   })->grid(-row=>1,-column=>12,-sticky => 'wns');
   $help -> attach($enable_local_button, -msg => "Run NONMEM locally");
   if ($os =~ m/MSWin/i) {
     $enable_pcluster_button = $mod_buttons -> Button (-image=>$gif{pcluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
-       if (($cluster_active == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
+       if ($cluster_active == 2) {cluster_monitor()} ;
        $cluster_active = 2;
-       if (($cluster_active==1)&&($setting{cluster_type}!=0)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
        $command_button -> configure(-image=>$gif_shell);
        cluster_active($cluster_active);
-       $cluster_label -> configure(-text=>" PCluster");
+       $cluster_label -> configure(-text=>" PCluster mode");
     })->grid(-row=>1,-column=>14,-sticky => 'wns');
     $help -> attach($enable_pcluster_button, -msg => "Run on PCluster");
   }
   $enable_mconnect_button = $mod_buttons -> Button (-image=>$gif{cluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
-     if (($cluster_active == 1)&&($setting{cluster_monitor})) {cluster_monitor()} ;
      $cluster_active = 1;
-     if (($cluster_active==1)&&($setting{cluster_type}!=0)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
      $command_button -> configure(-image=>$gif_shell);
      cluster_active($cluster_active);
-     $cluster_label -> configure(-text=>" Remote cluster");
+     $cluster_label -> configure(-text=>" Remote mode");
   })->grid(-row=>1,-column=>13,-sticky => 'wns');
   $help -> attach($enable_mconnect_button, -msg => "SSH remote cluster");
   $cluster_active = $setting{cluster_default};
   cluster_active($cluster_active);
 
-
-   $copy_dir_res_button = $mod_buttons->Button(-image=>$gif{folderout},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+  $copy_dir_res_button = $mod_buttons->Button(-image=>$gif{folderout},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
       $test_dirs = 0;
       foreach (@file_type_copy[$models_hlist -> selectionGet()]) {
@@ -4563,7 +4586,7 @@ sub frame_models_show {
       } else {
         message ("Please select one or more valid directories.");
       }
-    })->grid(-row=>1,-column=>9,-sticky=>'wens');
+  })->grid(-row=>1,-column=>9,-sticky=>'wens');
   $help->attach($copy_dir_res_button, -msg => "Copy results files and \$TABLE files from a subfolder to the current folder");
 
   $filter_buttons = $model_overview_frame -> Frame(-background=>$bgcol) ->grid(-row=>0,-column=>3,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'e');
@@ -4621,10 +4644,10 @@ sub show_run_frame {
   $run_info_frame = $run_frame -> Frame(-background=>$bgcol)->grid(-row=>1, -column=>7, -rowspan=>2, -ipady=>3, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"Model file:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"  Description:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>2, -column=>3, -sticky=>"nwe");
-  $run_info_frame -> Button (-image=>$gif{edit_info}, -width=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=> sub{
+  my $edit_note = $run_info_frame -> Button (-image=>$gif{edit_info}, -width=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=> sub{
     properties_command();
   }) -> grid(-row=>3, -column=>3, -sticky=>"ens");
-
+  $help -> attach($edit_note, -msg => "Edit properties and notes of model / results");
   $run_info_frame -> Label(-text=>"Last modified:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"ne");
   $run_info_frame -> Label(-text=>"Dataset:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"es");
   $run_info_frame -> Label (-text=>"  Coloring:", -font=>$font_normal, -background=>$bgcol )->grid(-column=>3,-row=>1,-sticky=>"ens");
@@ -4770,7 +4793,7 @@ sub model_properties_window {
       if ($descr_new ne $descr) {change_model_description($model_id, $descr_new)};
       $models_notes{$model_id} = $model_notes;
       my $note_strip = $model_notes;
-      $note_strip =~ s/\n/\ /g;
+      if ($condensed_model_list == 1) {$note_strip =~ s/\n/\ /g;}
       $models_hlist -> itemConfigure($idx, 10, -text => $note_strip);
       $models_hlist -> update();
       $model_prop_window -> destroy();
@@ -4797,8 +4820,8 @@ sub note_color {
 ### Purpose : Give the selected model/result a color
 ### Compat  : W+L+
   my $color = shift;
-  my $style_color = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$color, -font=>$font_normal);
-  my $style_color_small = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$color, -font=>"Verdana 8");
+  my $style_color = $models_hlist->ItemStyle( 'text', -anchor=>'nw', -padx => 5, -background=>$color, -font=>$font_normal);
+  my $style_color_small = $models_hlist->ItemStyle( 'text', -anchor=>'nw',-padx => 5, -background=>$color, -font=>$font_small);
 
   my @sel = $models_hlist -> selectionGet ();
   foreach my $no (@sel) {
@@ -4807,18 +4830,18 @@ sub note_color {
       # determine style colors
       $runno = @ctl_show[$no];
       $mod_background = $color;
-      $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$mod_background, -font => $font_normal);;
-      our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$mod_background, -foreground=>'#008800',-font => "Courier 9 bold");
-      our $style_red = $models_hlist->ItemStyle( 'text', -padx => 5, -background=>$mod_background, -foreground=>'#990000', -font => "Courier 9 bold");
+      $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);
+      our $style_green = $models_hlist->ItemStyle( 'text', -anchor=>"nw", -padx => 5, -background=>$mod_background, -foreground=>'#008800',-font =>"Courier 9 bold" );
+      our $style_red = $models_hlist->ItemStyle( 'text', -anchor=>"nw", -padx => 5, -background=>$mod_background, -foreground=>'#990000', -font =>"Courier 9 bold" );
       if (($res_ofv{$runno} ne "")&&($res_ofv{$models_refmod{$runno}} ne "")) {
         my $ofv_diff = $res_ofv{$models_refmod{$runno}} - $res_ofv{$runno} ;
         if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
         if ($ofv_diff < 0) { $style_ofv = $style_red; }
         if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
-          $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => "Courier 8 bold");
+          $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_bold);
         }
-      } else {$style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => "Courier 8 bold");}
-      if ($res_success{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
+      } else {$style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => "Courier 9 bold");}
+      if ($models_suc{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
       if ($res_cov{$runno} eq "C") {$style_cov = $style_green} else {$style_cov = $style_red};
       $models_hlist -> itemConfigure($no, 0, -style => $style_color);
       $models_hlist -> itemConfigure($no, 1, -style => $style_color_small);
@@ -5105,7 +5128,7 @@ sub show_exec_runs_window {
   }
   $db_results = db_read_exec_runs();
   my $i=0;
-  $style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);;
+  $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font_normal);;
   foreach my $row (@$db_results) {
     my ($model, $descr, $date_execute, $name_modeler, $nm_version, $method,
       $exec_where, $command) = @$row;
@@ -5361,11 +5384,11 @@ sub inter_window_add_item {
     my ($item, $minimization_done) = @_;
     my $dir1;
     my $i=1;
-    my $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>'white', -font => $font_normal);
-    my $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>'white', -font => $font_normal);
+    my $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'white', -font => $font_normal);
+    my $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font_normal);
     if ($minimization_done == 1) { # make green, probably busy doing the covariance step
-      $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'e',-padx => 5, -background=>$lightgreen, -font => $font_normal);
-      $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'w',-padx => 5, -background=>$lightgreen, -font => $font_normal);
+      $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>$lightgreen, -font => $font_normal);
+      $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$lightgreen, -font => $font_normal);
     }
     unless ($item =~ m/HASH/) {  # for some reason this sometimes is necessary.
         $grid->add($item);
