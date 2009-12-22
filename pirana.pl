@@ -68,7 +68,7 @@ our %setting, our %setting_descr, our %nm_dirs, our %nm_vers;
 our %software, our %software_descr; our $nm_reg_chosen; our $nm_reg_chosen;
 our %project, our %project_dir, our %project_nr = (); our %scripts; our %scripts_descr;
 our %clients, our %clients_descr; our $active_project; our %vars; our %psn_commands; our %psn_commands_descr;
-our $first_time_flag= 0;
+our $first_time_flag= 0; our $condensed_model_list = 1;
 
 #*** Read all Pirana modules ***************************************************
 do ("./subs.pl");
