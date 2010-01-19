@@ -10,7 +10,19 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
+our @EXPORT_OK = qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
+
+sub make_clean_dir {
+    my $dir = shift;
+    $cwd = fastgetcwd();
+    unless (-d $dir) {mkdir $dir};
+    if (chdir ($dir)) {
+	@files = dir($dir);
+	foreach (@files) {$_ = $dir."/".$_ }
+        unlink (@files);
+    }
+    chdir ($cwd);
+}
 
 sub nonmem_priority {
     my $priority = shift;

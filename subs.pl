@@ -23,6 +23,45 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate modules
 
+sub dark_row_color {
+    my $col = shift;
+    $col =~ s/#//;
+    my $red   = hex (substr($col,0,2)) * 0.95;
+    my $green = hex (substr($col,2,2)) * 0.95;
+    my $blue  = hex (substr($col,4,2)) * 0.95;
+    my $new_col = "#".sprintf("%x", $red).sprintf("%x", $green).sprintf("%x", $blue);
+    return ($new_col);
+};
+
+sub even {
+    my $n = shift;
+    my $even = 0;
+    if (($n/2) == int($n/2)) {
+	$even = 1;
+    }
+    return ($even);
+}
+
+sub enable_run_mode {
+    $cluster_active = shift;
+    if ($cluster_active == 0) {
+	$gif_shell=$gif{shell};
+	$command_button -> configure(-image=>$gif_shell);
+	cluster_active ($cluster_active);
+	$cluster_label -> configure(-text=>" Local mode");
+    }
+    if ($cluster_active == 1) {
+	$command_button -> configure(-image=>$gif_shell);
+	cluster_active ($cluster_active);
+	$cluster_label -> configure(-text=>" Remote mode");
+    }
+    if ($cluster_active == 2) {
+        $command_button -> configure(-image=>$gif_shell);
+        cluster_active ($cluster_active);
+        $cluster_label -> configure(-text=>" PCluster mode");
+    }
+}
+
 sub create_nm_start_script {
 ### Purpose : Create a script (bat or sh) to start
 ### Compat  : W+L+
@@ -197,6 +236,73 @@ sub view_outputfile_command {
   my $model_id = @ctl_show[@sel[0]];
   edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_res}));
 }
+sub R_plot_etas_distribution_command {
+  my @sel = $models_hlist -> selectionGet ();
+  if (@sel == 0) { message("First select a model / result file."); return(); }
+  my $model_id = @ctl_show[@sel[0]];
+  my $eta_file = $cwd."/".$model_id.".ETA" ;
+  unless (-e $eta_file) {
+      message ($model_id.".ETA was not found.\nNote that this feature is only available\when using NM version 7 or higher.");
+  };
+  unless (-d "pirana_temp") {mkdir ("pirana_temp")};
+  my $png = $cwd."/pirana_temp/model_id_etas.png" ;
+  my @args = ($eta_file, $png);
+  my $res = R_run_script ($R, $base_dir."/R/plot_etas.R", \@args);
+  if (-e $png) {
+      system ($png);
+  } else {
+      message ("For some reason, a plot could not be created. Please check R installation and Pirana settings.");
+  }
+}
+sub R_correlation_plot_command {
+### Purpose : create a csv file with the correlation matrix, feed it to R+ellipse and create a PDF.
+### Compat  : W+L-
+  unless (-d $software{r_dir}."/library/ellipse") {message ("You need to have the R-package 'ellipse' installed\nto use this function."); return();};
+  my @sel = $models_hlist -> selectionGet();
+  if (@sel == 0) { message("First select a model / result file."); return(); }
+  my $model_id = @ctl_show[@sel[0]];
+  make_clean_dir ($cwd."/pirana_temp");
+  my @corr_files;
+  if (-e $model_id.".cor") { # NM 7 or higher exports the corr.matrix to a file
+      convert_nm_table_file ($model_id.".cor");
+      @corr_files = dir ($cwd."/pirana_temp", $model_id.".cor");
+  } else {                   # NM 6 or lower: read correlation matrix from results file
+       my $lst_file = $model_id.".".$setting{ext_res};
+       print $lst_file;
+       if (-e $lst_file) {
+	   my ($cov_ref, $inv_cov_ref, $corr_ref, $r_ref, $s_ref, $labels_ref) = get_cov_mat ($lst_file);
+	   my $available = output_matrix ($corr_ref, $labels_ref, "pirana_temp/".$model_id."_matrix_corr.csv");
+       } else {message ("Please select a model of which a result file exists (*.".$setting{ext_res}.")")}
+       @corr_files = dir ("pirana_temp", $model_id.".cor");
+  }
+  if (@corr_files == 0) {
+      message ("Error finding information for correlation matrix.")
+  } else {
+      my $png = $cwd."/pirana_temp/".$corr_file."matrix_corr.png";
+      my @args = ($cwd."/pirana_temp/", $png, $model_id);
+      my $res = R_run_script ($R, $base_dir."/R/plot_corr_matrix.R", \@args);
+      generate_HTML_from_images ($cwd."/pirana_temp/", "correlation.html");
+      start_command($software{browser}, '"file:///'.$cwd."/pirana_temp/correlation.html");
+  }
+  return();
+}
+
+sub generate_HTML_from_images {
+    my ($dir, $html_file) = @_;
+    open (HTML, ">".$dir."/".$html_file);
+    print HTML "<HTML>\n<BODY>\n";
+    print HTML "</TABLE>\n";
+    my @png = dir($dir, ".png");
+    foreach $png_file (@png) {
+	print HTML "<TR><TD>";
+	print HTML "<IMG src='".$png_file."'></IMG>";
+	print HTML "</TD></TR>";
+    }
+    print HTML "</TABLE>\n";
+    print HTML "<BODY>\n<HTML>\n";
+    close(HTML);
+    return(1);
+}
 
 sub create_menu_bar {
 ### Purpose : Create the menu bar
@@ -243,12 +349,17 @@ sub create_menu_bar {
   }
   $mbar_NM_run_mode = $mbar_NM -> cascade (-label => "Run mode", -background=>$bgcol, -tearoff=>0);
   $mbar_NM_run_mode -> command(-label => "Local mode", -background=>$bgcol,
-    -command=> sub {});
+    -command=> sub {
+	enable_run_mode(0);
+    });
   $mbar_NM_run_mode -> command(-label => "Remote mode", -background=>$bgcol,
-    -command=> sub {});
+    -command=> sub {
+	enable_run_mode(1);
+    });
   $mbar_NM_run_mode -> command(-label => "PCluster mode", -background=>$bgcol,
-    -command=> sub {});
-
+    -command=> sub {
+	enable_run_mode(2);
+    });
 
   our $mbar_model = $mbar -> cascade(-label =>"Model", -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_model -> command(-label => "Run (nmfe)", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
@@ -351,8 +462,6 @@ sub create_menu_bar {
     our $mbar_matrix = $mbar_tools -> cascade (-label => "Matrices", -background=>$bgcol, -underlin=>0, -tearoff => 0);
     $mbar_matrix -> command(-label => "Extract all matrices from output", -background=>$bgcol,
 		   -command=> sub {save_matrices();} );
-    $mbar_matrix -> command(-label => "Plot correlation matrix (R)", -background=>$bgcol,
-		    -command=> sub {plot_corr_matrix();} );
 
   if (-d $software{r_dir}) {
     our $mbar_xpose = $mbar_tools -> cascade (-label => "Xpose", -background=>$bgcol, -underline=>0, -tearoff => 0);
@@ -360,20 +469,36 @@ sub create_menu_bar {
 		    -command=> sub {xpose_VPC_window();} );
   };
 
-  our $mbar_tools_batch = $mbar_tools -> cascade(-label =>"Batch processing", -background=>$bgcol,-underline=>1, -tearoff => 0);
-  $mbar_tools_batch -> command(-label => "Create n duplicates of model(s)", -background=>$bgcol,-underline=>1,
+  our $mbar_tools_batch = $mbar_tools -> cascade(-label =>"Batch processing", -background=>$bgcol, -tearoff => 0);
+  $mbar_tools_batch -> command(-label => "Create n duplicates of model(s)", -background=>$bgcol,
 		  -command=> sub { create_duplicates_window()});
-  $mbar_tools_batch -> command(-label => "Add code to models", -background=>$bgcol,-underline=>1,
+  $mbar_tools_batch -> command(-label => "Add code to models", -background=>$bgcol,
 		  -command=> sub { add_code() });
-  $mbar_tools_batch -> command(-label => "Replace blocks", -background=>$bgcol,-underline=>1,
+  $mbar_tools_batch -> command(-label => "Replace blocks", -background=>$bgcol,
 		  -command=> sub { batch_replace_block() });
-  $mbar_tools_batch -> command(-label => "Random seeds in \$SIM", -background=>$bgcol,-underline=>1,
+  $mbar_tools_batch -> command(-label => "Random seeds in \$SIM", -background=>$bgcol,
 		  -command=> sub { random_sim_block_window() });
   if ($setting{use_scripts} == 1) { # beta functionality
-    $mbar_tools -> command(-label => "Scripts", -image=>$gif{script}, -compound=>'left',-background=>$bgcol,-underline=>1,
+    $mbar_tools -> command(-label => "Scripts", -image=>$gif{script}, -compound=>'left',-background=>$bgcol,
 		  -command=>sub {edit_scripts()});
   }
+
   #my $mbar_tools_misc = $mbar_tools -> cascade(-label => "Misc", -background=>$bgcol,-underline=>0, -tearoff => 0);
+  my $mbar_tools_R = $mbar_tools -> cascade(-label => "R",-image=>$gif{R}, -compound=>'left', -background=>$bgcol, -tearoff => 0);
+  $mbar_tools_R -> command(-label => "Start R process", -background=>$bgcol,
+		  -command=> sub {
+		            status ("Starting R process. This will take a few seconds.");
+			    (our $R, my $res) = R_start_process ( $software{r_dir} );
+			    status ();
+		      if ($res =~ m/Perl bridge started/i) {
+			  message ("R process started in background.")
+		      } else {
+			  message ("R process could not be started.\nPlease check R installation and Pirana settings.");
+	              };
+		  });
+  $mbar_tools_R -> command(-label => "Stop R process", -background=>$bgcol,
+		  -command=> sub { if ($R) {R_stop_process($R)}; });
+
   $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -compound=>'left', -background=>$bgcol,-underline=>0,
 		  -command=>sub {cov_calc_window()});
   $mbar_tools -> command(-label => "Generate summary (csv) of all output", -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1,
@@ -565,7 +690,7 @@ sub recalc_cov {
   $covar_sd_entr -> update();
 }
 
-sub plot_corr_matrix {
+sub plot_corr_matrix_old {
 ### Purpose : create a csv file with the correlation matrix, feed it to R+ellipse and create a PDF.
 ### Compat  : W+L-
   unless (-d $software{r_dir}."/library/ellipse") {message ("You need to have the R-package 'ellipse' installed\nto use this function."); return();};
@@ -583,6 +708,7 @@ sub plot_corr_matrix {
   } else {message ("Please select a model of which a result file exists (*.".$setting{ext_res}.")")}
   return();
 }
+
 sub save_matrices {
 ### Purpose : Start extraction of all matrices from a results file.
 ### Compat  : W+L+
@@ -931,8 +1057,20 @@ sub show_estim_window {
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
 
     my ($th_ref, $om_ref, $si_ref, $th_se_ref, $om_se_ref, $si_se_ref) = get_estimates_from_lst ($lstfile);
-    my @th = @$th_ref; my @om = @$om_ref; my @si = @$si_ref;
-    my @th_se = @$th_se_ref; my @om_se = @$om_se_ref; my @si_se = @$si_se_ref;
+    my ($methods_ref, $est_ref, $term_ref) = get_estimates_from_lst ($lstfile);
+    my @methods = @$methods_ref;
+    my %est = %$est_ref;
+
+#    print @methods;
+    my $last_method = @methods[-1] ;  # take results from the last estimation method
+    my $res_ref = $est{$last_method};
+    my @res = @$res_ref;
+    my $theta_ref = @res[0];  my @th = @$theta_ref;
+    my $omega_ref = @res[1];  my @om = @$omega_ref;
+    my $sigma_ref = @res[2];  my @si = @$sigma_ref;
+    my $theta_se_ref = @res[3];  my @th_se = @$theta_se_ref;
+    my $omega_se_ref = @res[4];  my @om_se = @$omega_se_ref;
+    my $sigma_se_ref = @res[5];  my @si_se = @$sigma_se_ref;
 
     # and get information from NM model file
     my $modelno = $modelfile;
@@ -948,7 +1086,7 @@ sub show_estim_window {
     if (int(@si) > $cols) {$cols = int(@si+1)};
 
     unless ($estim_window) {
-      our $estim_window = $mw -> Toplevel(-title=>'Final parameter estimates');
+      our $estim_window = $mw -> Toplevel();
       $estim_window -> OnDestroy ( sub{
         undef $estim_window; undef $estim_window_frame; undef @estim_grid; undef @estim_headers;
       });
@@ -982,7 +1120,7 @@ sub show_estim_window {
 
     $i = 1; $j=1; my $max_i = 1;
     if (@th>0) {
-    $estim_window ->configure (-title=>'Final parameter estimates '.$lstfile);
+    $estim_window ->configure (-title=>$lstfile." (".$last_method.")");
     $estim_grid -> delete("all");
     $estim_grid -> add($i);
     $estim_grid -> itemCreate($i, 0, -text => "TH 1", -style=>$header_right);
@@ -1350,11 +1488,11 @@ sub edit_scripts {
 sub edit_ini_window {
 ### Purpose : Open a window to edit preferences/software settings
 ### Compat  : W+L?
-  ($ini_file, $ref_ini, $ref_ini_descr, $title, $software) = @_;
-  %ini = %$ref_ini;
-  %ini_descr = %$ref_ini_descr;
+  my ($ini_file, $ref_ini, $ref_ini_descr, $title, $software) = @_;
+  my %ini = %$ref_ini;
+  my %ini_descr = %$ref_ini_descr;
   open (INI, "<".unix_path($home_dir."/ini/".$ini_file));
-  @lines=<INI>;
+  my @lines=<INI>;
   close INI;
   my @keys;
   my @sections; my @sections_cnt;
@@ -1366,7 +1504,7 @@ sub edit_ini_window {
        $i++;
     }
     if (substr($_,0,1) eq "[") {
-      $sect = $_;
+      my $sect = $_;
       $sect =~ s/\[//;
       $sect =~ s/\]//;
       chomp($sect);
@@ -1375,7 +1513,7 @@ sub edit_ini_window {
     }
   }
   close INI;
-  $edit_ini_w = $mw -> Toplevel(-title=>$title);
+  my $edit_ini_w = $mw -> Toplevel(-title=>$title);
   $edit_ini_w -> resizable( 0, 0 );
   center_window($edit_ini_w);
   my $edit_ini_frame = $edit_ini_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
@@ -2710,7 +2848,7 @@ sub read_curr_dir {
     undef @ctl_copy; undef @ctl_descr_copy; undef @file_type_copy;
     foreach (@ctl_descr) {   # filter
       if (((@ctl_files[$i] =~ m/$filter/i) || ($models_notes{@ctl_files[$i]} =~ m/$filter/i) || ($models_descr{@ctl_files[$i]} =~ m/$filter/i)) || ($filter eq "")) {
-        unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || (@ctl_files[$i] =~ m/nmprd4p/i)) {
+        unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || (@ctl_files[$i] =~ m/nmprd4p/i) || (@ctl_files[$i] =~ m/pirana_temp/i) ) {
           push (@ctl_descr_copy, @ctl_descr[$i]);
           push (@ctl_copy, @ctl_files[$i]);
           push (@file_type_copy, @file_type[$i]);
@@ -2742,6 +2880,38 @@ sub update_model_info {
    our %models_dataset     = %{@model_refs[12]};
 }
 
+
+sub calc_ofv_diff {
+    my ($ref_ofv, $ref_method, $ofv, $method) = @_ ;
+    my @ref_methods = split (",", $ref_method);
+    my @methods = split (",", $method);
+    my @ofvs = split (",", $ofv);
+    my @ref_ofvs = split (",", $ref_ofv);
+    my %ofv_c; my %ref_ofv_c; my @dofv;
+    my $i = 0;
+    foreach my $meth (@ref_methods) {
+	$ref_ofv_c{$meth} = @ref_ofvs[$i];
+	$i++;
+    }
+    my $i = 0;
+    foreach my $meth (@methods) {
+	$ofv_c{$meth} = @ofvs[$i];
+	if ($ref_ofv_c{$meth} ne "") {
+	    push (@dofv, rnd(($ref_ofv_c{$meth} - $ofv_c{$meth}),3) );
+	}
+	$i++;
+    }
+    my $d = join (",", @dofv);
+    return ($d);
+};
+
+sub return_last {
+# Purpose: Return only last value in a comma-separated string
+    my $all_str = shift;
+    my @all = split (",", $all_str);
+    return (@all[-1]);
+}
+
 sub populate_models_hlist {
 ### Purpose : To put all the NM model files and directories found in the current working directory in the main overview table
 ### Compat  : W+
@@ -2769,49 +2939,85 @@ sub populate_models_hlist {
       my $ofv_diff;
       unless ((@file_type_copy[$i] < 2)&&(length(@ctl_descr_copy[$i]) == 0)) {
         if (@file_type_copy[$i] < 2) {
-          $runno = "<DIR>"; $style=$dirstyle; $style_ofv = $dirstyle;
+          $runno = "<DIR>";
+	  $style = $dirstyle;
           $models_hlist -> itemCreate($i, 0, -text => $runno, -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 2, -text => @ctl_descr_copy[$i], -style=>$style );
           for ($j=3;$j<=10;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
            $runno=@ctl_show[$i];
-           $mod_background = "#FFFFFF";
-           if ($models_colors {$runno} ne "") {
+	   my $mod_background = "#FFFFFF";
+           unless ($models_colors{$runno} eq "") {
              $mod_background = $models_colors{$runno};
            }
-           $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);;
-           $style_small = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -background=>$mod_background, -font => $font_small);;
-           our $style_green = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_fixed);
-           our $style_red = $models_hlist->ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_fixed);
+	   if (even($i)) {$mod_background = dark_row_color($mod_background)};
+           our $style_ofv   = $models_hlist -> ItemStyle( 'text', -anchor => 'ne', -justify=>'l', -padx => 5, -background=>$mod_background, -font => $font_small, -foreground=>"#000000");
+           our $style       = $models_hlist -> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);;
+           our $style_small = $models_hlist -> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -background=>$mod_background, -font => $font_small);;
+           our $style_green = $models_hlist -> ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_small);
+           our $style_red   = $models_hlist -> ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_small);
            if (($models_ofv{$runno} ne "")&&($models_ofv{$models_refmod{$runno}} ne "")) {
-             $ofv_diff = $models_ofv{$models_refmod{$runno}} - $models_ofv{$runno} ;
-             if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
-             if ($ofv_diff < 0) { $style_ofv = $style_red; }
-             if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
-               $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_fixed);
-             }
-             $ofv_diff = rnd(-$ofv_diff,3); # round before printing
-            } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_fixed);}
-          if ($models_suc{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
-          if ($models_cov{$runno} eq "C") {$style_cov = $style_green} else {$style_cov = $style_red};
-          my $runno_text = "";
-          for ($sp=0; $sp<$model_indent{$runno}; $sp++) {$runno_text .= "   "};
-          if ($model_indent{$runno}>0) {$runno_text .= "» ";}
-          $runno_text .= $runno;
-          if (($models_ofv{$runno} eq "")||($models_ofv{$models_refmod{$runno}} eq "")) {
-            $models_dofv{$runno} = "";
-          }
+	       $ofv_diff = calc_ofv_diff ($models_ofv{$models_refmod{$runno}}, $models_method{$models_refmod{$runno}}, $models_ofv{$runno}, $models_method{$runno}) ;
+             #if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
+             #if ($ofv_diff < 0) { $style_ofv = $style_red; }
+             #if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
+             #  $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_small);
+             #}
+             #$ofv_diff = rnd(-$ofv_diff,3); # round before printing
+	   } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_small);}
+	   my $runno_text = "";
+	   for ($sp=0; $sp<$model_indent{$runno}; $sp++) {$runno_text .= "   "};
+	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
+	   $runno_text .= $runno;
+	   my $method_temp = $models_method{$runno};
+	   my $ofv_temp    = $models_ofv{$runno};
+	   my $dofv_temp   = $ofv_diff;
+	   my $succ_temp; my $cov_temp; my $bnd_temp; my $sig_temp;
+	   my @meth = split (",",$method_temp);
+	   if ($condensed == 0) {
+	       foreach (@meth) { # put the SUUCCESSFUL MINIMIZATION from FO methods on the correct line
+		   if ($_ =~ m/FO/) {
+		       $succ_temp = add_item($succ_temp, $models_suc{$runno});
+		       $cov_temp = add_item($cov_temp, $models_cov{$runno});
+		       $bnd_temp = add_item($bnd_temp, $models_bnd{$runno});
+		       $sig_temp = add_item($sig_temp, $models_sig{$runno});
+		   } else {
+		       $succ_temp = add_item($cov_temp, " ");
+		       $cov_temp = add_item($cov_temp, " ");
+		       $bnd_temp = add_item($bnd_temp, " ");
+		       $sig_temp = add_item($sig_temp, " ");
+		   }
+	       };
+	       $succ_temp =~ s/\,/\n/g;
+	       $cov_temp =~ s/\,/\n/g;
+	       $bnd_temp =~ s/\,/\n/g;
+	       $sig_temp =~ s/\,/\n/g;
+	       $method_temp =~ s/\,/\n/g;
+	       $ofv_temp =~ s/\,/\n/g;
+	       $dofv_temp =~ s/\,/\n/g;
+ 	   } else {
+	       $method_temp = return_last ($method_temp);
+	       $ofv_temp = return_last ($ofv_temp);
+	       $dofv_temp = return_last ($dofv_temp);
+	       $succ_temp   = $models_suc{$runno};
+	       $cov_temp   = $models_cov{$runno};
+	       $bnd_temp   = $models_bnd{$runno};
+	       $sig_temp   = $models_sig{$runno};
+	   }
+	   if (($models_ofv{$runno} eq "")||($models_ofv{$models_refmod{$runno}} eq "")) {
+	       $models_dofv{$runno} = "";
+	   }
           $models_hlist -> itemCreate($i, 0, -text => $runno_text.$add_condensed, -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $models_refmod{$runno}, -style=>$style_small);
           $models_hlist -> itemCreate($i, 2, -text => $models_descr{$runno}, -style=>$style );
-          $models_hlist -> itemCreate($i, 3, -text => $models_method{$runno}, -style=>$style_small);
-          $models_hlist -> itemCreate($i, 4, -text => $models_ofv{$runno}, -style=>$style_ofv);
-          $models_hlist -> itemCreate($i, 5, -text => $ofv_diff, -style=>$style_ofv);
-          $models_hlist -> itemCreate($i, 6, -text => $models_suc{$runno}, -style=>$style_success);
-          $models_hlist -> itemCreate($i, 7, -text => $models_cov{$runno}, -style=>$style_cov);
-          $models_hlist -> itemCreate($i, 8, -text => $models_bnd{$runno}, -style=>$style_red);
-          $models_hlist -> itemCreate($i, 9, -text => $models_sig{$runno}, -style=>$style);
+          $models_hlist -> itemCreate($i, 3, -text => $method_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 4, -text => $ofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 5, -text => $dofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 6, -text => $succ_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 7, -text => $cov_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 8, -text => $bnd_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 9, -text => $sig_temp, -style=>$style);
           my $note = $models_notes{$runno};
 	  if ($condensed == 1) {$note =~ s/\n/\ /g;}
           $models_hlist -> itemCreate($i, 10, -text => $note, -style=>$style);
@@ -3100,7 +3306,7 @@ sub text_window {
   our $text_window_frame = $text_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
   our $text_text = $text_window_frame -> Scrolled ('Text',
       -scrollbars=>'e', -width=>80, -height=>35,
-      -background=>"#ffffff",-exportselection => 0,
+      -background=>"#FFFFFF",-exportselection => 0,
       -relief=>'groove', -border=>2,
       -selectbackground=>'#606060',-font=>$font_normal,-highlightthickness =>0) -> grid(-column=>1, -row=>1, -sticky=>'nwes');
   $text_text->insert('end', $text);
@@ -4163,18 +4369,14 @@ sub psn_run_window {
   $psn_command_line_entry -> delete("1.0","end");
   $psn_command_line_entry -> insert("1.0",$psn_command_line);
 
-  $psn_run_window -> update();
-  status ("Requesting NONMEM versions available in PsN...");
-  my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software);
-  %psn_nm_versions = %$psn_nm_versions_ref;
-  # bit of a workaround to get "default" option as first option...
-  my %psn_nm_versions_copy = %psn_nm_versions;
-  delete ($psn_nm_versions_copy {"default"});
-  my @psn_nm_installations = keys(%psn_nm_versions_copy);
-  unshift (@psn_nm_installations, "default");
-  $psn_run_frame -> Label (-text=>"NM installation:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
+  $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton)
+   -> grid(-row=>9, -column=>3,-sticky=>"wns");
+  $help -> attach($psn_run_button, "Start run");
 
-  our $nm_versions_menu = $psn_run_frame -> Optionmenu(-options=>[@psn_nm_installations],-variable => \$nm_version_chosen,
+  $psn_run_frame -> Label (-text=>"NM installation:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
+  $psn_run_frame -> Label (-text=>"\nPsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
+  $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
+  our $nm_versions_menu = $psn_run_frame -> Optionmenu(
       -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
       -font=>$font_normal, -background=>"#c0c0c0",
       -activebackground=>"#a0a0a0", -command=> sub{
@@ -4186,13 +4388,22 @@ sub psn_run_window {
         }
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
-        $psn_command_line_entry -> insert("1.0",$psn_command_line);
+        $psn_command_line_entry -> insert("1.0", $psn_command_line);
   })-> grid(-row=>7,-column=>2,-sticky => 'wns');
 
-  $psn_run_frame -> Label (-text=>"\nPsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
-  $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
+  $psn_run_window -> update();
+  $psn_run_text -> insert("0.0", "Requesting NONMEM versions available in PsN...\n");
 
-  $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -command=> sub {
+  my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software);
+  %psn_nm_versions = %$psn_nm_versions_ref;
+  # bit of a workaround to get "default" option as first option...
+  my %psn_nm_versions_copy = %psn_nm_versions;
+  delete ($psn_nm_versions_copy {"default"});
+  my @psn_nm_installations = keys(%psn_nm_versions_copy);
+  unshift (@psn_nm_installations, "default");
+  $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
+
+  $psn_run_button -> configure ( -command=> sub {
       my $files = "";
       $psn_command_line = $psn_command_line_entry -> get("0.0","end");
       $psn_command_line =~ s/\n//g;
@@ -4258,15 +4469,17 @@ sub psn_run_window {
       chdir ($cwd);
       $help -> detach($psn_run_button);
       $psn_run_window -> destroy();
-  })-> grid(-row=>9, -column=>3,-sticky=>"wns");
-  $help -> attach($psn_run_button, "Start run");
+  });
+
   $psn_run_window -> update();
-  status ("Requesting PsN command information...");
+  $psn_run_text -> insert("1.0", "Requesting command information from PsN...\n");
+  $psn_run_text -> update();
   my $psn_text = get_psn_info($psn_option, $software{psn_toolkit});
   if ($psn_text eq "") {
     $psn_text = "PsN was not found. Please check your installation!";
     $psn_run_button -> configure(-state=>'disabled');
   }
+  $psn_run_text -> delete ("0.0",end);
   $psn_run_text -> insert("0.0", $psn_text);
   status ();
 }
@@ -4319,11 +4532,13 @@ sub frame_models_show {
           update_psn_lst_param ();
           if (($run_method eq "NONMEM")&&(@file_type_copy[@sel[0]]==2)) { update_new_dir(@ctl_show[@sel])};
           # get note from SQL
-          if (@file_type_copy[@sel[0]] ==2) {
+          if (@file_type_copy[@sel[0]] == 2) {
             my $mod_file = @ctl_show[@sel[0]].".".$setting{ext_ctl};
             update_text_box(\$model_info_no, @ctl_show[@sel[0]].".".$setting{ext_ctl});
             update_text_box(\$notes_text, $models_descr{@ctl_show[@sel[0]]});
-            my $mod_time = gmtime(@{stat $mod_file}[9]);
+	    my $stat_ref = stat $mod_file;
+	    my @stat = @$stat_ref;
+            my $mod_time = gmtime(@stat[9]);
             update_text_box(\$model_info_modified, $mod_time);
             update_text_box(\$model_info_dataset, $models_dataset{@ctl_show[@sel[0]]});
           } else {
@@ -4346,6 +4561,12 @@ sub frame_models_show {
       })  ;
     }
 
+    $models_hlist -> bind ('<Control-r>' => sub {
+	nmfe_command();
+    });
+    $models_hlist -> bind ('<Control-e>' => sub {
+	psn_command("execute");
+    });
     our $models_menu = $models_hlist->Menu(-tearoff => 0, -background=>$bgcol, -title=>'None');
     $models_menu -> command (-label=> " Run (nmfe)", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        nmfe_command();
@@ -4408,6 +4629,20 @@ sub frame_models_show {
     $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_report_command();
          });
+    $models_menu_R = $models_menu -> cascade (-label=> " R / XPose", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -tearoff=>0);
+    $models_menu_R -> command (-label=> "Model convergence", -background=>$bgcol, -command => sub{
+	R_model_convergence_command ();
+    });
+    $models_menu_R -> command (-label=> "Histograms of eta-distribution", -background=>$bgcol, -command => sub{
+	R_plot_etas_distribution_command ();
+    });
+    $models_menu_R -> command (-label=> "Correlation plot", -background=>$bgcol, -command => sub{
+	R_correlation_plot_command ();
+    });
+    $models_menu_R -> command (-label=> "XPose: VPC from folder", -background=>$bgcol, -command => sub{
+	R_xpose_VPC_command ();
+    });
+
     $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_LaTeX_command();
          });
@@ -4480,7 +4715,7 @@ sub frame_models_show {
            $condensed_model_list = 1 - $condensed_model_list;
 	   populate_models_hlist ($models_view, $condensed_model_list);
       })->grid(-row=>1,-column=>1,-sticky=>'we');
-  $help->attach($condensed_view_button, -msg => "Show condensed or expanded view of models (allowing for room for notes etc.");
+  $help->attach($condensed_view_button, -msg => "Show condensed or expanded view of models");
 
   if ($models_view eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
   our $sort_button = $mod_buttons->Button(-image=>$listimage, -width=>26, -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
@@ -4511,7 +4746,7 @@ sub frame_models_show {
 	  -command=>sub {
       show_exec_runs_window();
     })->grid(-row=>1,-column=>6,-sticky=>'wens');
-  $help->attach($show_execution_log, -msg => "Show parameter estimates from runs");
+  $help->attach($show_execution_log, -msg => "Show model execution log");
 
   our $show_estim_button = $mod_buttons->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
@@ -4545,30 +4780,20 @@ sub frame_models_show {
   $help->attach($tree_txt_button, -msg => "Generate run record as tree");
 
   $mod_buttons -> Label (-text=>"   ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
-  my $cluster_label = $mod_buttons -> Label (-text=>"  Local mode", -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>15,-sticky=>'we');
+  our $cluster_label = $mod_buttons -> Label (-text=>"  Local mode", -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>15,-sticky=>'we');
   $enable_local_button = $mod_buttons -> Button (-image=>$gif{local_active}, -border=>$bbw, -width=>30, -height=>22, , -background=>$bgcol,-activebackground=>$abutton,-command=>sub{
-     $cluster_active = 0;
-     $gif_shell=$gif{shell};
-     $command_button -> configure(-image=>$gif_shell);
-     cluster_active($cluster_active);
-     $cluster_label -> configure(-text=>" Local mode");
+     enable_run_mode(0);
   })->grid(-row=>1,-column=>12,-sticky => 'wns');
   $help -> attach($enable_local_button, -msg => "Run NONMEM locally");
   if ($os =~ m/MSWin/i) {
     $enable_pcluster_button = $mod_buttons -> Button (-image=>$gif{pcluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
        if ($cluster_active == 2) {cluster_monitor()} ;
-       $cluster_active = 2;
-       $command_button -> configure(-image=>$gif_shell);
-       cluster_active($cluster_active);
-       $cluster_label -> configure(-text=>" PCluster mode");
+       enable_run_mode (2);
     })->grid(-row=>1,-column=>14,-sticky => 'wns');
     $help -> attach($enable_pcluster_button, -msg => "Run on PCluster");
   }
   $enable_mconnect_button = $mod_buttons -> Button (-image=>$gif{cluster_inactive}, -border=>$bbw, -width=>36, -height=>22, -background=>$bgcol, -activebackground=>$abutton, -command=>sub{
-     $cluster_active = 1;
-     $command_button -> configure(-image=>$gif_shell);
-     cluster_active($cluster_active);
-     $cluster_label -> configure(-text=>" Remote mode");
+     enable_run_mode(1);
   })->grid(-row=>1,-column=>13,-sticky => 'wns');
   $help -> attach($enable_mconnect_button, -msg => "SSH remote cluster");
   $cluster_active = $setting{cluster_default};
@@ -4691,7 +4916,7 @@ sub show_run_frame {
   })->grid(-column=>4, -row=>1,-rowspan=>1,-sticky=>'nw');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>'white', -activebackground=>'white', -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
-    note_color ("#ffffff");
+    note_color ("#FFFFFF");
     status();
   })->grid(-column=>7, -row=>1,-rowspan=>1,-sticky=>'nw');
     $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>1,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
@@ -4820,8 +5045,6 @@ sub note_color {
 ### Purpose : Give the selected model/result a color
 ### Compat  : W+L+
   my $color = shift;
-  my $style_color = $models_hlist->ItemStyle( 'text', -anchor=>'nw', -padx => 5, -background=>$color, -font=>$font_normal);
-  my $style_color_small = $models_hlist->ItemStyle( 'text', -anchor=>'nw',-padx => 5, -background=>$color, -font=>$font_small);
 
   my @sel = $models_hlist -> selectionGet ();
   foreach my $no (@sel) {
@@ -4829,29 +5052,33 @@ sub note_color {
       $models_colors {$no} = $color;
       # determine style colors
       $runno = @ctl_show[$no];
-      $mod_background = $color;
-      $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);
-      our $style_green = $models_hlist->ItemStyle( 'text', -anchor=>"nw", -padx => 5, -background=>$mod_background, -foreground=>'#008800',-font =>"Courier 9 bold" );
-      our $style_red = $models_hlist->ItemStyle( 'text', -anchor=>"nw", -padx => 5, -background=>$mod_background, -foreground=>'#990000', -font =>"Courier 9 bold" );
-      if (($res_ofv{$runno} ne "")&&($res_ofv{$models_refmod{$runno}} ne "")) {
-        my $ofv_diff = $res_ofv{$models_refmod{$runno}} - $res_ofv{$runno} ;
-        if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
-        if ($ofv_diff < 0) { $style_ofv = $style_red; }
-        if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
-          $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_bold);
-        }
-      } else {$style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => "Courier 9 bold");}
+      my $mod_background = "#FFFFFF";
+      if ($color ne "#FFFFFF") {
+         $mod_background = $color;
+      }
+      if (even($no)) {$mod_background = dark_row_color($mod_background)};
+      my $style_color = $models_hlist->ItemStyle( 'text', -anchor=>'nw', -padx => 5, -background=>$mod_background, -font=>$font_normal);
+      my $style_color_small = $models_hlist->ItemStyle( 'text', -anchor=>'nw',-padx => 5, -background=>$mod_background, -font=>$font_small);
+      our $style        = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);
+ #      if (($res_ofv{$runno} ne "")&&($res_ofv{$models_refmod{$runno}} ne "")) {
+ #       my $ofv_diff = $res_ofv{$models_refmod{$runno}} - $res_ofv{$runno} ;
+ #       if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
+ #       if ($ofv_diff < 0) { $style_ofv = $style_red; }
+ #       if (($ofv_diff >= 0)&&($ofv_diff < $setting{ofv_sign})) {
+ #         $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_bold);
+ #       }
+ #     } else {$style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => "Courier 9 bold");}
       if ($models_suc{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
       if ($res_cov{$runno} eq "C") {$style_cov = $style_green} else {$style_cov = $style_red};
       $models_hlist -> itemConfigure($no, 0, -style => $style_color);
       $models_hlist -> itemConfigure($no, 1, -style => $style_color_small);
       $models_hlist -> itemConfigure($no, 2, -style => $style_color);
-      $models_hlist -> itemConfigure($no, 3, -style => $style_color_small);
-      $models_hlist -> itemConfigure($no, 4, -style => $style_ofv);
-      $models_hlist -> itemConfigure($no, 5, -style => $style_ofv);
-      $models_hlist -> itemConfigure($no, 6, -style => $style_success);
-      $models_hlist -> itemConfigure($no, 7, -style => $style_cov);
-      $models_hlist -> itemConfigure($no, 8, -style => $style_red);
+      $models_hlist -> itemConfigure($no, 3, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 4, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 5, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 6, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 7, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 8, -style => $style_color);
       $models_hlist -> itemConfigure($no, 9, -style => $style_color);
       $models_hlist -> itemConfigure($no, 10, -style => $style_color);
       db_add_color (@ctl_show[$no], $color)
