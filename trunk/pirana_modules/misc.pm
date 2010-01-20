@@ -10,7 +10,7 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start start_command);
+our @EXPORT_OK = qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
 
 sub make_clean_dir {
     my $dir = shift;
@@ -304,58 +304,75 @@ sub center_window {
   $win->deiconify;  # Show the window again
 }
 
+sub read_dirs {
+### Purpose : Return all directories in the current directory
+### Compat  : W+L?
+    my ($path, $filter) = shift;
+    my @dirs = ();
+    my @dir_all = <$path/*>;
+    foreach (@dir_all) {
+	if (-d $_) {
+	    if (($_ ne ".")&&($_ ne "..")) {
+		unless (($filter ne "")&!($_ =~ m/$filter/)) {
+		    push (@dirs, $_);
+		}
+	    }
+	}
+    }
+    return @dirs;
+}
 sub read_dirs_win {
 ### Purpose : Return all directories in the current directory
 ### Compat  : W+L?
-  my $filter = shift;
-  my @dirs = ();
-  my @dir_all = <*>;
-  foreach (@dir_all) {
-    if (-d $_) {
-      if (($_ ne ".")&&($_ ne "..")) {
-        unless (($filter ne "")&!($_ =~ m/$filter/)) {
-          push (@dirs, $_);
-        }
-      }
+    my $filter = shift;
+    my @dirs = ();
+    my @dir_all = <*>;
+    foreach (@dir_all) {
+	if (-d $_) {
+	    if (($_ ne ".")&&($_ ne "..")) {
+		unless (($filter ne "")&!($_ =~ m/$filter/)) {
+		    push (@dirs, $_);
+		}
+	    }
+	}
     }
-  }
-  return @dirs;
+    return @dirs;
 }
 
 sub win_start {
 ### Purpose : Start a program on Windows (with arguments)
 ### Compat  : W+L-
-  # arguments: program, arguments
-  my @path = split(/\\/,@_[0]);
-  my $program = @path[@path-1];
-  $program =~ s/.exe//i;
-  my $cmd_line = $program." ".@_[1];
-  my $priority = "LOW_PRIORITY_CLASS";
-  if (-e @_[0]) {
-    Win32::Process::Create(my $Process, @_[0], $cmd_line, 0, $priority,".") || die "Failed to start @_[0]!";
-    return("");
-  } else {
-    my @file = split ('/',unix_path(@_[0]));
-    return("Cannot find ".$program.". Please check software settings.");
-  }
+    # arguments: program, arguments
+    my @path = split(/\\/,@_[0]);
+    my $program = @path[@path-1];
+    $program =~ s/.exe//i;
+    my $cmd_line = $program." ".@_[1];
+    my $priority = "LOW_PRIORITY_CLASS";
+    if (-e @_[0]) {
+	Win32::Process::Create(my $Process, @_[0], $cmd_line, 0, $priority,".") || die "Failed to start @_[0]!";
+	return("");
+    } else {
+	my @file = split ('/',unix_path(@_[0]));
+	return("Cannot find ".$program.". Please check software settings.");
+    }
 }
 sub linux_start {
-  my $curr_dir = cwd();
-  if (@_[1] ne "") {chdir (@_[1]); }
-  system (@_[0]." ".@_[1]." &");
-  chdir ($curr_dir);
+    my $curr_dir = cwd();
+    if (@_[1] ne "") {chdir (@_[1]); }
+    system (@_[0]." ".@_[1]." &");
+    chdir ($curr_dir);
 }
 
 sub start_command {
-  my $os = "$^O";
-  if ($os =~ m/MSWin/i) {
-    win_start (@_);
-  }
-  if ($os =~ m/linux/) {
-    linux_start(@_);
-  }
-  if ($os =~ m/linux/) {
-  }
+    my $os = "$^O";
+    if ($os =~ m/MSWin/i) {
+	win_start (@_);
+    }
+    if ($os =~ m/linux/) {
+	linux_start(@_);
+    }
+    if ($os =~ m/linux/) {
+    }
 }
 
 1;
