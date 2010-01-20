@@ -28,6 +28,7 @@ use Tk::HdrResizeButton;    # Resizable headers in Tk::Hlist
 use Tk::Text;               # Textarea widget
 use Tk::PlotDataset;        # For DataInspector
 use Tk::LineGraphDataset;   # ..
+use Tk::PNG;
 use File::Copy;             # File info and operations
 use File::stat;             # ..
 use File::Path;             # ..
@@ -39,7 +40,7 @@ use DBI;                    # database connection to sqlite
 use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
-our $version = "2.2.1";     # version "Pipeline"
+our $version = "2.3.0b";     # version "Oahu"
 our $os      = $^O;
 if ($os =~ m/MSWin/i) {
   require Win32::PerfLib;
@@ -76,7 +77,7 @@ use pirana_modules::db        qw(db_get_project_info db_insert_project_info db_c
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::nm        qw(add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win start_command);
+use pirana_modules::misc      qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 use pirana_modules::R         qw(R_start_process R_stop_process R_run_script);
@@ -111,6 +112,7 @@ our $button     = "#dddac9";
 our $abutton    = "#cecbba";
 our $status_col = "#fffdec";
 our $mw = MainWindow -> new (-title => "Piraña", -background=>$bgcol);
+
 our $nrows = 27;
 our $models_hlist_width=112;
 our $help = $mw->Balloon();
@@ -127,6 +129,15 @@ foreach my $file (@images) {
   $name =~ s/\.gif//i;
   $gif_file{$name} = $file;
   $gif{$name} = $frame_dir -> Photo ( -file => "images/".$file );
+}
+
+if ($^O =~ m/MSWin/) {
+    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
+    $mw -> Icon (-image=> $icon);
+} else {
+    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana.png', -format=>'PNG', -width => 32, -height => 32);
+    $mw -> iconbitmap ($icon);
+    $mw -> iconmask ($base_dir.'/images/pirana-mask.xbm');
 }
 
 #*** Menu bar ******************************************************************

@@ -438,6 +438,17 @@ sub create_menu_bar {
          } else {message("Please select model first!")};
        });
 
+  our @script_types = ("pl","R","S","py","awk","bat");
+  our %assoc_command;
+  $assoc_command {pl} = "perl";
+  $assoc_command {py} = "python";
+  $assoc_command {awk} = "awk";
+
+  our $mbar_scripts = create_scripts_menu ($mbar, "", 1, $base_dir."/scripts", "Scripts", 0);
+  $mbar_scripts -> separator;
+#  $mbar_scripts_edit = $mbar_scripts -> cascade(-label =>"Edit script", -background=>$bgcol, -tearoff => 0);
+  create_scripts_menu ($mbar_scripts, "edit_script", 1, $base_dir."/scripts", "Edit", 1);
+
   our $mbar_tools = $mbar -> cascade(-label =>"Tools", -background=>$bgcol,-underline=>0, -tearoff => 0);
 
   if ($setting{use_psn}==1) {
@@ -453,7 +464,7 @@ sub create_menu_bar {
       })
   };
   if ((-e unix_path($software{wfn_dir})."/bin/wfn.bat")&&($os =~ m/MSWin/i)) {
-    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -background=>$bgcol, -underlin=>0, -tearoff => 0);
+    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -background=>$bgcol, -underline=>0, -tearoff => 0);
     $mbar_wfn -> command(-label => "Edit wfn.bat", -background=>$bgcol,-underline=>0,
 		  -command=> sub {start_command ($software{editor}, win_path($software{wfn_dir}."/bin/wfn.bat"));});
     $mbar_wfn -> command(-label => "Combine bootstrap results", -background=>$bgcol,-underline=>0,
@@ -576,6 +587,56 @@ sub create_menu_bar {
   $mbar_help -> command(-label => "About Piraña", -background=>$bgcol, -command=>sub {
   $mw -> messageBox(-type=>'ok',	-message=>"Piraña (version ".$version.")\n   Created by Ron Keizer.\n   Department of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by the Uppsala PM group,\nand several other modelers.\n\nhttp://pirana.sf.net\n");
   });
+}
+
+sub create_scripts_menu {
+    my ($menu_parent, $icon, $children, $folder, $title, $edit) = @_;
+    my $mbar_scripts;
+    if ($icon ne "") {
+	$mbar_scripts = $menu_parent -> cascade(-image=> $gif{$icon}, -label =>$title, -compound=>'left', -background=>$bgcol, -tearoff => 0);
+    } else {
+	$mbar_scripts = $menu_parent -> cascade(-label => $title, -background=>$bgcol, -tearoff => 0);
+    }
+    my @scripts;
+    my @commands = ("perl", "R", "R", "python", "awk", "");
+
+    if ($children == 1) {
+	my @dirs = read_dirs ($folder, "");
+	foreach my $dir_full (@dirs) {
+	    my @dir_spl = split("/",$dir_full) ;
+	    my $dir = pop (@dir_spl);
+		create_scripts_menu ($mbar_scripts, 0, 0, $folder."/".$dir, $dir, $edit);
+	}
+    }
+
+    foreach my $type (@script_types) {
+	push (@scripts, dir($folder, '\.'.$type));
+    }
+    foreach my $scriptfile (@scripts) {
+	my $script = $scriptfile;
+	@script_spl = split ('\.', $script);
+	$script_ext = pop (@script_spl);
+	$script = join (".", @script_spl);
+	$script =~ s/_/ /g;
+	unless ((-d $scriptfile)||($script_ext =~ m/\~/)||($scriptfile =~ m/Template/gi)) {
+	    unless ($edit == 1) {
+		$mbar_scripts -> command (-label => $script." (".$script_ext.")", -command => sub{
+		    my @sel = $models_hlist -> selectionGet ();
+		    if (@sel == 0) { message("First select a model."); return(); }
+		    my $model_id = @ctl_show[@sel[0]];
+		    run_script ($folder."/".$scriptfile, $model_id);
+   	        });
+	    } else {
+		$mbar_scripts -> command (-label => $script, -command => sub{
+		    my @sel = $models_hlist -> selectionGet ();
+		    if (@sel == 0) { message("First select a model."); return(); }
+		    my $model_id = @ctl_show[@sel[0]];
+		    edit_model ($base_dir."/scripts/".$scriptfile);
+		});
+	    }
+	}
+    }
+    return ($mbar_scripts);
 }
 
 sub check_out_dataset {
@@ -813,19 +874,65 @@ sub xpose_VPC_window {
 }
 
 sub run_script {
-### Purpose : Run a perl (or other type of) script and capture the console output
-### Compat  : W+L?
-  $command = shift;
-  my $console = show_console_output();
-  open (OUT, $command);
-  if (defined $console) {
-    while (my $line = <OUT>) {
-      $console -> insert('end', $line);
-      $mw -> update;
-      $console -> yview (moveto=>1);
+### Purpose : Run an R / perl (or other type of) script an capture the console output
+    my ($scriptfile, $model_id) = @_;
+    unless (-d "pirana_temp") {mkdir ("pirana_temp")}
+    my @spl = split (/\//, $scriptfile);
+    my $scriptfile_nopath = pop(@spl) ;
+    copy ($scriptfile, "pirana_temp/".$scriptfile_nopath);
+    update_script_with_parameters ("pirana_temp/".$scriptfile_nopath, $model_id);
+    my @spl = split (/\./, $scriptfile);
+    my $ext = pop (@spl);
+    if ($ext eq "R") {
+	run_command_in_console ('"'.$software{r_dir}.'\bin\R" --vanilla <'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath));
+    } else {
+	run_command_in_console ($assoc_command{$ext}.' '.unix_path($cwd."/pirana_temp/".$scriptfile_nopath));
     }
-  }
-  close OUT;
+}
+
+sub update_script_with_parameters {
+    my ($file, $model_id) = @_;
+    open (SCR, "<".$file);
+    my @lines = <SCR>;
+    close (SCR);
+    my $text_ref = shift;
+    my $mod_ref = extract_from_model ($model_id.".".$setting{ext_ctl}, $model_id, "all");
+    my %mod = %$mod_ref;
+    $tab_ref = $mod{tab_files};
+    $tables = join (",", @$tab_ref);
+    foreach my $line (@lines) {
+	$line =~ s/\#MODEL\#/$model_id/g;
+	if ($line =~ m/#TABLES#/g) {
+	    $line =~ s/#TABLES#/$tables/g
+	}
+    }
+    open (SCR, ">".$file);
+    print SCR @lines;
+    close (SCR);
+}
+
+sub run_command_in_console {
+### Purpose : Run a command and capture the console output
+### Compat  : W+L?
+    $command = shift;
+    my $console = show_console_output("");
+    open (OUT, "$command 2>&1 |"); # redirect STDERR to STDOUT
+    if (defined $console) {
+	while (my $line = <OUT>) {
+	    $console -> insert('end', $line);
+	    $mw -> update;
+	    $console -> yview (moveto=>1);
+	    if ($line =~ m/#PIRANA/) {
+		my $script_output = $line;
+		$script_output =~ s/#PIRANA//;
+		$script_output =~ s/\>//; #remove R's >
+		$script_output =~ s/^\s+//; #remove leading spaces
+		system ($script_output);
+	    };
+	}
+    }
+    close OUT;
+    return(1);
 }
 
 sub restart_msf {
@@ -2048,11 +2155,12 @@ sub refresh_pirana {
 sub show_console_output {
 ### Purpose : Create (or destroy) a text-box that show the output of several commands
 ### Compat  : W+L+
-  open (FILE, $base_dir."/process_log");
-  my @lines = <FILE>;
-  close (FILE);
-  my $console = text_window(join(@lines),"Process log");
-  return($console);
+#  open (FILE, $base_dir."/temp/process_log");
+#  my @lines = <FILE>;
+#  close (FILE);
+    my $text = shift;
+    my $console = text_window($text, "Command output");
+    return($console);
 }
 
 sub message {
@@ -3303,14 +3411,20 @@ sub text_window {
     });
     $text_window -> resizable( 0, 0 );
   }
-  our $text_window_frame = $text_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
-  our $text_text = $text_window_frame -> Scrolled ('Text',
+  my $text_window_frame = $text_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
+  $text_window_frame -> Button (-text => 'Close', -width=>12,
+    -background=>$button, -activebackground=>$abutton, -border=>$bbw,
+    -command=> sub{
+      $text_window -> destroy();
+  }) -> grid(-column=>1, -row=>2, -sticky=>'ne');
+  my $text_text = $text_window_frame -> Scrolled ('Text',
       -scrollbars=>'e', -width=>80, -height=>35,
       -background=>"#FFFFFF",-exportselection => 0,
       -relief=>'groove', -border=>2,
-      -selectbackground=>'#606060',-font=>$font_normal,-highlightthickness =>0) -> grid(-column=>1, -row=>1, -sticky=>'nwes');
+      -selectbackground=>'#606060',-font=>$font_normal,-highlightthickness =>0
+  ) -> grid(-column=>1, -row=>1, -sticky=>'nwes');
   $text_text->insert('end', $text);
-  return $text_text;
+  return ($text_text);
 }
 
 
@@ -4626,22 +4740,27 @@ sub frame_models_show {
          });
 
     $models_menu -> separator ( -background=>$bgcol) ;
+
+    create_scripts_menu ($models_menu, "script", 1, $base_dir."/scripts", "Scripts");
     $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_report_command();
          });
-    $models_menu_R = $models_menu -> cascade (-label=> " R / XPose", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -tearoff=>0);
-    $models_menu_R -> command (-label=> "Model convergence", -background=>$bgcol, -command => sub{
-	R_model_convergence_command ();
-    });
-    $models_menu_R -> command (-label=> "Histograms of eta-distribution", -background=>$bgcol, -command => sub{
-	R_plot_etas_distribution_command ();
-    });
-    $models_menu_R -> command (-label=> "Correlation plot", -background=>$bgcol, -command => sub{
-	R_correlation_plot_command ();
-    });
-    $models_menu_R -> command (-label=> "XPose: VPC from folder", -background=>$bgcol, -command => sub{
-	R_xpose_VPC_command ();
-    });
+
+
+#    $models_menu_R = $models_menu -> cascade (-label=> " R / XPose", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -tearoff=>0);
+
+#    $models_menu_R -> command (-label=> "Model convergence", -background=>$bgcol, -command => sub{
+#	R_model_convergence_command ();
+#    });
+#    $models_menu_R -> command (-label=> "Histograms of eta-distribution", -background=>$bgcol, -command => sub{
+#	R_plot_etas_distribution_command ();
+#    });
+#    $models_menu_R -> command (-label=> "Correlation plot", -background=>$bgcol, -command => sub{
+#	R_correlation_plot_command ();
+#    });
+#    $models_menu_R -> command (-label=> "XPose: VPC from folder", -background=>$bgcol, -command => sub{
+#	R_xpose_VPC_command ();
+#    });
 
     $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex}, -compound=>'left', -background=>$bgcol, -command => sub{
            generate_LaTeX_command();
@@ -5289,7 +5408,6 @@ sub project_buttons_show {
      }
      refresh_pirana($cwd);
   });
-  $mw->iconimage($gif{pirana});
   our $browse_button = $frame_dir -> Button(-image=>$gif{browse}, -width=>28, -border=>0,-background=>$button, -activebackground=>$abutton, -command=> sub{
       $dir_old = $cwd;
       $cwd = $mw-> chooseDirectory();
