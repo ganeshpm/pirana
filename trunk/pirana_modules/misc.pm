@@ -309,7 +309,9 @@ sub read_dirs {
 ### Compat  : W+L?
     my ($path, $filter) = shift;
     my @dirs = ();
-    my @dir_all = <$path/*>;
+    my $cwd = fastgetcwd();
+    chdir ($path);
+    my @dir_all = <*>;
     foreach (@dir_all) {
 	if (-d $_) {
 	    if (($_ ne ".")&&($_ ne "..")) {
@@ -319,6 +321,7 @@ sub read_dirs {
 	    }
 	}
     }
+    chdir ($cwd);
     return @dirs;
 }
 sub read_dirs_win {
