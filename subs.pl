@@ -495,20 +495,21 @@ sub create_menu_bar {
   }
 
   #my $mbar_tools_misc = $mbar_tools -> cascade(-label => "Misc", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  my $mbar_tools_R = $mbar_tools -> cascade(-label => "R",-image=>$gif{R}, -compound=>'left', -background=>$bgcol, -tearoff => 0);
-  $mbar_tools_R -> command(-label => "Start R process", -background=>$bgcol,
-		  -command=> sub {
-		            status ("Starting R process. This will take a few seconds.");
-			    (our $R, my $res) = R_start_process ( $software{r_dir} );
-			    status ();
-		      if ($res =~ m/Perl bridge started/i) {
-			  message ("R process started in background.")
-		      } else {
-			  message ("R process could not be started.\nPlease check R installation and Pirana settings.");
-	              };
-		  });
-  $mbar_tools_R -> command(-label => "Stop R process", -background=>$bgcol,
-		  -command=> sub { if ($R) {R_stop_process($R)}; });
+
+#  my $mbar_tools_R = $mbar_tools -> cascade(-label => "R",-image=>$gif{R}, -compound=>'left', -background=>$bgcol, -tearoff => 0);
+#  $mbar_tools_R -> command(-label => "Start R process", -background=>$bgcol,
+#		  -command=> sub {
+#		            status ("Starting R process. This will take a few seconds.");
+#			    (our $R, my $res) = R_start_process ( $software{r_dir} );
+#			    status ();
+#		      if ($res =~ m/Perl bridge started/i) {
+#			  message ("R process started in background.")
+#		      } else {
+#			  message ("R process could not be started.\nPlease check R installation and Pirana settings.");
+#	              };
+#		  });
+#  $mbar_tools_R -> command(-label => "Stop R process", -background=>$bgcol,
+#		  -command=> sub { if ($R) {R_stop_process($R)}; });
 
   $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -compound=>'left', -background=>$bgcol,-underline=>0,
 		  -command=>sub {cov_calc_window()});
@@ -605,7 +606,9 @@ sub create_scripts_menu {
 	foreach my $dir_full (@dirs) {
 	    my @dir_spl = split("/",$dir_full) ;
 	    my $dir = pop (@dir_spl);
-		create_scripts_menu ($mbar_scripts, 0, 0, $folder."/".$dir, $dir, $edit);
+	    my $dir_name = $dir;
+	    $dir_name =~ s/_/ /g;
+	    create_scripts_menu ($mbar_scripts, 0, 1, $folder."/".$dir, $dir_name, $edit);
 	}
     }
 
@@ -629,9 +632,8 @@ sub create_scripts_menu {
 	    } else {
 		$mbar_scripts -> command (-label => $script, -command => sub{
 		    my @sel = $models_hlist -> selectionGet ();
-		    if (@sel == 0) { message("First select a model."); return(); }
 		    my $model_id = @ctl_show[@sel[0]];
-		    edit_model ($base_dir."/scripts/".$scriptfile);
+		    edit_model ($folder."/".$scriptfile);
 		});
 	    }
 	}
@@ -896,15 +898,23 @@ sub update_script_with_parameters {
     my @lines = <SCR>;
     close (SCR);
     my $text_ref = shift;
-    my $mod_ref = extract_from_model ($model_id.".".$setting{ext_ctl}, $model_id, "all");
+    my $mfile = $model_id.".".$setting{ext_ctl};
+    my $mod_ref = extract_from_model ($mfile, $model_id, "all");
     my %mod = %$mod_ref;
+    my $datafile = $mod{dataset};
     $tab_ref = $mod{tab_files};
     $tables = join (",", @$tab_ref);
     foreach my $line (@lines) {
-	$line =~ s/\#MODEL\#/$model_id/g;
+	$line =~ s/#MODEL#/$model_id/g;
+	$line =~ s/#DESCRIPTION#/$mod{description}/g;
+	$line =~ s/#REFMOD#/$mod{refmod}/g;
 	if ($line =~ m/#TABLES#/g) {
 	    $line =~ s/#TABLES#/$tables/g
 	}
+	$line =~ s/#MFILE#/$mfile/g;
+	$line =~ s/#DATA#/$mod{dataset}/g;
+	$line =~ s/#RES#/$model_id\.$setting{ext_res}/g;
+
     }
     open (SCR, ">".$file);
     print SCR @lines;

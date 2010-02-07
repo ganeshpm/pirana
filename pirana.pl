@@ -80,7 +80,7 @@ use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
 use pirana_modules::misc      qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
-use pirana_modules::R         qw(R_start_process R_stop_process R_run_script);
+#use pirana_modules::R         qw(R_start_process R_stop_process R_run_script);
 
 #*** Initialization ************************************************************
 read_log();    # read last settings for Project / NONMEM
