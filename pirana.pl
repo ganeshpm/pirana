@@ -77,10 +77,12 @@ use pirana_modules::db        qw(db_get_project_info db_insert_project_info db_c
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::nm        qw(add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
+use pirana_modules::misc      qw(make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
-#use pirana_modules::R         qw(R_start_process R_stop_process R_run_script);
+if ($^O =~ m/MSWin32/) {
+  require pirana_modules::windows_specific ; #qw(nonmem_priority get_processes);
+}
 
 #*** Initialization ************************************************************
 read_log();    # read last settings for Project / NONMEM
@@ -111,9 +113,15 @@ our $bgcol      = "#ece9d8";
 our $button     = "#dddac9";
 our $abutton    = "#cecbba";
 our $status_col = "#fffdec";
-our $mw = MainWindow -> new (-title => "Piraña", -background=>$bgcol);
+our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 
-our $nrows = 27;
+# I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
+$mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
+
+our $nrows = 24;
+if ($setting{n_rows} > 24) {
+  our $nrows = 24;
+}
 our $models_hlist_width=112;
 our $help = $mw->Balloon();
 
@@ -135,9 +143,9 @@ if ($^O =~ m/MSWin/) {
     my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
     $mw -> Icon (-image=> $icon);
 } else {
-    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana.png', -format=>'PNG', -width => 32, -height => 32);
-    $mw -> iconbitmap ($icon);
-    $mw -> iconmask ($base_dir.'/images/pirana-mask.xbm');
+    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
+    #$mw -> iconbitmap ($icon);
+    #$mw -> iconmask ($base_dir.'/images/pirana-mask.xbm');
 }
 
 #*** Menu bar ******************************************************************
@@ -145,7 +153,6 @@ create_menu_bar();
 
 #*** Main Loop ***********************************************************
 $mw -> optionAdd('*BorderWidth' => 1);
-$mw -> resizable( 0, 0);
 $mw -> update();
 
 renew_pirana();
@@ -157,6 +164,7 @@ if ($first_time_flag==1) { # save to home folder
   first_time_dialog($user);
 }
 
+$mw -> resizable( 0, 0);
 MainLoop;
 #***********************************************************************
 

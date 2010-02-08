@@ -78,6 +78,7 @@ sub create_nm_start_script {
   } else {
     $ext = "sh";
     $nmfe_file = "nmfe".$nm_vers{$nm_version};
+    $nmfe_file =~ s/\r//g;
   }
   unless (-d $base_dir."/temp") {mkdir $base_dir."/temp"};
   my $nm_start_script = os_specific_path ($nm_dirs{$nm_version}."/util/".$nmfe_file);
@@ -2093,9 +2094,7 @@ sub csv_tab_window {
 sub frame_statusbar {
 ### Purpose : Create frame+label with status text
 ### Compat  : W+L+
-  our $frame_status = $model_overview_frame -> Frame(-border=>0, -background=>$bgcol)->grid(-column=>1, -columnspan=>15,-row=>5,-ipady=>1, -sticky=>"nws");
-  $mw->update();
-  our $status_bar = $frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>"Arial 8", -width=>140, -background=>$bgcol, -foreground=>"#757575")->grid(-column=>1,-row=>1,-sticky=>"w", -ipady=>0);
+    our $status_bar = $mw -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_small, -background=>$bgcol, -foreground=>"#757575")->grid(-column=>1,-row=>5,-sticky=>"w");
 }
 
 sub status {
@@ -2129,19 +2128,19 @@ sub setup_ini_dir {
 sub renew_pirana {
 ### Purpose : To reload the main part of the GUI
 ### Compat  : W+L+
-  if($frame2) {$frame2->gridForget()};
-  if($run_frame) {$run_frame -> gridForget()};
-  if ($frame_links) {$frame_links -> gridForget()};
-  if ($frame_status) {$frame_status -> gridForget()};
-  frame_models_show(1);
-  show_run_frame();
-  frame_statusbar(1);
-  project_buttons_show();
-  frame_tab_show(1);
-  our $project_optionmenu = project_optionmenu ();
-  refresh_pirana ($cwd, $filter, 1);
-  $project_optionmenu -> configure(-state=>'normal');
-  status();
+    if($frame2) {$frame2->gridForget()};
+    if($run_frame) {$run_frame -> gridForget()};
+    if ($frame_links) {$frame_links -> gridForget()};
+    if ($frame_status) {$frame_status -> gridForget()};
+    frame_models_show(1);
+    frame_tab_show(1);
+    show_run_frame();
+    frame_statusbar(1);
+    project_buttons_show();
+    our $project_optionmenu = project_optionmenu ();
+    refresh_pirana ($cwd, $filter, 1);
+    $project_optionmenu -> configure(-state=>'normal');
+    status();
 }
 
 sub refresh_pirana {
@@ -2317,18 +2316,25 @@ sub initialize {
   #if ($setting{username}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
   our $models_view = $setting{models_view};
 
+  our $font_normal = 'Verdana 7';
+  our $font_small = 'Verdana 6';
+  our $font_fixed = "Courier 8 bold";
+  our $font_bold = 'Verdana 8 bold';
+
   if ($setting{font_size}==2) {
     our $font_normal = 'Verdana 8';
     our $font_small = 'Verdana 7';
     our $font_fixed = "Courier 9 bold";
     our $font_fixed2 = "Courier 10";
     our $font_bold = 'Verdana 8 bold';
-  } else {
-    our $font_normal = 'Verdana 7';
-    our $font_small = 'Verdana 6';
-    our $font_fixed = "Courier 8 bold";
-    our $font_bold = 'Verdana 8 bold';
-  }
+  } 
+  if ($setting{font_size}==3) {
+    our $font_normal = 'Verdana 10';
+    our $font_small = 'Verdana 8';
+    our $font_fixed = "Courier 10 bold";
+    our $font_fixed2 = "Courier 10";
+    our $font_bold = 'Verdana 10 bold';
+  } 
 
   print LOG "Deleting temporary files...\n";
   if(chdir ($base_dir."/temp")){
@@ -4644,7 +4650,7 @@ sub frame_models_show {
         -columns    => int(@models_hlist_headers),
         -scrollbars => 'se',
         -height     => $nrows,
-        -width      => 116,
+        -width      => 105,
         -pady       => 0,
         -padx       => 0,
         -background => 'white',
