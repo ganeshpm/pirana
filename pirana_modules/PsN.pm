@@ -9,8 +9,8 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(get_psn_info get_psn_help get_psn_nm_versions);
 
 sub get_psn_info {
-### Purpose : Get the info on a PsN command, by invoking the -h switch and capturing the output 
-### Compat  : W+L? 
+### Purpose : Get the info on a PsN command, by invoking the -h switch and capturing the output
+### Compat  : W+L?
   my ($psn_command, $psn_dir)  = @_;
   #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
   eval (open (OUT, unix_path($psn_dir."/".$psn_command)." -h |"));
@@ -24,7 +24,7 @@ sub get_psn_info {
   return ($psn_text);
 }
 sub get_psn_help {
-### Purpose : Get the full help on a PsN command, by invoking the -help swith and capturing the output 
+### Purpose : Get the full help on a PsN command, by invoking the -help swith and capturing the output
 ### Compat  : W+L?
   my ($psn_command, $psn_dir)  = @_;
   #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
@@ -40,18 +40,18 @@ sub get_psn_help {
 }
 
 sub get_psn_nm_versions {
-### Purpose : Retrieve the NM versions specified to psn. (reads a pipe from "psn -nm_versions") 
+### Purpose : Retrieve the NM versions specified to psn. (reads a pipe from "psn -nm_versions")
 ### Compat  : W+L+
 ### Notes   : When the psn command is invoked but cannot be found, Pirana crashes
   my ($setting_ref, $software_ref, $cluster_active)= @_;
   my %setting = %$setting_ref;
-  my %software = %$software_ref; 
+  my %software = %$software_ref;
   my @split;
   our $max_psn_name;
   my %psn_nm_versions; my %psn_nm_versions_vers;
-  if ($software{psn_dir} =~ m/perl/i) {  # use the PsN that is specified, not necisssarily the one in the system variables 
+  if ($software{psn_dir} =~ m/perl/i) {  # use the PsN that is specified, not necisssarily the one in the system variables
     my $psn_dir = $software{psn_dir};
-    @split = split(/\\/,$psn_dir); 
+    @split = split(/\\/,$psn_dir);
   }
   my $command;
   unless (($setting{use_cluster}==1)&&($cluster_active==1)) {
@@ -78,7 +78,6 @@ sub get_psn_nm_versions {
      }
   }
   if ($max_psn_name<9) {$max_psn_name=9};
-  return \%psn_nm_versions, \%psn_nm_versions_vers;  
+  return \%psn_nm_versions, \%psn_nm_versions_vers;
 }
 1;
-

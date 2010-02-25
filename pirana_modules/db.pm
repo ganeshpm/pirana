@@ -6,10 +6,20 @@ use strict;
 use File::stat;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_insert_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
+our @EXPORT_OK = qw(check_db_file_correct db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_insert_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 
 our $db_name = "pirana.dir";
 our $dbargs = {AutoCommit => 0, PrintError => 1};
+
+sub check_db_file_correct {
+### Purpose : Deletes pirana.dir if size = 0 b.
+### Compat  : W+L+
+    if (-e $db_name) {
+	if (-s $db_name == 0) {
+	    unlink ($db_name);
+	}
+    }
+}
 
 sub db_get_project_info {
 ### Purpose : Get project info from database
@@ -56,7 +66,7 @@ sub db_create_tables {
       "proj_name VARCHAR(50), descr VARCHAR(120), modeler VARCHAR(40), collaborators VARCHAR (80), start_date INTEGER, ".
       "end_date INTEGER, notes TEXT, tstamp TIMESTAMP)",
     "INSERT INTO project_info (proj_name, descr, modeler, collaborators, start_date, end_date, notes) VALUES (".
-      "('', '', '', '', '', '', '')"); 
+      "('', '', '', '', '', '', '')");
   if (-w "./") {db_execute_multiple(\@tables);}
 }
 
@@ -79,7 +89,7 @@ sub delete_run_results {
 }
 
 sub db_add_note {
-### Purpose : Add a note for a model to the sqlite database (pirana.dir) 
+### Purpose : Add a note for a model to the sqlite database (pirana.dir)
 ### Compat  : W+L+
   my ($model, $note) = @_;
   if (-w "./") {
@@ -91,7 +101,7 @@ sub db_add_note {
 }
 
 sub db_execute {
-### Purpose : Execute an SQL command on the database 
+### Purpose : Execute an SQL command on the database
 ### Compat  : W+L+
   my $db_command = shift;
   if (-w "./") {
@@ -102,7 +112,7 @@ sub db_execute {
   }
 }
 sub db_execute_multiple {
-### Purpose : Execute several SQL command on the database and commit afterwards (to save speed) 
+### Purpose : Execute several SQL command on the database and commit afterwards (to save speed)
 ### Compat  : W+L+
   my $db_commands_ref = shift;
   my @db_commands = @$db_commands_ref;
@@ -117,7 +127,7 @@ sub db_execute_multiple {
   }
 }
 sub db_insert_table_info {
-### Purpose : Inserts table information into db (notes/creator etc) 
+### Purpose : Inserts table information into db (notes/creator etc)
 ### Compat  : W+L+
   my ($file, $descr, $creator, $note, $update) = @_;
   if ($update == 1) {
@@ -127,14 +137,14 @@ sub db_insert_table_info {
   }
 }
 sub db_insert_model_info {
-### Purpose : Inserts model information into db (notes/description etc) 
+### Purpose : Inserts model information into db (notes/description etc)
 ### Compat  : W+L+
   my ($model_id, $descr, $note) = @_;
   db_execute ("UPDATE model_db SET descr='$descr', note='$note' WHERE model_id='$model_id'");
 }
 
 sub db_add_color {
-### Purpose : Add the color that is chosen for a model/results to the database 
+### Purpose : Add the color that is chosen for a model/results to the database
 ### Compat  : W+L+
   if (-w "./") {
     my ($model, $color) = @_;
@@ -172,7 +182,7 @@ sub db_read_table_info {
 sub db_read_model_info {
 ### Purpose : Read table info (notes / creator / etc.) of one specific model
 ### Compat  : W+L+
-  if (-e $db_name) {  
+  if (-e $db_name) {
     my $model = shift;
     my $dbargs = {AutoCommit => 0, PrintError => 1};
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
@@ -194,7 +204,7 @@ sub db_read_all_model_data {
        "FROM model_db"
     );
     my %models_dates_db; my %models_resdates_db; my %models_refmod; my %models_descr;
-    my %models_method; my %models_ofv; my %models_suc; my %models_bnd; my %models_cov; 
+    my %models_method; my %models_ofv; my %models_suc; my %models_bnd; my %models_cov;
     my %models_sig; my %models_notes; my %models_colors; my $model; my %models_dataset;
     foreach my $row (@$all) {
       my ($model, $date_mod, $date_res, $ref_mod, $descr, $method,
@@ -216,8 +226,8 @@ sub db_read_all_model_data {
     }
     $db -> commit();
     $db -> disconnect ();
-    return ( \%models_dates_db, \%models_resdates_db,  \%models_refmod, \%models_descr, 
-       \%models_method, \%models_ofv, \%models_suc, \%models_bnd, \%models_cov, 
+    return ( \%models_dates_db, \%models_resdates_db,  \%models_refmod, \%models_descr,
+       \%models_method, \%models_ofv, \%models_suc, \%models_bnd, \%models_cov,
        \%models_sig, \%models_notes, \%models_colors, \%models_dataset)
   }
 }

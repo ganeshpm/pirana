@@ -8,7 +8,17 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
+
+sub get_file_extension {
+    my $filename = shift;
+    my @spl = split (/\./, $filename);
+    my $ext = "";
+    if (@spl > 1) {
+	$ext = @spl[(@spl-1)];
+    }
+    return($ext);
+}
 
 sub make_clean_dir {
     my $dir = shift;
@@ -226,16 +236,16 @@ sub tab2csv {
 
 sub center_window {
 ### Purpose : Sort ascending
-### Compat  : W+L-
+### Compat  : W+L+
 ### Notes   : Doesn't work properly on Linux correct yet...
     my $win = shift;
     if ($^O =~ m/MSWin32/) {
-	$win->withdraw;   # Hide the window while we move it about
-	$win->update;     # Make sure width and height are current
+	$win -> withdraw;   # Hide the window while we move it about
+	$win -> update;     # Make sure width and height are current
 	my $xpos = int(($win->screenwidth  - $win->width ) / 2);
 	my $ypos = int(($win->screenheight - $win->height) / 2);
-	$win->geometry("+$xpos+$ypos");
-	$win->deiconify;  # Show the window again
+	$win -> geometry("+$xpos+$ypos");
+	$win -> deiconify;  # Show the window again
     }
 }
 

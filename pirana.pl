@@ -18,8 +18,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Piraña.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 use strict;                 #
-use Cwd;                    # Basic functions
+use Cwd qw (fastgetcwd cwd realpath); # Basic functions
 use Tk;                     # Tk
 use Tk::Balloon;            # Help balloon widget
 use Tk::HList;              # HList widget
@@ -53,9 +54,19 @@ if ($os =~ m/MSWin/i) {
 }
 our $user = getlogin();
 
-# delcare some global variables (keep globals to a minimum)
-our $cwd      = cwd();
-our $base_dir = cwd();
+#*** include pirana modules in INC
+eval 'exec $PERLLOCATION/bin/perl -x $0;'
+  if 0;
+$| = 1;
+use File::Basename;
+our $base_dir;
+our $cwd = fastgetcwd();
+BEGIN{
+   $base_dir = &File::Basename::dirname(realpath($0));
+	push (@INC, $base_dir);
+}
+
+#*** Set $home directory
 if ($os =~ m/MSWin/i) {
   if ($ENV{APPDATA} eq "") {
     our $home_dir = $base_dir;
@@ -72,12 +83,12 @@ our %clients, our %clients_descr; our $active_project; our %vars; our %psn_comma
 our $first_time_flag= 0; our $condensed_model_list = 1;
 
 #*** Read all Pirana modules ***************************************************
-do ("./subs.pl");
-use pirana_modules::db        qw(db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
+do ($base_dir."/subs.pl");
+use pirana_modules::db        qw(check_db_file_correct db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::nm        qw(add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
+use pirana_modules::misc      qw(get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 if ($^O =~ m/MSWin32/) {
@@ -106,6 +117,11 @@ our $darkgreen      = "#a5d3a5";
 our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
 our $bbw            = 0; # button border width;
+if ($^O =~ m/MSWin/i) {
+    our $selectcol = $white;
+} else {
+    our $selectcol = $darkerred;
+};
 our $filter         = "";
 
 #*** Main Window ***************************************************************
@@ -114,6 +130,7 @@ our $button     = "#dddac9";
 our $abutton    = "#cecbba";
 our $status_col = "#fffdec";
 our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
+$mw -> setPalette ($bgcol);
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
 $mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
@@ -127,16 +144,15 @@ our $help = $mw->Balloon();
 
 #*** Load Icons (from http://sourceforge.net/projects/icon-collection **********
 our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>0,-column=>1, -columnspan=>10, -ipadx=>5,-ipady=>0,-sticky=>'nws', -rowspan=>2);
-#$mw->geometry("1024x560");
-chdir ("./images");
+chdir ($base_dir."/images");
 my @images = <*.gif>;
-chdir ("..");
+chdir ($cwd);
 our %gif; our %gif_file;
 foreach my $file (@images) {
   my $name = $file;
   $name =~ s/\.gif//i;
   $gif_file{$name} = $file;
-  $gif{$name} = $frame_dir -> Photo ( -file => "images/".$file );
+  $gif{$name} = $frame_dir -> Photo ( -file => $base_dir."/images/".$file );
 }
 
 if ($^O =~ m/MSWin/) {
