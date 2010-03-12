@@ -6,7 +6,7 @@ use strict;
 use File::stat;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(check_db_file_correct db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_insert_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
+our @EXPORT_OK = qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_insert_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 
 our $db_name = "pirana.dir";
 our $dbargs = {AutoCommit => 0, PrintError => 1};
@@ -19,6 +19,14 @@ sub check_db_file_correct {
 	    unlink ($db_name);
 	}
     }
+}
+
+sub db_rename_model {
+### Purpose : Get project info from database
+### Compat  : W+L+
+    my ($old, $new) = @_;
+    db_execute ("UPDATE model_db SET model_id='".$new."' WHERE model_id='".$old."'");
+    return (1);
 }
 
 sub db_get_project_info {
@@ -136,6 +144,7 @@ sub db_insert_table_info {
     db_execute ("INSERT INTO table_db (table_id, descr, creator, note) VALUES ('$file', '$descr', '$creator', '$note')");
   }
 }
+
 sub db_insert_model_info {
 ### Purpose : Inserts model information into db (notes/description etc)
 ### Compat  : W+L+

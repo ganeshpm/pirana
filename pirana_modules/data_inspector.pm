@@ -58,15 +58,15 @@ sub create_plot_window {
     $var_frame -> Label (-text=>"X-axis", -background=>$bgcol) -> grid(-column=>1, -row=>1, -sticky=>'nwe');
     $var_frame -> Label (-text=>"Y-axis", -background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
     $add_frame -> Label (-text=>"Additional graphic parameters:      ", -background=>$bgcol)-> grid(-column=>1, -row=>3, -columnspan=>2, -sticky=>'nw');
-    $add_frame -> Checkbutton(-text=>"Show unity line", -background=>$bgcol, -variable=>\$show_unity, -command=> sub{refresh_plot() ;})->grid(-column=>1,-columnspan=>2,-row=>4, -sticky=>"w");
-    $add_frame -> Checkbutton(-text=>"Log X-axis", -background=>$bgcol, -variable=>\$log_x, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>6, -sticky=>"w");
-    $add_frame -> Checkbutton(-text=>"Log Y-axis", -background=>$bgcol, -variable=>\$log_y, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>7, -sticky=>"w");
+    $add_frame -> Checkbutton(-text=>"Show unity line", -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$show_unity, -command=> sub{refresh_plot() ;})->grid(-column=>1,-columnspan=>2,-row=>4, -sticky=>"w");
+    $add_frame -> Checkbutton(-text=>"Log X-axis", -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_x, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>6, -sticky=>"w");
+    $add_frame -> Checkbutton(-text=>"Log Y-axis", -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_y, -command=>sub{refresh_plot();})->grid(-column=>1,-columnspan=>2,-row=>7, -sticky=>"w");
     $add_frame -> Label (-text=>"   ", -background=>$bgcol)-> grid(-column=>1, -row=>8, -sticky=>'nw');
 
     $x_var_list = $var_frame -> Listbox (-width=>10, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-					 -selectbackground=>'#606060',-highlightthickness =>0, -background=>'#fffeee', -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
+					 -selectbackground=>'#AAAAAA',-highlightthickness =>0, -background=>'#ffffee', -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
     $y_var_list = $var_frame -> Listbox (-width=>10, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-					 -selectbackground=>'#606060',-selectmode=>'extended', -highlightthickness =>0, -background=>'#fffeee',-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
+					 -selectbackground=>'#AAAAAA',-selectmode=>'extended', -highlightthickness => 0, -background=>'#ffffee',-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
     $help_box = $plot_window -> Balloon();
     $help_box -> attach($y_var_list, -msg => "Multiple columns for Y can be selected by holding control-key.");
     $var_frame -> Label (-text=>" ") -> grid(-column=>1,-row=>3, -columnspan=>2, -sticky=>'nwe');

@@ -110,11 +110,11 @@ sub bin_mode {
 sub rnd {
 ### Purpose : Return a rounded number (with trailing zeroes removed)
 ### Compat  : W+L+
-  my ($n, $rnd) = @_;
-  my $x = Math::BigFloat->new($n);
-  $x -> bround($rnd);
-  $x =~ s/\.0+$//; #remove trailing zeroes
-  if ($x == int($n)) {return int($n)} else {return ($x)};  # return 1 FIX and not 1.0000
+    my ($n, $rnd) = @_;
+    $b = sprintf("%.".$rnd."f", $n);
+    $b =~ s/0*$//;
+    $b =~ s/\.*$//;
+    return ($b);
 }
 
 sub one_dir_up {
