@@ -53,13 +53,19 @@ sub enable_run_mode {
     if ($cluster_active == 1) {
 	$command_button -> configure(-image=>$gif_shell);
 	cluster_active ($cluster_active);
-	$cluster_label -> configure(-text=>" Remote mode");
+	$cluster_label -> configure(-text=>" Remote mode ");
     }
     if ($cluster_active == 2) {
         $command_button -> configure(-image=>$gif_shell);
         cluster_active ($cluster_active);
-        $cluster_label -> configure(-text=>" PCluster mode");
+        $cluster_label -> configure(-text=>" PCluster mode  ");
     }
+    if ($cluster_active == 3) {
+        $command_button -> configure(-image=>$gif_shell);
+        cluster_active ($cluster_active);
+        $cluster_label -> configure(-text=>" SGE mode  ");
+    }
+
 }
 
 sub create_nm_start_script {
@@ -71,6 +77,8 @@ sub create_nm_start_script {
   my $nm_start_script;
   my @mod = @$mod_ref;
   my $drive = "";
+  my $qsub;
+  if ($cluster_active == 3) {$qsub = "qsub "};
   if ($os =~ m/MSWin/i) {
     if ($run_dir =~ m/:/) {$drive = substr($run_dir, 0,2)."\n";}
     $ext = "bat";
@@ -98,7 +106,7 @@ sub create_nm_start_script {
       print SCR "CALL ".$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n";
       print SCR "COLOR 07\n";
     } else {
-      print SCR $nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n";
+      print SCR $qsub.$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n";
     }
     if ($run_in_new_dir == 1) {print SCR "cd ..\n";}
   }
@@ -361,6 +369,10 @@ sub create_menu_bar {
     -command=> sub {
 	enable_run_mode(1);
     });
+  $mbar_NM_run_mode -> command(-label => "SGE mode", -background=>$bgcol,
+    -command=> sub {
+	enable_run_mode(3);
+    });
   $mbar_NM_run_mode -> command(-label => "PCluster mode", -background=>$bgcol,
     -command=> sub {
 	enable_run_mode(2);
@@ -550,12 +562,19 @@ sub create_menu_bar {
       redraw_screen($full_screen, $show_tab_list);
     });
   #}
-#  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -image=>$gif{split_vertical}, -label=>"    Show tables & files", -compound=>'left', -command=>sub{
-#    redraw_screen($full_screen, $show_tab_list);
+  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -image=>$gif{split_vertical}, -label=>"    Show tables & files", -compound=>'left', -command=>sub{
+#      redraw_screen($full_screen, $show_tab_list);
+  });
+  our $show_model_info = 1;
+#  $mbar_view -> checkbutton(-variable=>\$show_model_info, -image=>$gif{edit_info}, -label=>"    Show model info / coloring", -compound=>'left', -command=>sub{
+#      $run_frame -> destroy();
+#      $tab_frame_info -> destroy();
+#      refresh_pirana();
 #  });
   $mbar_view -> checkbutton (-variable=>\$condensed_model_list, -image=>$gif{binocular}, -label => "    Condensed view", -compound=>'left',  -command=>sub{
       populate_models_hlist ($models_view, $condensed_model_list);
   });
+
   $mbar_view -> command (-label => "    Execution log", -image=>$gif{log}, -compound=>'left',-background=>$bgcol,
 	  -command=>sub {
       show_exec_runs_window();
@@ -967,12 +986,12 @@ sub run_script {
     my $ext = pop (@spl);
     if ($ext eq "R") {
 	if ($^O =~ m/MSWin/) {
-	    run_command_in_console ('"'.$software{r_dir}.'\bin\R" --vanilla <'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath));
+	    run_command_in_console ('"'.$software{r_dir}.'\bin\R" --vanilla <"'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath.'"'));
 	} else {
-	    run_command_in_console ('"'.$software{r_exec}.'" --vanilla <'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath));
+	    run_command_in_console ('"'.$software{r_exec}.'" --vanilla <"'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath.'"'));
 	}
     } else {
-	run_command_in_console ($assoc_command{$ext}.' '.unix_path($cwd."/pirana_temp/".$scriptfile_nopath));
+	run_command_in_console ($assoc_command{$ext}.' "'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath.'"'));
     }
 }
 
@@ -1462,7 +1481,7 @@ sub add_nm_inst_local {
   $nm_inst_frame -> Label (-text=>"NM version: ",-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e");
   my $nm_name="NM6";
   my $nm_dir ="C:\\nmvi";
-  if ($os =~ m/MSWin/i) {
+  unless ($os =~ m/MSWin/i) {
     $nm_dir = "/opt/nmvi";
   }
   my $nm_type = "regular";
@@ -1498,7 +1517,7 @@ sub add_nm_inst_local {
           $valid_nm = 1;
         }
         # regular installation
-        if ((-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/run/nmfe".$nm_ver).".bat")) {
+        if ((-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
           $nm_type = "regular";
           $valid_nm = 1;
         }
@@ -2875,7 +2894,7 @@ sub duplicate_model_window {
   $dupl_dialog_frame -> Entry (-width=>40, -border=>2, -relief=>'groove', -background=>$white,
      -textvariable=>\$new_ctl_descr)->grid(-row=>3,-column=>2,-sticky=>"w");
 
-  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change run-numbers in ouput/tables?",  -selectcolor=>$selectcol, -activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>'w');
+  $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change model name in \$PROB / \$TABLE / \$EST sections?",  -selectcolor=>$selectcol, -activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>'w');
   $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Use final parameter estimates from reference model?",  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$est_as_init)->grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>'w');
   $dupl_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Fix estimates?", -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$fix_est)->grid(-row=>6,-column=>2,-columnspan=>2,-sticky=>'w');
 
@@ -2987,23 +3006,36 @@ sub rename_ctl {
   center_window($ren_dialog);
   $ren_dialog_frame = $ren_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $ren_dialog_frame -> Label (-background=>$bgcol,-text=>'Model number (without .'.$setting{ext_ctl}.'): '."\n")->grid(-column=>1,-row=>1,-sticky=>"ne");
-  $ren_dialog_frame -> Label (-background=>$bgcol,-text=>"\nNB. Both model files and result files will be renamed.", -foreground=>'#777777')->grid(-column=>1,-row=>3,-sticky=>"ne",-columnspan=>3);
+  $ren_dialog_frame -> Label (-background=>$bgcol,-text=>"\nNB. Both model files and result file and will be renamed.\nOther files (e.g. table files) will not be modified.\n", -foreground=>'#777777', -justify=>"l")->grid(-column=>2,-row=>3,-sticky=>"nw",-columnspan=>1);
   $ren_dialog_frame -> Entry ( -background=>$white, -width=>10, -border=>2, -relief=>'groove', -textvariable=>\$ren_ctl_name)->grid(-column=>2,-row=>1,-sticky=>"nw");
+  my $change_run_nos = 1;
+  $ren_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change model name in \$PROB / \$TABLE / \$EST sections?", -selectcolor=>$selectcol, -activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>2,-column=>2,-columnspan=>2,-sticky=>'w');
   $ren_dialog_frame -> Button (-text=>"Rename", -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     if ((-e $cwd."/".$ren_ctl_name.".".$setting{ext_ctl})||((-e $cwd."/".$ren_ctl_name.".".$setting{ext_res}))) {  # check if control stream already exists;
 	$overwrite_bool = message_yesno ("Model- or result-file for ".$ren_ctl_name." already exists.\n Do you want to overwrite?");
     }
     if ($overwrite_bool==1) {
-      move ($old.".".$setting{ext_ctl},$ren_ctl_name.".".$setting{ext_ctl});
-      move ($old.".".$setting{ext_res},$ren_ctl_name.".".$setting{ext_res});
+	if ($change_run_nos == 0) {
+	    move ($old.".".$setting{ext_ctl}, $ren_ctl_name.".".$setting{ext_ctl});
+	    move ($old.".".$setting{ext_res}, $ren_ctl_name.".".$setting{ext_res});
+	} else {
+	    my $mod_ref = extract_from_model ($modelfile, $modelno);
+	    my %mod = %$mod_ref;
+	    duplicate_model ($old, $ren_ctl_name, $mod{description}, $mod{refmod}, 1, 0, 0, \%setting);
+	    if (-e $ren_ctl_name.".".$setting{ext_ctl}) {
+		unlink ($old.".".$setting{ext_ctl});
+	    }
+	}
+	db_rename_model ($old, $ren_ctl_name);
     }
     read_curr_dir($cwd, $filter, 1);
     destroy $ren_dialog;
-  })->grid(-column=>2,-row=>2,-sticky=>"w");
+  })->grid(-column=>2,-row=>4,-sticky=>"w");
   $ren_dialog_frame -> Button (-text=>'Cancel', -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     destroy $ren_dialog;
-  })->grid(-column=>1,-row=>2,-sticky=>"e");
+  })->grid(-column=>1,-row=>4,-sticky=>"e");
 }
+
 sub update_model_descr {
 ### Purpose : Updata model description (extracted from NM model file)
 ### Compat  : W+L+
@@ -3515,7 +3547,7 @@ sub exec_run_nmfe {
 ### Purpose : Run a model using the nmfe command
 ### Compat  : W+L?
   status ("Starting run using nmfe (or NMQual perl file)");
-  if (@nm_installations>0) {
+  if (@nm_installations > 0) {
   ($nm_inst, $method, $run_in_new_dir) = @_;
   @runs = $models_hlist -> selectionGet ();
   @files = @ctl_show[@runs];
@@ -4490,21 +4522,35 @@ sub cluster_active {
   $active = shift;
   if ($active==2) {
     $enable_local_button->configure(-image=>$gif{"local_inactive"});
-    $enable_pcluster_button->configure(-image=>$gif{"pcluster_active"});
+    if ($enable_pcluster_button) {
+	$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"});
+    }
+    $enable_mconnect_button->configure(-image=>$gif{"cluster_inactive"});
+    @nm_installations = keys(%nm_dirs);
+  }
+  if ($active==3) {
+    $enable_local_button->configure(-image=>$gif{"local_inactive"});
+    if ($eneable_pcluster_button) {
+	$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"});
+    }
     $enable_mconnect_button->configure(-image=>$gif{"cluster_inactive"});
     @nm_installations = keys(%nm_dirs);
   }
   if ($active==0) {
     $enable_local_button->configure(-image=>$gif{"local_active"});
-    if ($enable_pcluster_button) {$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"}); }
+    if ($enable_pcluster_button) {
+	$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"});
+    }
     $enable_mconnect_button->configure(-image=>$gif{"cluster_inactive"});
     @nm_installations = keys(%nm_dirs);
   }
   if ($active==1) {
     $enable_local_button->configure(-image=>$gif{"local_inactive"});
-    if ($enable_pcluster_button) {$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"}); }
+    if ($enable_pcluster_button) {
+	$enable_pcluster_button->configure(-image=>$gif{"pcluster_inactive"});
+    }
     $enable_mconnect_button->configure(-image=>$gif{"cluster_active"});
-    @nm_installations = keys(%nm_dirs);
+    @nm_installations = keys(%nm_dirs_remote);
   }
 }
 
@@ -4522,7 +4568,7 @@ sub cluster_enable {
 
 sub save_header_widths {
 ### Purpose : Save the columnwidths of the main Listbox
-### Compat  : W+L+?
+### Compat  : W+L+
   my $x=0;
   foreach(@main_headers) {
     @header_widths[$x] = $models_hlist->columnWidth($x);
@@ -4536,6 +4582,8 @@ sub save_header_widths {
 }
 
 sub nmfe_run_window {
+### Purpose : Create dialog window for running a model
+### Compat  : W+L+
   my $model = @_[0];
   my $modelfile = $model.".".$setting{ext_ctl};
   my $run_in_new_dir = 0;
@@ -4543,6 +4591,7 @@ sub nmfe_run_window {
   if ($cluster_active == 1) {$title .= "(remotely through SSH)"};
   if ($cluster_active == 0) {$title .= "(locally)"};
   if ($cluster_active == 2) {$title .= "(remotely on PCluster)"};
+  if ($cluster_active == 3) {$title .= "(submit to SGE)"};
   my $nmfe_run_window = $mw -> Toplevel(-title=>$title);
   center_window($nmfe_run_window);
   $nmfe_run_window -> OnDestroy ( sub{
@@ -4575,6 +4624,8 @@ sub nmfe_run_window {
   my $nm_installation_text;
   if ($cluster_active == 0) {$nm_installation_text = "Local NM installation:"; }
   if ($cluster_active == 1) {$nm_installation_text = "Remote NM installation:"; }
+  if ($cluster_active == 2) {$nm_installation_text = "Local NM installation:"; }
+  if ($cluster_active == 3) {$nm_installation_text = "Local NM installation:"; }
   $nmfe_run_frame -> Label (-text=>$nm_installation_text, -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
   my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],-variable => \$nm_version_chosen,
       -border=>$bbw,
@@ -4587,13 +4638,13 @@ sub nmfe_run_window {
   }) -> grid(-row=>6,-column=>2,-sticky => 'wns');
   delete $nm_dirs{""};
   my $nm_dirs_ref; my $nm_vers_ref ;
-  if ($cluster_active==0) { ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_local.ini");}
-  if ($cluster_active==1) { ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_cluster.ini");}
+  unless ($cluster_active==1) {
+      ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_local.ini");
+  } else {
+      ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_cluster.ini");
+  }
   my %nm_dirs_run = %$nm_dirs_ref; my %nm_vers_run = %$nm_vers_ref;
   @nm_installations = keys(%nm_dirs_run);
-  #foreach (@nm_installations) {
-  #  $_ = substr($_,0,13);
-  #};
   if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [@nm_installations] )} ;
 
   $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
@@ -4612,7 +4663,7 @@ sub nmfe_run_window {
             message ("Your current working directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.");
           }
       }
-      if ($cluster_active==0) {
+      if (($cluster_active==0||($cluster_active==3))) {
         exec_run_nmfe ($nm_version_chosen, $method_chosen, $run_in_new_dir);
       }
     } else {
@@ -4862,7 +4913,7 @@ sub frame_models_show {
             update_text_box(\$model_info_modified, $mod_time);
             update_text_box(\$model_info_dataset, $models_dataset{@ctl_show[@sel[0]]});
           } else {
-            $notes_text -> configure(-state=>"disabled")
+	      if ($show_model_info==1) { $notes_text -> configure(-state=>"disabled") }
           }
           if ($estim_window) {
             show_estim_window (@ctl_show[@sel[0]].".".$setting{ext_res});
@@ -5107,7 +5158,7 @@ sub frame_models_show {
   $help->attach($tree_txt_button, -msg => "Generate run record as tree");
 
   $mod_buttons -> Label (-text=>"   ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
-  our $cluster_label = $mod_buttons -> Label (-text=>"  Local mode", -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>15,-sticky=>'we');
+  our $cluster_label = $mod_buttons -> Label (-text=>"Local mode", -width=>14, -background=>$bgcol, -foreground=>"#757575")->grid(-row=>1,-column=>16,-sticky=>'e');
   $enable_local_button = $mod_buttons -> Button (-image=>$gif{local_active}, -border=>$bbw, -width=>30, -height=>22, , -background=>$bgcol,-activebackground=>$abutton,-command=>sub{
      enable_run_mode(0);
   })->grid(-row=>1,-column=>12,-sticky => 'wns');
@@ -5362,10 +5413,12 @@ sub update_text_box {
 ### Compat  : W+L+
   my($obj_ref, $text) = @_;
   $obj = $$obj_ref;
-  $obj -> configure(-state=>"normal");
-  $obj -> delete("0.0","end");
-  $obj -> insert ("0.0", $text);
-  $obj -> configure(-state=>"disabled");
+  if ($show_model_info == 1) {
+      $obj -> configure(-state=>"normal");
+      $obj -> delete("0.0","end");
+      $obj -> insert ("0.0", $text);
+      $obj -> configure(-state=>"disabled");
+  }
 }
 
 sub note_color {

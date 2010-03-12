@@ -38,7 +38,6 @@ use HTTP::Date;             # Date and time functions
 use List::Util qw(max maxstr min minstr reduce); # some basic functions
 use POSIX qw(ceil floor);   # some basic functions
 use DBI;                    # database connection to sqlite
-use Math::BigFloat;         # used for rounding to significant digits
 
 #*** Some parameter initalisation **********************************************
 our $version = "2.3.0b";     # version "Oahu"
@@ -84,7 +83,7 @@ our $first_time_flag= 0; our $condensed_model_list = 1;
 
 #*** Read all Pirana modules ***************************************************
 do ($base_dir."/subs.pl");
-use pirana_modules::db        qw(check_db_file_correct db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
+use pirana_modules::db        qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
 use pirana_modules::nm        qw(add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
@@ -160,8 +159,6 @@ if ($^O =~ m/MSWin/) {
     $mw -> Icon (-image=> $icon);
 } else {
     my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
-    #$mw -> iconbitmap ($icon);
-    #$mw -> iconmask ($base_dir.'/images/pirana-mask.xbm');
 }
 
 #*** Menu bar ******************************************************************
@@ -179,8 +176,8 @@ if ($first_time_flag==1) { # save to home folder
   $first_time_flag = 0;
   first_time_dialog($user);
 }
-
 $mw -> resizable( 0, 0);
+$mw -> raise;
 MainLoop;
 #***********************************************************************
 
