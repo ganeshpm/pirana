@@ -172,7 +172,7 @@ sub db_read_exec_runs {
     my $dbargs = {AutoCommit => 0, PrintError => 1};
     my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
     my $db_results = $db -> selectall_arrayref("SELECT model_id, descr, date_executed, name_modeler, nm_version, ".
-       "method, exec_where, command FROM executed_runs ORDER BY date_executed DESC" );
+       "method, exec_where, command FROM executed_runs" );
     $db -> disconnect ();
     return($db_results);
   }

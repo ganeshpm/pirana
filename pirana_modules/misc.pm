@@ -8,7 +8,37 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(find_R get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
+
+sub find_R {
+### Purpose : Find the newest R version on Windows
+### Compat  : W+L-
+    my $prog_dir_ref = shift;
+    my @prog_dir = @$prog_dir_ref;
+    my %all_R;
+    foreach my $dir (@prog_dir) {
+	my @dirs = read_dirs ($dir);
+	foreach my $R_dir (@dirs) {
+	    if (($R_dir =~ m/R-/)&&(-e $dir."/".$R_dir."/bin/R.exe")) {
+		$all_R {$R_dir} = $dir."/".$R_dir;
+	    }
+        }
+    }
+    # find newest R version available
+    my $highest_version_number; 
+    my $version;
+    foreach my $R (keys(%all_R)) {
+	my $R_num = $R;
+	$R_num =~ s/R-//i;
+	my @spl = split (/\./, $R_num);
+	my $version_number = @spl[0]*10000 + @spl[1]*100 + @spl[2];
+	if ($version_number > $highest_version_number) {
+	    $highest_version_number = $version_number;
+	    $version = $R;   
+	}
+    }
+    return ($all_R{$version});
+}
 
 sub get_file_extension {
     my $filename = shift;
