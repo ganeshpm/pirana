@@ -22,6 +22,7 @@
 use strict;                 #
 use Cwd qw (fastgetcwd cwd realpath); # Basic functions
 use Tk;                     # Tk
+use Tk::NoteBook;
 use Tk::Balloon;            # Help balloon widget
 use Tk::HList;              # HList widget
 use Tk::ItemStyle;          # ..
@@ -84,10 +85,11 @@ our $first_time_flag= 0; our $condensed_model_list = 1;
 #*** Read all Pirana modules ***************************************************
 do ($base_dir."/subs.pl");
 use pirana_modules::db        qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
-use pirana_modules::editor    qw(text_edit_window refresh_edit_window save_model);
-use pirana_modules::nm        qw(add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
+use pirana_modules::editor    qw(text_edit_window text_edit_window_build refresh_edit_window save_model);
+use pirana_modules::nm        qw(get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
+use pirana_modules::sge       qw(stop_job qstat_get_nodes_info qstat_get_jobs_info qstat_get_specific_job_info);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
+use pirana_modules::misc      qw(find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 if ($^O =~ m/MSWin32/) {
