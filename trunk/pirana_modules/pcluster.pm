@@ -6,7 +6,7 @@ use strict;
 use Cwd;
 use File::stat;
 use HTTP::Date;
-use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(generate_zink_file get_active_nodes);
@@ -14,7 +14,7 @@ our @EXPORT_OK = qw(generate_zink_file get_active_nodes);
 sub generate_zink_file {
 ### Purpose : Generate a zink-file (PsN)
 ### Compat  : W+L+
-  my ($zink_host, $cluster_drive, $jobname, $priority, $exepath, $command, $specific_client) = @_ ; 
+  my ($zink_host, $cluster_drive, $jobname, $priority, $exepath, $command, $specific_client) = @_ ;
   if ($specific_client ne "") {
     mkdir ($cluster_drive."/ZinkJobs/".$specific_client);
     $specific_client .= "\/";
@@ -34,7 +34,7 @@ sub generate_zink_file {
 
 sub get_active_nodes {
 ### Purpose : Return the CPUs in the PCluster
-### Compat  : W+L? 
+### Compat  : W+L?
   my ($cluster_drive, $clients_ref) = @_;
   my %clients = %$clients_ref;
   my $cwd = getcwd();
@@ -56,7 +56,7 @@ sub get_active_nodes {
     if (int(int($now)-int($df)) < 60) {
       $total_cpus{$_} = $total;
       $busy_cpus{$_} = $runs;
-    } 
+    }
     chomp(@lines[1]);
     $pc_names{$_} = @lines[1];
   };

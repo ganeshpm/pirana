@@ -23,8 +23,68 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
+sub sge_get_job_cwd {
+    my $job = shift;
+    my $info_ref = qstat_get_specific_job_info ($job);
+    my @info = @$info_ref;
+    my $folder;
+    foreach my $line (@info) {
+	if (substr($line, 0, 3) eq "cwd") {
+	    $folder = $line;
+	    $folder =~ s/cwd://i;
+	    $folder =~ s/^\s+//; #remove leading spaces
+	}
+    }
+    return ($folder);
+}
+
+sub create_window_piranaR {
+    my ($mw, $script, $start_script_bool, $script_file) = @_;
+    my $message = "";
+    unless ($R_proc) {
+	our ($R_proc, $read) = R_start_process ();
+    } else {
+	$message = "R session continued from previous session.\n";
+    }
+    $window_piranaR = $mw -> Toplevel(-title=>"PiranaR");
+    if ($^O =~ m/MSWin/) {
+	$window_piranaR -> Icon (-image=> $icon);
+    }
+    $window_piranaR -> OnDestroy ( sub {
+	R_stop_process ($R_proc);
+	undef ($R_proc);
+    });
+    my $frame_piranaR  = $window_piranaR -> Frame() -> grid();
+    if ($script_file eq "") {$script_file = "test_1.R"};
+    my @R_commands; #history of R commands
+    my $script_text_box_frame = $frame_piranaR -> Frame() -> grid(-row=> 1, -column=>1,-sticky=>"nwes");
+    my $R_interface_box_frame = $frame_piranaR -> Frame() -> grid(-row=> 2, -column=>1,-sticky=>"nwes");
+    my $R_interface_box = R_create_R_box ("", "Script text box", $R_interface_box_frame, $R_proc, \@R_commands);
+    my $script_text_box = R_create_script_text_box ($script, "Script text box", $script_text_box_frame, $R_proc, $R_interface_box, \@R_commands, $cwd."/".$script_file);
+
+    $window_piranaR -> update();
+    
+    $R_interface_box -> insert("end","Pirana is trying to start R...", "pirana");
+    if ($read =~ m/Perl bridge started/i) {
+	$R_interface_box -> insert("end", "Successful.\n", "pirana");
+	$R_interface_box -> insert("end", $message, "pirana");				   
+	$R_interface_box -> insert("end", "Note: on-screen plotting is not available in PiranaR.\n","pirana");
+	$R_interface_box -> insert("end", "> ");
+    } else {
+	$R_interface_box -> insert("end", "Pirana was unable to start an R process\n","error");
+    }
+#    R_insert_line ($R_proc, $R_interface_box, "setwd('".$cwd."')", $R_commands_ref, 1);
+
+    if ($start_script_bool == 1 ) {
+	my $success = R_insert_multiple_lines ($R_proc, $R_interface_box, $script, $R_commands_ref, 1);
+    }
+    $window_piranaR -> resizable (0,0);
+    $window_piranaR -> raise();
+    $window_piranaR -> transient($mw);
+}
+
 sub refresh_sge_monitor {
-    my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished) = @_;
+    my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my %ssh = %$ssh_ref;
     my $ssh_add1 = "";
     my $ssh_add2 = "";
@@ -32,13 +92,15 @@ sub refresh_sge_monitor {
 	$ssh_add1 = $ssh{login}." ".$ssh{parameters}." '";
 	$ssh_add2 = "'";
     }
-    my $job_info_running_ref = qstat_get_jobs_info ($ssh_add1."qstat -s r ".$ssh_add2."|");
-    my $job_info_scheduled_ref = qstat_get_jobs_info ($ssh_add1."qstat -s p ".$ssh_add2."|");
-    my $job_info_finished_ref = qstat_get_jobs_info ($ssh_add1."qstat -s z ".$ssh_add2."|");
+    my $job_info_running_ref = qstat_get_jobs_info ($ssh_add1."qstat -u '*' -s r ".$ssh_add2."|");
+    my $job_info_scheduled_ref = qstat_get_jobs_info ($ssh_add1."qstat -u '*' -s p ".$ssh_add2."|");
+    my $job_info_finished_ref = qstat_get_jobs_info ($ssh_add1."qstat -u '*' -s z ".$ssh_add2."|");
     my $node_info_ref = qstat_get_nodes_info ($ssh_add1."qhost ".$ssh_add2."|");
+    my $node_use_ref = qstat_get_nodes_info ($ssh_add1."qstat -g c ".$ssh_add2."|");
     populate_nodes_hlist ($nodes_hlist, $node_info_ref);
+    populate_nodes_hlist ($use_hlist, $node_use_ref);
     populate_jobs_hlist ($jobs_hlist_running, $job_info_running_ref);
-    populate_jobs_hlist ($jobs_hlist_scheduled, $job_info_running_ref);
+    populate_jobs_hlist ($jobs_hlist_scheduled, $job_info_scheduled_ref);
     populate_jobs_hlist ($jobs_hlist_finished, $job_info_finished_ref);
 }
 
@@ -53,7 +115,7 @@ sub tk_table_from_model_output {
         -columns    => int(@jobs_headers), # int(@models_hlist_headers),
         -scrollbars => 'se', -width => 80, -height => 20, -border => 1,
         -background => '#ffffff', -selectbackground => $pirana_orange,
-        -font       => $font_normal,
+        -font       => $font,
         -command    => sub {
 	    my $jobsel = $jobs_hlist -> selectionGet ();
 	    my $job_n = @$jobsel[0];
@@ -70,7 +132,7 @@ sub tk_table_from_model_output {
     my $job_info_ref = qstat_get_jobs_info ($filter);
     populate_jobs_hlist ($jobs_hlist, $job_info_ref);
 
-    if ($filter eq "r") {
+    if ($filter =~ m/\-s r/) {
 	my $job_menu = $jobs_hlist -> Menu(-tearoff => 0,-title=>'None', -background=>$bgcol, -menuitems=> [
         [Button => " Job info", -background=>$bgcol,-font=>$font_normal,  -command => sub{
 	    my $tabsel = $jobs_hlist -> selectionGet ();
@@ -78,18 +140,38 @@ sub tk_table_from_model_output {
 	    $job_n =~ s/job\_//;
 	    job_specific_information_window($job_n);
         }],
+        [Button => " Go to folder", -background=>$bgcol,-font=>$font_normal,  -command => sub{
+	    my $tabsel = $jobs_hlist -> selectionGet ();
+	    my $job_n = @$tabsel[0];
+	    $job_n =~ s/job\_//;
+	    my $folder = sge_get_job_cwd($job_n);
+	    if (chdir ($folder)) {
+		$cwd = $folder;
+		refresh_pirana($cwd);
+	    } else {message ("Couldn't change to folder. Check permissions.")}
+        }],
+        [Button => " Intermediate results", -background=>$bgcol,-font=>$font_normal,  -command => sub{
+	    my $tabsel = $jobs_hlist -> selectionGet ();
+	    my $job_n = @$tabsel[0];
+	    $job_n =~ s/job\_//;
+	    my $folder = sge_get_job_cwd($job_n);
+	    if (chdir ($folder)) {
+		show_inter_window ($folder);
+	    } else {message ("Couldn't read folder. Check permissions.")}
+	    chdir ($cwd);
+        }],
         [Button => " Stop job", -background=>$bgcol, -font=>$font_normal, -command => sub{
 	    my $tabsel = $jobs_hlist -> selectionGet ();
 	    my $job_n = @$tabsel[0];
 	    $job_n =~ s/job\_//;
-	    my $kill = message_yesno ("Are you sure you want to kill this job?");
+	    my $kill = message_yesno ("Are you sure you want to kill this job?", $mw, $bgcol, $font_normal);
 	    if ($kill == 1) {
 		stop_job ($job_n);
-		sleep (1); # short delay to wait for SGE to kill the job
-		my $node_info_ref = qstat_get_nodes_info ();
-		my $job_info_ref = qstat_get_jobs_info ();
-		populate_nodes_hlist ($nodes_hlist, $node_info_ref);
-		populate_jobs_hlist ($jobs_hlist, $job_info_ref);
+		sleep (1); # short delay to wait for SGE to kill the job (sometimes not enough...);
+		my $job_info_running_ref  = qstat_get_jobs_info ($ssh_add1."qstat -s r ".$ssh_add2."|");
+		populate_jobs_hlist ($jobs_hlist, $job_info_running_ref);
+#		refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
+
 	    }
 	 }],
 	] );
@@ -116,16 +198,18 @@ sub populate_nodes_hlist {
     my ($nodes_hlist, $node_info_ref) = @_;
     my @node_info = @$node_info_ref;
     my $i=0;
-    $nodes_hlist -> delete("all");
-    foreach my $node (@node_info) {
-        $nodes_hlist -> add("node_".$i);
-        $nodes_hlist -> itemCreate("node_".$i, 0, -text => @$node[0], -style=>$align_right);
-        $nodes_hlist -> itemCreate("node_".$i, 1, -text => @$node[1], -style=>$align_right);
-        $nodes_hlist -> itemCreate("node_".$i, 2, -text => @$node[2], -style=>$align_right);
-        $nodes_hlist -> itemCreate("node_".$i, 3, -text => @$node[3], -style=>$align_right);
-        $nodes_hlist -> itemCreate("node_".$i, 4, -text => @$node[4], -style=>$align_right);
-        $nodes_hlist -> itemCreate("node_".$i, 5, -text => @$node[5], -style=>$align_right);
-	$i++;
+    if ($nodes_hlist ) {
+	$nodes_hlist -> delete("all");
+	foreach my $node (@node_info) {
+	    $nodes_hlist -> add("node_".$i);
+	    $nodes_hlist -> itemCreate("node_".$i, 0, -text => @$node[0], -style=>$align_right);
+	    $nodes_hlist -> itemCreate("node_".$i, 1, -text => @$node[1], -style=>$align_right);
+	    $nodes_hlist -> itemCreate("node_".$i, 2, -text => @$node[2], -style=>$align_right);
+	    $nodes_hlist -> itemCreate("node_".$i, 3, -text => @$node[3], -style=>$align_right);
+	    $nodes_hlist -> itemCreate("node_".$i, 4, -text => @$node[4], -style=>$align_right);
+	    $nodes_hlist -> itemCreate("node_".$i, 5, -text => @$node[5], -style=>$align_right);
+	    $i++;
+	}
     }
     return();
 }
@@ -154,11 +238,12 @@ sub populate_jobs_hlist {
 sub sge_monitor_window {
     my $sge_monitor_window = $mw -> Toplevel (-title=>"SGE monitor", -background=>$bgcol);
     my $sge_monitor_window_frame = $sge_monitor_window -> Frame (-background=>$bgcol)->grid(-column=>1, -row=>1,-ipadx=>10, -ipady=>10);
-    my $sge_notebook = $sge_monitor_window_frame ->NoteBook(-tabpadx=>5, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4);
-    my $sge_nodes = $sge_notebook -> add("nodes", -label=>"Nodes");
+    my $sge_notebook = $sge_monitor_window_frame -> NoteBook(-tabpadx=>5, -font=>$font, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>10);
     my $sge_running = $sge_notebook -> add("running", -label=>"Running");
     my $sge_scheduled = $sge_notebook -> add("scheduled", -label=>"Scheduled");
     my $sge_finished = $sge_notebook -> add("finished", -label=>"Finished");
+    my $sge_nodes = $sge_notebook -> add("nodes", -label=>"Nodes");
+    my $sge_use = $sge_notebook -> add("use", -label=>"Usage");
     my $sge_ssh = $sge_notebook -> add("ssh", -label=>"SSH");
 
     unless (%ssh) {
@@ -188,13 +273,38 @@ sub sge_monitor_window {
         -padx       => 0,
         -background => '#ffffff',
         -selectbackground => $pirana_orange,
-        -font       => $font_normal,
+        -font       => $font,
         -browsecmd   => sub{
-            my $jobsel = $nodes_hlist -> selectionGet ();
+            my $node_sel = $nodes_hlist -> selectionGet ();
         }
       )->grid(-column => 2, -columnspan=>6, -row => 1, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
     foreach my $x ( 0 .. $#nodes_headers ) {
         $nodes_hlist -> header('create', $x, -text=> @nodes_headers[$x], -headerbackground => 'gray');
+       # $cluster_monitor_grid -> columnWidth($x, @widths[$i]);
+    }
+    my @use_headers = qw/queue cqload used res avail total aoacds cdsue/;
+    my $use_hlist;
+    my $use_info_ref = qstat_get_nodes_info ("qstat -g c |");
+    $use_hlist = $sge_use ->Scrolled('HList',
+        -head       => 1,
+        -selectmode => "single",
+        -highlightthickness => 0,
+        -columns    => int(@use_headers), # int(@models_hlist_headers),
+        -scrollbars => 'se',
+        -width      => 80,
+        -height     => 20,
+        -border     => 1,
+        -pady       => 0,
+        -padx       => 0,
+        -background => '#ffffff',
+        -selectbackground => $pirana_orange,
+        -font       => $font,
+        -browsecmd   => sub{
+            my $use_sel = $use_hlist -> selectionGet ();
+        }
+      )->grid(-column => 2, -columnspan=>6, -row => 1, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
+    foreach my $x ( 0 .. $#use_headers ) {
+        $use_hlist -> header('create', $x, -text=> @use_headers[$x], -headerbackground => 'gray');
        # $cluster_monitor_grid -> columnWidth($x, @widths[$i]);
     }
 
@@ -202,13 +312,13 @@ sub sge_monitor_window {
     $jobs_hlist_running = tk_table_from_model_output ("qstat -s r |", $sge_running);
     $jobs_hlist_scheduled = tk_table_from_model_output ("qstat -s p |", $sge_scheduled);
     $jobs_hlist_finished = tk_table_from_model_output ("qstat -s z |", $sge_finished);
-    refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
+    refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
 
 # main buttons
-    $sge_monitor_window_frame -> Button (-text => "Refresh", -width=>15, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
+    $sge_monitor_window_frame -> Button (-text => "Refresh", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
     })-> grid(-column=>1, -row=>8,-sticky=>"nwe");
-    $sge_monitor_window_frame -> Button (-text => "Start Qmon", -width=>15, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
+    $sge_monitor_window_frame -> Button (-text => "Start Qmon", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	my $ssh_add1 = "";
 	my $ssh_add2 = "";
 	if ($ssh{connect_ssh} == 1) {
@@ -218,10 +328,10 @@ sub sge_monitor_window {
 	system ($ssh_add1."qmon ".$ssh_add2."&");
     })-> grid(-column=>2, -row=>8,-sticky=>"nwe");
 
-    $sge_monitor_window_frame -> Button (-text => "Close", -width=>15, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
+    $sge_monitor_window_frame -> Button (-text => "Close", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$sge_monitor_window -> destroy();
-    })-> grid(-column=>4, -row=>8,-sticky=>"nwe");
-
+    })-> grid(-column=>3, -row=>8,-sticky=>"nwe");
+    $sge_monitor_window -> transient($mw);
 }
 
 sub sge_monitor_window_old {
@@ -254,8 +364,9 @@ sub even {
 sub create_nm_start_script {
 ### Purpose : Create a script (bat or sh) to start
 ### Compat  : W+L+
-  my ($script_file, $nm_version, $run_dir, $mod_ref, $run_in_new_dir, $new_dirs_ref, $clusters_ref) = @_;
+  my ($script_file, $nm_version, $run_dir, $mod_ref, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref) = @_;
   my %clusters = %$clusters_ref;
+  my %ssh = %$ssh_ref;
   my $nmfe_file;
   my $ext;
   my $nm_start_script;
@@ -263,13 +374,14 @@ sub create_nm_start_script {
   @new_dirs = @$new_dirs_ref;
   my $drive = "";
   my $qsub;
+  my $qsub_base = "";
   if ($clusters{run_on_sge} == 1) {
-      $qsub = $clusters{sge_submit_command}." ".$clusters{sge_parameters}." ";
+      $qsub_base = $clusters{sge_submit_command}." ".$clusters{sge_parameters}." ";
       if ($clusters{sge_priority} ne "") {
-	  $qsub .= "-p ".$clusters{sge_priority}." ";
+	  $qsub_base .= "-p ".$clusters{sge_priority}." ";
       }
   }
-  if ($os =~ m/MSWin/i) {
+  if (($os =~ m/MSWin/i)&&($ssh{connect_ssh} == 0)) {
     if ($run_dir =~ m/:/) {$drive = substr($run_dir, 0,2)."\n";}
     $ext = "bat";
     $nmfe_file = "nmfe".$nm_vers{$nm_version}.".bat";
@@ -278,29 +390,44 @@ sub create_nm_start_script {
     $nmfe_file = "nmfe".$nm_vers{$nm_version};
     $nmfe_file =~ s/\r//g;
   }
+  if ($ssh{connect_ssh}==1) {
+    $ext = "sh";
+    $nmfe_file = "nmfe".$nm_vers_cluster{$nm_version};
+    $nmfe_file =~ s/\r//g;
+  }
   unless (-d $base_dir."/temp") {mkdir $base_dir."/temp"};
-  my $nm_start_script = os_specific_path ($nm_dirs{$nm_version}."/util/".$nmfe_file);
+  my $nm_command;
+  if ($ssh{connect_ssh}==1) {
+      $nm_command = $nm_dirs_cluster{$nm_version}."/util/".$nmfe_file;
+  } else {
+      $nm_command = $nm_dirs{$nm_version}."/util/".$nmfe_file;
+  }
+  my $nm_start_script = os_specific_path ($nm_command);
   my @script;
   push (@script, $drive);
   push (@script, "cd ".$run_dir."\n");
   foreach my $model (@mod) {
       if (($clusters{run_on_sge})&&($clusters{sge_model_as_jobname} == 1)) {
 	  $active_project =~ s/\s/\_/g;
-	  $qsub .= "-N ".$active_project."_".$model." ";
+	  $qsub = $qsub_base."-N ".substr($active_project."_".$model, 0, 10)." ";
       }
       if($run_in_new_dir == 1) {
 	  my $new_dir = shift(@new_dirs);
 	  push (@script, "cd ".$new_dir."\n");
       }
-      if ($os =~ m/MSWin/i) {
-#	  push (@script, "COLOR 4F\n");
+      if (($os =~ m/MSWin/i)&&($ssh{connect_ssh} == 0)) {
 	  push (@script,"CALL ".$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n");
-#	  push (@script, "COLOR 07\n");
       } else {
 	  push (@script, $qsub.$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n");
       }
+      if (($clusters{run_on_sge} == 0)&&($clusters{run_on_pcluster} == 0)) {
+	  push (@script, "echo Run for model ".$model." finished.\n");
+      } else {
+	  push (@script, "echo Run for model ".$model." submitted.\n");
+     }
       if ($run_in_new_dir == 1) {push(@script, "cd ..\n");}
   }
+  push (@script, "echo All runs finished or submitted.\n");
   return ($script_file, \@script);
 }
 
@@ -391,7 +518,7 @@ sub edit_model_command {
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model."); return(); }
   my $model_id = @ctl_show[@sel[0]];
-  edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_ctl}));
+  edit_model(unix_path($cwd."/".$model_id.".".$setting{ext_ctl}));
 }
 sub rename_model_command {
   my @sel = $models_hlist -> selectionGet ();
@@ -418,13 +545,13 @@ sub delete_models_command {
   delete_models_window(\@sel);
 }
 sub generate_report_command {
-    my $include_html_ref = shift;
+    my $run_reports_ref = shift;
     @run = @ctl_show[$models_hlist -> selectionGet];
     if (@run == 0) { message("First select a model / result file."); return(); }
     foreach (@run) {
 	my $pirana_notes = $models_notes{$_};
 	$_ .= ".".$setting{ext_res};
-	output_results_HTML($_, \%setting, $pirana_notes, $include_html_ref);
+	output_results_HTML($_, \%setting, $pirana_notes, $run_reports_ref);
 	start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum_'.$_.'.html"');
     }
 }
@@ -438,6 +565,12 @@ sub generate_LaTeX_command {
   foreach (@run) {$_ .= ".".$setting{ext_res}};
   my $latex = output_results_LaTeX(@run[0], \%setting);
   text_window ($latex, "Parameters for model ".@run[0]);
+}
+sub send_model_info_to_R_command {
+      my @sel = $models_hlist -> selectionGet ();
+      if (@sel == 0) { message("First select a model."); return(); }
+      my @models_sel = @ctl_show[@sel];
+      send_object_to_piranaR (\@models_sel);
 }
 sub view_outputfile_command {
   my @sel = $models_hlist -> selectionGet ();
@@ -518,113 +651,111 @@ sub create_menu_bar {
 ### Compat  : W+L+
   our $mbar = $mw -> Menu(-background=>$bgcol, -border=>0);
   our $mw -> configure(-menu => $mbar);
-  our $mbar_file = $mbar -> cascade(-label=>"File", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  $mbar_file -> command(-label => "Preferences...", -background=>$bgcol,-underline=>0,
+
+  our $mbar_file = $mbar -> cascade(-label=>"File", -font=>$font, -background=>$bgcol,-underline=>0, -tearoff => 0);
+  $mbar_file -> command(-label => "Preferences...", -font=>$font, -background=>$bgcol,-underline=>0,
 		  -command=>sub {
         edit_ini_window("settings.ini", \%setting, \%setting_descr, "Piraña preferences",0)});
-  $mbar_file -> command(-label => "Software...", -background=>$bgcol,-underline=>5,
+  $mbar_file -> command(-label => "Software...", -font=>$font, -background=>$bgcol,-underline=>5,
 		  -command=>sub {
 		  my $software_ini = "software_linux.ini";
         if ($os =~ m/MSWin/i) {$software_ini = "software_win.ini";}
         edit_ini_window($software_ini, \%software, \%software_descr, "Software integration",1);
       });
 
-  $mbar_file -> command(-label => "Exit", -underline=>0,-background=>$bgcol,
+  $mbar_file -> command(-label => "Exit",-font=>$font, -underline=>0,-background=>$bgcol,
 		  -command=>sub { quit(); } );
 
-  our $mbar_NM = $mbar -> cascade(-label =>"NONMEM", -background=>$bgcol,-underline=>1, -tearoff => 0);
-  $mbar_NM -> command(-label => "Manage NM installations", -background=>$bgcol,-underline=>1,
+  our $mbar_NM = $mbar -> cascade(-label =>"NONMEM", -font=>$font,-background=>$bgcol,-underline=>1, -tearoff => 0);
+  $mbar_NM -> command(-label => "Manage NM installations",-font=>$font, -background=>$bgcol,-underline=>1,
 		  -command=> sub { manage_nm_window();
      });
-  $mbar_NM -> command(-label => "Install NM6/7 using NMQual", -background=>$bgcol,-underline=>1,
+  $mbar_NM -> command(-label => "Install NM6/7 using NMQual", -font=>$font,-background=>$bgcol,-underline=>1,
 		  -command=> sub { install_nonmem_nmq_window() });
-  $mbar_NM -> command(-label => "Install NM6/7 from CD", -background=>$bgcol,-underline=>0,
+  $mbar_NM -> command(-label => "Install NM6/7 from CD", -font=>$font,-background=>$bgcol,-underline=>0,
 		  -command=> sub { install_nonmem_window() });
 
   if ($os =~ m/MSWin/i) {
-    our $mbar_NM_priority = $mbar_NM -> cascade(-label => "Set priority active runs", -background=>$bgcol,-underline=>1, -tearoff => 0);
+    our $mbar_NM_priority = $mbar_NM -> cascade(-label => "Set priority active runs", -font=>$font,-background=>$bgcol,-underline=>1, -tearoff => 0);
     $mbar_NM_priority -> command(-label => "Low", -background=>$bgcol,-underline=>1, -command=> sub {
        my $m = nonmem_priority("low");
        message ($m);
     });
-    $mbar_NM_priority -> command(-label => "Normal", -background=>$bgcol,-underline=>1, -command=> sub {
+    $mbar_NM_priority -> command(-label => "Normal",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
        my $m = nonmem_priority("normal");
        message ($m);
     });
-    $mbar_NM_priority -> command(-label => "High", -background=>$bgcol,-underline=>1, -command=> sub {
+    $mbar_NM_priority -> command(-label => "High",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
        my $m = nonmem_priority("high");
        message ($m);
     });
   }
-  our $mbar_model = $mbar -> cascade(-label =>"Model", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  $mbar_model -> command(-label => "Run (nmfe)", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
+  our $mbar_model = $mbar -> cascade(-label =>"Model", -font=>$font,-background=>$bgcol,-underline=>0, -tearoff => 0);
+  $mbar_model -> command(-label => "Run (nmfe)",-font=>$font, -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0,
 		  -command=> sub { nmfe_command() });
-  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol, -tearoff=>0);
-  $mbar_model_psn -> command (-label=> " execute", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+  $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -font=>$font,-image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol, -tearoff=>0);
+  $mbar_model_psn -> command (-label=> " execute", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
-    $mbar_model_psn -> command (-label=> " vpc", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " vpc", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("vpc");
     });
-    $mbar_model_psn -> command (-label=> " npc", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " npc",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("npc");
     });
-    $mbar_model_psn -> command (-label=> " bootstrap", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " bootstrap",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("bootstrap");
     });
-    $mbar_model_psn -> command (-label=> " cdd", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " cdd", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("cdd");
     });
-    $mbar_model_psn -> command (-label=> " llp", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " llp", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("llp");
     });
-    $mbar_model_psn -> command (-label=> " sse", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("sse");
     });
-    $mbar_model_psn -> command (-label=> " sumo", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
+    $mbar_model_psn -> command (-label=> " sumo",-font=>$font, -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
     });
 
   if ($os =~ m/MSWin/i) {
-    $mbar_model_wfn = $mbar_model -> cascade(-label => "WFN", -image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
-    $mbar_model_wfn -> command (-label=> " NMGO", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_wfn = $mbar_model -> cascade(-label => "WFN", -font=>$font,-image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol,-underline=>0);
+    $mbar_model_wfn -> command (-label=> " NMGO", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
         wfn_command("NMGO");
     });
-    $mbar_model_wfn -> command (-label=> " NMBS", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $mbar_model_wfn -> command (-label=> " NMBS",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
         wfn_command("NMBS");
     });
   }
   $mbar_model -> separator ;
-  $mbar_model -> command(-label => "Properties", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Properties", -font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol,-underline=>0,
 		  -command=> sub { properties_command(); });
-  $mbar_model -> command(-label => "Edit model", -image=>$gif{notepad}, -compound=>'left', -background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left', -background=>$bgcol,-underline=>0,
 		  -command=> sub { edit_model_command(); });
-  $mbar_model -> command(-label => "Rename model",  -image=>$gif{rename}, -compound=>'left',-background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Rename model", -font=>$font, -image=>$gif{rename}, -compound=>'left',-background=>$bgcol,-underline=>0,
 		  -command=> sub { rename_model_command(); });
-  $mbar_model -> command(-label => "Duplicate model",  -image=>$gif{duplicate}, -compound=>'left',-background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Duplicate model", -font=>$font, -image=>$gif{duplicate}, -compound=>'left',-background=>$bgcol,-underline=>0,
 		  -command=> sub { duplicate_model_command(); });
-  $mbar_model -> command(-label => "Duplicate model for MSF restart",  -image=>$gif{msf}, -compound=>'left',-background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Duplicate model for MSF restart",-font=>$font,  -image=>$gif{msf}, -compound=>'left',-background=>$bgcol,-underline=>0,
 		  -command=> sub { duplicate_msf_command(); });
-  $mbar_model -> command(-label => "Delete model(s)", -image=>$gif{trash}, -compound=>'left',-background=>$bgcol,-underline=>0,
+  $mbar_model -> command(-label => "Delete model(s)",-font=>$font, -image=>$gif{trash}, -compound=>'left',-background=>$bgcol,-underline=>0,
 		  -command=> sub { delete_models_command(); });
 
-  our $mbar_results = $mbar -> cascade(-label =>"Results", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  our %include_html;
-  $include_html{basic_run_info} = 1;
-  $include_html{model_file} = 0;
-  $include_html{notes_and_comments} = 1;
-  $include_html{param_est_all} = 1;
-  $include_html{param_est_last} = 0;
+  our $mbar_results = $mbar -> cascade(-label =>"Results", -font=>$font,-background=>$bgcol,-underline=>0, -tearoff => 0);
 
-  $mbar_results -> command (-label => "Generate HTML run report", -background=>$bgcol,-underline=>0,  -image=>$gif{HTML}, -compound=>'left',
+
+
+# Run reports
+  $mbar_results -> command (-label => "Generate HTML run report", -font=>$font,-background=>$bgcol,-underline=>0,  -image=>$gif{HTML}, -compound=>'left',
 		  -command=> sub {
-		      generate_report_command(\%include_html);
+		      generate_report_command(\%run_reports);
       });
-  $mbar_results -> command(-label => "LaTeX tables of parameter estimates", -background=>$bgcol,-underline=>0,  -image=>$gif{latex}, -compound=>'left',
+  $mbar_results -> command(-label => "LaTeX tables of parameter estimates",-font=>$font, -background=>$bgcol,-underline=>0,  -image=>$gif{latex}, -compound=>'left',
 		  -command=> sub {
-           generate_LaTeX_command();
+#           generate_LaTeX_command();
       });
-  $mbar_results -> command(-label => "View NM output file", -background=>$bgcol,-underline=>0,-image=>$gif{notepad}, -compound=>'left',
+  $mbar_results -> command(-label => "View NM output file", -font=>$font,-background=>$bgcol,-underline=>0,-image=>$gif{notepad}, -compound=>'left',
 		  -command=> sub {
 		     @run = @ctl_show[$models_hlist -> selectionGet];
          if (@run>0) {
@@ -633,20 +764,27 @@ sub create_menu_bar {
            edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_res}));
          } else {message("Please select model first!")};
        });
-
-  $mbar_results_html = $mbar_results -> cascade (-image=>$gif{question_doc}, -compound=>'left', -label => "Include in run reports", -background=>$bgcol, -tearoff => 0);
-  $mbar_results_html -> checkbutton (-label => "Basic run info", -variable=>\$include_html{basic_run_info});
-  $mbar_results_html -> checkbutton (-label => "Notes and comments", -variable=>\$include_html{notes_and_comments});
-  $mbar_results_html -> checkbutton (-label => "Model file", -variable=>\$include_html{model_file});
-  $mbar_results_html -> checkbutton (-label => "Parameter estimates of all estimation methods", -variable=>\$include_html{param_est_all}, -command => sub {
-      if ($include_html{param_est_all} == 1 ) {
-	  $include_html{param_est_last} = 0;
-      }
+  $mbar_results_html = $mbar_results -> cascade (-image=>$gif{question_doc},-font=>$font, -compound=>'left', -label => "Include in run reports", -background=>$bgcol, -tearoff => 0);
+  $mbar_results_html -> checkbutton (-label => "Basic run info",-font=>$font, -variable=>\$run_reports{basic_run_info}, -command=> sub{
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
   });
-  $mbar_results_html -> checkbutton (-label => "Parameter estimates of last estimation methods", -variable=>\$include_html{param_est_last}, -command => sub {
-      if ($include_html{param_est_last} == 1 ) {
-	  $include_html{param_est_all} = 0;
+  $mbar_results_html -> checkbutton (-label => "Notes and comments",-font=>$font, -variable=>\$run_reports{notes_and_comments}, -command => sub{
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+  });
+  $mbar_results_html -> checkbutton (-label => "Model file",-font=>$font, -variable=>\$run_reports{model_file}, -command=>sub{
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+  });
+  $mbar_results_html -> checkbutton (-label => "Parameter estimates of all estimation methods", -font=>$font,-variable=>\$run_reports{param_est_all}, -command => sub {
+      if ($run_reports{param_est_all} == 1 ) {
+	  $run_reports{param_est_last} = 0;
       }
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+  });
+  $mbar_results_html -> checkbutton (-label => "Parameter estimates of last estimation methods",-font=>$font, -variable=>\$run_reports{param_est_last}, -command => sub {
+      if ($run_reports{param_est_last} == 1 ) {
+	  $run_reports{param_est_all} = 0;
+      }
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
   });
 
   our @script_types = ("pl","R","S","py","awk","bat");
@@ -661,73 +799,68 @@ sub create_menu_bar {
   $mbar_scripts -> separator;
 
   our $mbar_scripts_edit = create_scripts_menu ($mbar_scripts, "", 1, $base_dir."/scripts", "Edit script", 1);
-  $mbar_scripts_edit -> command (-background=>$bgcol, -label=> "New script...", -command => sub{
+  $mbar_scripts_edit -> command (-background=>$bgcol, -font=>$font,-label=> "New script...", -command => sub{
       my $dialog = new_script_dialog ($base_dir."/scripts");
       center_window($dialog);
       $dialog -> focus();
   });
   $mbar_scripts_edit -> separator;
   our $mbar_scripts_edit_user = create_scripts_menu ($mbar_scripts_edit, "", 1, $home_dir."/scripts", "My scripts", 1);
-  $mbar_scripts_edit_user -> command (-background=>$bgcol, -label=> "New script...", -command => sub {
+  $mbar_scripts_edit_user -> command (-background=>$bgcol, -font=>$font,-label=> "New script...", -command => sub {
       my $dialog = new_script_dialog ($home_dir."/scripts");
       center_window($dialog);
       $dialog -> focus();
   });
 
   our $show_console = 1;
-  $mbar_scripts -> checkbutton (-label => "Show script console", -variable => \$show_console);
-
-  our $mbar_tools = $mbar -> cascade(-label =>"Tools", -background=>$bgcol,-underline=>0, -tearoff => 0);
+  $mbar_scripts -> checkbutton (-label => "Show script console", -font=>$font, -variable => \$show_console);
+  $mbar_scripts -> command (-background=>$bgcol, -font=>$font,-label=> "Send model info to PiranaR", -command => sub {
+      send_model_info_to_R_command ();
+  });
+  our $mbar_tools = $mbar -> cascade(-label =>"Tools", -font=>$font, -background=>$bgcol,-underline=>0, -tearoff => 0);
 
   if ($setting{use_psn}==1) {
-    our $mbar_psn = $mbar_tools -> cascade (-label => "PsN", -background=>$bgcol, -underline=>0, -tearoff => 0);
+    our $mbar_psn = $mbar_tools -> cascade (-label => "PsN",-font=>$font,-background=>$bgcol, -underline=>0, -tearoff => 0);
     if (-e unix_path($software{psn_dir})."/psn.conf") {
-      $mbar_psn -> command(-label => "Edit psn.conf (local)", -background=>$bgcol,-underline=>0,
+      $mbar_psn -> command(-label => "Edit psn.conf (local)",-font=>$font, -background=>$bgcol,-underline=>0,
 		    -command=> sub {
 			edit_model (unix_path($software{psn_dir}."/psn.conf"));
       });
     }
-      $mbar_psn -> command(-label => "Edit PsN default command parameters", -background=>$bgcol,-underline=>1,
+      $mbar_psn -> command(-label => "Edit PsN default command parameters",-font=>$font, -background=>$bgcol,-underline=>1,
 		    -command=> sub {
 		      edit_ini_window("psn.ini", \%psn_commands, \%psn_commands_descr, "PsN commands default parameters", 0);
       })
   };
   if ((-e unix_path($software{wfn_dir})."/bin/wfn.bat")&&($os =~ m/MSWin/i)) {
-    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -background=>$bgcol, -underline=>0, -tearoff => 0);
+    our $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -font=>$font,-background=>$bgcol, -underline=>0, -tearoff => 0);
     $mbar_wfn -> command(-label => "Edit wfn.bat", -background=>$bgcol,-underline=>0,
 		  -command=> sub {start_command ($software{editor}, win_path($software{wfn_dir}."/bin/wfn.bat"));});
     $mbar_wfn -> command(-label => "Combine bootstrap results", -background=>$bgcol,-underline=>0,
 		  -command=> sub {combine_wfn_bootstraps()} );
   };
-    our $mbar_matrix = $mbar_tools -> cascade (-label => "Matrices", -background=>$bgcol, -underlin=>0, -tearoff => 0);
-    $mbar_matrix -> command(-label => "Extract all matrices from output (NM6)", -background=>$bgcol,
-		   -command=> sub {save_matrices();} );
 
   if (-d $software{r_dir}) {
-    our $mbar_xpose = $mbar_tools -> cascade (-label => "Xpose", -background=>$bgcol, -underline=>0, -tearoff => 0);
+    our $mbar_xpose = $mbar_tools -> cascade (-label => "Xpose",-font=>$font, -background=>$bgcol, -underline=>0, -tearoff => 0);
     $mbar_xpose -> command(-label => "xpose.VPC from npc_dir folder", -background=>$bgcol,-underline=>6,
 		    -command=> sub {xpose_VPC_window();} );
   };
 
-  our $mbar_tools_batch = $mbar_tools -> cascade(-label =>"Batch processing", -background=>$bgcol, -tearoff => 0);
-  $mbar_tools_batch -> command(-label => "Create n duplicates of model(s)", -background=>$bgcol,
+  our $mbar_tools_batch = $mbar_tools -> cascade(-label =>"Batch processing",-font=>$font, -background=>$bgcol, -tearoff => 0);
+  $mbar_tools_batch -> command(-label => "Create n duplicates of model(s)", -font=>$font,-background=>$bgcol,
 		  -command=> sub { create_duplicates_window()});
-  $mbar_tools_batch -> command(-label => "Add code to models", -background=>$bgcol,
+  $mbar_tools_batch -> command(-label => "Add code to models",-font=>$font, -background=>$bgcol,
 		  -command=> sub { add_code() });
-  $mbar_tools_batch -> command(-label => "Replace blocks", -background=>$bgcol,
+  $mbar_tools_batch -> command(-label => "Replace blocks", -font=>$font,-background=>$bgcol,
 		  -command=> sub { batch_replace_block() });
-  $mbar_tools_batch -> command(-label => "Random seeds in \$SIM", -background=>$bgcol,
+  $mbar_tools_batch -> command(-label => "Random seeds in \$SIM", -font=>$font,-background=>$bgcol,
 		  -command=> sub { random_sim_block_window() });
-  if ($setting{use_scripts} == 1) { # beta functionality
-    $mbar_tools -> command(-label => "Scripts", -image=>$gif{script}, -compound=>'left',-background=>$bgcol,
-		  -command=>sub {edit_scripts()});
-  }
 
-  $mbar_tools -> command(-label => "SGE monitor",-image=>$gif{computer}, -compound=>'left', -background=>$bgcol,-underline=>0,
-		  -command=>sub {sge_monitor_window()});
-  $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -compound=>'left', -background=>$bgcol,-underline=>0,
+  $mbar_tools -> command(-label => "PiranaR interface",-image=>$gif{pirana_r}, -font=>$font,-compound=>'left', -background=>$bgcol,-underline=>0,
+		  -command=>sub {create_window_piranaR ($mw, "", 0);});
+  $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -font=>$font,-compound=>'left', -background=>$bgcol,-underline=>0,
 		  -command=>sub {cov_calc_window()});
-  $mbar_tools -> command(-label => "Generate summary (csv) of all output", -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1,
+  $mbar_tools -> command(-label => "Generate summary (csv) of all output", -font=>$font, -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1,
 		  -command=> sub {
         create_output_summary ("pirana_output_list.csv");
         if (-e $software{spreadsheet}) {
@@ -737,30 +870,30 @@ sub create_menu_bar {
     });
   our $full_screen = 0;
   our $show_tab_list = 1;
-  our $mbar_view = $mbar -> cascade(-label =>"View", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  #if ($os =~ m/MSWin/i) {
-    $mbar_view -> checkbutton (-variable=>\$full_screen, -image=>$gif{full_screen}, -compound=>'left', -label => "    Full screen", -command=>sub{
+  our $mbar_view = $mbar -> cascade(-label =>"View", -font=>$font, -background=>$bgcol,-underline=>0, -tearoff => 0);
+  if ($os =~ m/MSWin/i) {
+    $mbar_view -> checkbutton (-variable=>\$full_screen, -font=>$font, -image=>$gif{full_screen}, -compound=>'left', -label => "    Full screen", -command=>sub{
       redraw_screen($full_screen, $show_tab_list);
     });
-  #}
-  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -image=>$gif{split_vertical}, -label=>"    Show tables & files", -compound=>'left', -command=>sub{
+  }
+#  $mbar_view -> checkbutton(-variable=>\$show_tab_list, -image=>$gif{split_vertical}, -label=>"    Show tables & files", -compound=>'left', -command=>sub{
 #      redraw_screen($full_screen, $show_tab_list);
-  });
+#  });
   our $show_model_info = 1;
 #  $mbar_view -> checkbutton(-variable=>\$show_model_info, -image=>$gif{edit_info}, -label=>"    Show model info / coloring", -compound=>'left', -command=>sub{
 #      $run_frame -> destroy();
 #      $tab_frame_info -> destroy();
 #      refresh_pirana();
 #  });
-  $mbar_view -> checkbutton (-variable=>\$condensed_model_list, -image=>$gif{binocular}, -label => "    Condensed view", -compound=>'left',  -command=>sub{
+  $mbar_view -> checkbutton (-variable=>\$condensed_model_list, -font=>$font,-image=>$gif{binocular}, -label => "    Condensed view", -compound=>'left',  -command=>sub{
       populate_models_hlist ($models_view, $condensed_model_list);
   });
 
-  $mbar_view -> command (-label => "    Execution log", -image=>$gif{log}, -compound=>'left',-background=>$bgcol,
+  $mbar_view -> command (-label => "    Execution log", -font=>$font, -image=>$gif{log}, -compound=>'left',-background=>$bgcol,
 	  -command=>sub {
       show_exec_runs_window();
     });
-  $mbar_view -> command(-label => "PCluster monitor", -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol,
+  $mbar_view -> command(-label => "PCluster monitor", -font=>$font, -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol,
 		  -command=>sub {cluster_monitor()});
 
   our $process_monitor = 0;
@@ -768,45 +901,45 @@ sub create_menu_bar {
  #  -command=>sub {
  #     show_console_output();
  #   });
-  $mbar_view -> command (-label => "    Show parameter estimates",-image=>$gif{estim}, -compound=>'left', -background=>$bgcol,
+  $mbar_view -> command (-label => "    Show parameter estimates", -font=>$font,-image=>$gif{estim}, -compound=>'left', -background=>$bgcol,
 	  -command=>sub {
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
         my $lst = @lst[0].".".$setting{ext_res};
         show_estim_window ($lst);
         $estim_window -> raise();
     });
-  $mbar_view -> command (-label => "    Intermediate results of active runs", -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol,
+  $mbar_view -> command (-label => "    Intermediate results of active runs", -font=>$font, -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol,
 	  -command=>sub {
     $cwd = $dir_entry -> get();
       chdir($cwd);
-      show_inter_window();
+      show_inter_window($cwd);
       if ($inter_window) {$inter_window -> focus();}
    });
 
-	our $mbar_help = $mbar -> cascade(-label =>"Help", -background=>$bgcol,-underline=>0, -tearoff => 0);
-  $mbar_help -> command(-label => "Piraña manual", -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
-  $mbar_help -> command(-label => "Piraña website", -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://pirana.sf.net")});
+  our $mbar_help = $mbar -> cascade(-label =>"Help", -font=>$font, -background=>$bgcol,-underline=>0, -tearoff => 0);
+  $mbar_help -> command(-label => "Piraña manual", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
+  $mbar_help -> command(-label => "Piraña website", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://pirana.sf.net")});
   my @nm = values(%nm_dirs);
   our @nm_keys = keys(%nm_dirs);
   unless (@nm_keys == 0) {
-    $mbar_help -> command(-label => "NONMEM Help files", -background=>$bgcol,-underline=>0,-command=>sub {
+    $mbar_help -> command(-label => "NONMEM Help files", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {
 	start_command($software{browser}, "file://".unix_path($nm_dirs{@nm_keys[0]}."/html/index.htm")) }
     );
   }
-  $mbar_help -> command(-label => "NM UsersNet", -background=>$bgcol,,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
-  $mbar_help_psn = $mbar_help -> cascade(-label => "PsN", -background=>$bgcol, -tearoff=>0);
-  $mbar_help_psn -> command(-label => "PsN manual", -background=>$bgcol,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
-  $mbar_help_psn -> command(-label => "execute", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("execute", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "vpc", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("vpc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "npc", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("npc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "bootstrap", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("bootstrap", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "llp", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sse", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sumo", -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help -> command(-label => "NM UsersNet", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
+  $mbar_help_psn = $mbar_help -> cascade(-label => "PsN", -font=>$font, -background=>$bgcol, -tearoff=>0);
+  $mbar_help_psn -> command(-label => "PsN manual", -font=>$font, -background=>$bgcol,-command=>sub {system("start ".win_path($base_dir.'\doc\Manual.pdf'))});
+  $mbar_help_psn -> command(-label => "execute", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("execute", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "vpc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("vpc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "npc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("npc", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "bootstrap", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("bootstrap", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "llp", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sse", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sumo", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($psn_help_command, "PsN Help files"); });
 
-  $mbar_help -> command(-label => "Xpose", -background=>$bgcol,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
-  $mbar_help -> command(-label => "WFN", -background=>$bgcol,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
-  $mbar_help -> command(-label => "About Piraña", -background=>$bgcol, -command=>sub {
+  $mbar_help -> command(-label => "Xpose", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
+  $mbar_help -> command(-label => "WFN", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
+  $mbar_help -> command(-label => "About Piraña", -font=>$font, -background=>$bgcol, -command=>sub {
   $mw -> messageBox(-type=>'ok',	-message=>"Piraña (version ".$version.")\n   Created by Ron Keizer.\n   Department of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by the Uppsala PM group,\nand several other modelers.\n\nhttp://pirana.sf.net\n");
   });
 }
@@ -873,9 +1006,9 @@ sub create_scripts_menu {
     my ($menu_parent, $icon, $children, $folder, $title, $edit) = @_;
     my $mbar_scripts;
     if ($icon ne "") {
-	$mbar_scripts = $menu_parent -> cascade(-image=> $gif{$icon}, -label =>$title, -compound=>'left', -background=>$bgcol, -tearoff => 0);
+	$mbar_scripts = $menu_parent -> cascade(-image=> $gif{$icon}, -font=>$font, -label =>$title, -compound=>'left', -background=>$bgcol, -tearoff => 0);
     } else {
-	$mbar_scripts = $menu_parent -> cascade(-label => $title, -background=>$bgcol, -tearoff => 0);
+	$mbar_scripts = $menu_parent -> cascade(-label => $title, -font=>$font, -background=>$bgcol, -tearoff => 0);
     }
     my @scripts;
     my @commands = ("perl", "R", "R", "python", "awk", "");
@@ -902,17 +1035,15 @@ sub create_scripts_menu {
 	$script =~ s/_/ /g;
 	unless ((-d $scriptfile)||($script_ext =~ m/\~/)||($scriptfile =~ m/template/i)) {
 	    unless ($edit == 1) {
-		$mbar_scripts -> command (-label => $script." (".$script_ext.")",-background=>$bgcol, -command => sub{
+		$mbar_scripts -> command (-label => $script." (".$script_ext.")", -font=>$font, -background=>$bgcol, -command => sub{
 		    my @sel = $models_hlist -> selectionGet ();
 		    if (@sel == 0) { message("First select a model."); return(); }
-		    my $model_id = @ctl_show[@sel[0]];
-		    run_script ($folder."/".$scriptfile, $model_id);
+		    my @models_sel = @ctl_show[@sel];
+		    run_script ($folder."/".$scriptfile, \@models_sel);
    	        });
 	    } else {
-		$mbar_scripts -> command (-label => $script." (".$script_ext.")", -background=>$bgcol, -command => sub{
+		$mbar_scripts -> command (-label => $script." (".$script_ext.")", -font=>$font,  -background=>$bgcol, -command => sub{
 		    my @sel = $models_hlist -> selectionGet ();
-		    if (@sel == 0) { message("First select a model."); return(); }
-		    my $model_id = @ctl_show[@sel[0]];
 		    edit_model ($folder."/".$scriptfile);
 		});
 	    }
@@ -1155,16 +1286,26 @@ sub xpose_VPC_window {
   } else {message ("Please select a valid folder")}
 }
 
+sub send_object_to_piranaR {
+    my ($models_ref, $script_add) = @_;
+    my $object = "models <- ".create_R_object_from_models ($models_ref);
+    create_window_piranaR ($mw, $object.$script_add, 1, "temp");
+}
+
 sub run_script {
 ### Purpose : Run an R / perl (or other type of) script an capture the console output
-    my ($scriptfile, $model_id) = @_;
+    my ($scriptfile, $models_ref) = @_;
     unless (-d "pirana_temp") {mkdir ("pirana_temp")}
     my @spl = split (/\//, $scriptfile);
     my $scriptfile_nopath = pop(@spl) ;
     copy ($scriptfile, "pirana_temp/".$scriptfile_nopath);
-    update_script_with_parameters ("pirana_temp/".$scriptfile_nopath, $model_id);
+    update_script_with_parameters ("pirana_temp/".$scriptfile_nopath, $models_ref);
     my @spl = split (/\./, $scriptfile);
     my $ext = pop (@spl);
+    open (SCR, "<pirana_temp/".$scriptfile_nopath);
+    my @lines = <SCR>;
+    my $script = join ("", @lines);
+    close SCR;
     if ($ext eq "R") {
 	if ($^O =~ m/MSWin/) {
 	    run_command_in_console ('"'.$software{r_dir}.'\bin\R" --vanilla <"'.unix_path($cwd."/pirana_temp/".$scriptfile_nopath.'"'));
@@ -1176,29 +1317,55 @@ sub run_script {
     }
 }
 
+sub create_R_object_from_models {
+    my ($models_ref) = @_;
+    my @models = @$models_ref;
+    my $model_text = "list ( \n";
+    my $i = 0;
+    foreach my $model_id (@models) {
+	my $mfile = $model_id.".".$setting{ext_ctl};
+	my $mod_ref = extract_from_model ($mfile, $model_id, "all");
+	my %mod = %$mod_ref;
+	$model_text .= '  "'.$model_id.'" = list ( '."\n";
+	$model_text .= '    "modelfile"       = "'.$mfile.'",'."\n";
+	$model_text .= '    "description"     = "'.$mod{description}.'",'."\n";
+	$mod{refmod} .= s/\\/\//g;
+	$model_text .= '    "reference_model" = "'.$mod{refmod}.'",'."\n";
+	$mod{dataset} .= s/\\/\//g;
+	$model_text .= '    "data_file"       = "'.$mod{dataset}.'",'."\n";
+	$model_text .= '    "output_file"     = "'.$model_id.".".$setting{ext_res}.'",'."\n";
+	$tab_ref = $mod{tab_files};
+	$tables = '"'.join ('","', @$tab_ref).'"';
+	$mod{tables} .= s/\\/\//g;
+	$model_text .= '    "tables"          = c('.$tables.")\n  )";
+	$i++;
+	unless (@models == $i) {
+	    $model_text .= ",\n";
+	} else {
+	    $model_text .= "\n";
+	}
+    }
+    $model_text .= ")\n" ;
+    return($model_text);
+}
+
 sub update_script_with_parameters {
-    my ($file, $model_id) = @_;
+    my ($file, $models_ref) = @_;
+    my $model_text = create_R_object_from_models ($models_ref);
     open (SCR, "<".$file);
     my @lines = <SCR>;
     close (SCR);
-    my $text_ref = shift;
-    my $mfile = $model_id.".".$setting{ext_ctl};
-    my $mod_ref = extract_from_model ($mfile, $model_id, "all");
-    my %mod = %$mod_ref;
-    my $datafile = $mod{dataset};
-    $tab_ref = $mod{tab_files};
-    $tables = join (",", @$tab_ref);
     foreach my $line (@lines) {
-	$line =~ s/#MODEL#/$model_id/g;
-	$line =~ s/#DESCRIPTION#/$mod{description}/g;
-	$line =~ s/#REFMOD#/$mod{refmod}/g;
-	if ($line =~ m/#TABLES#/g) {
-	    $line =~ s/#TABLES#/$tables/g
-	}
-	$line =~ s/#MFILE#/$mfile/g;
-	$line =~ s/#DATA#/$mod{dataset}/g;
-	$line =~ s/#RES#/$model_id\.$setting{ext_res}/g;
-
+	$line =~ s/\#PIRANA_IN/$model_text/i ;
+#	$line =~ s/#MODEL#/$model_id/g;
+#	 $line =~ s/#DESCRIPTION#/$mod{description}/g;
+#	$line =~ s/#REFMOD#/$mod{refmod}/g;
+#	if ($line =~ m/#TABLES#/g) {
+#	    $line =~ s/#TABLES#/$tables/g
+#	}
+#	$line =~ s/#MFILE#/$mfile/g;
+#	$line =~ s/#DATA#/$mod{dataset}/g;
+#	$line =~ s/#RES#/$model_id\.$setting{ext_res}/g;
     }
     open (SCR, ">".$file);
     print SCR @lines;
@@ -1212,19 +1379,45 @@ sub run_command_in_console {
     my $console;
     if ($show_console == 1) {
 	$console = show_console_output("");
+        $console -> tagConfigure ("comment", -foreground=>"#888888");
+        $console -> tagConfigure ("r", -foreground=>"#3344ee", -font=>$font_fixed." bold");
+        $console -> tagConfigure ("command", -foreground=>"#000000");
+	$console -> tagConfigure ("pirana", -foreground=>"#cc6611", -font=>$font_fixed." bold");
+	$console -> tagConfigure ("error", -foreground=>"#880000", -font=>$font_fixed." bold");
     }
     open (OUT, "$command 2>&1 |"); # redirect STDERR to STDOUT
     if ((defined $console)||($show_console==0)) {
 	while (my $line = <OUT>) {
-	    if ($show_console ==1 ) {
-		$console -> insert('end', $line);
+	    if ($show_console == 1 ) {
+		my $pos = $console -> index('end');
+		my $response = $line;
+		my $comment;
+		my $command_line = 0;
+		my $rest = $line;
+		if ($line =~ m/\#/) {
+		    $comment = substr($line, length($`));
+		    $rest    = substr($line, 0, length($`));
+		}
+		if ((substr($line,0,2) eq "> ")||(substr($line,0,2) eq "+ ")) {
+		    $console -> insert("end", $rest, "command");
+		    $console -> insert("end", $comment, "comment");
+		} else {
+		    if (($rest =~ m/Error/i)||($rest =~ m/Warning/i)) {
+			$console -> insert("end", $rest, "error");
+		    } else {
+			$console -> insert("end", $rest, "r");
+		    }
+		    $console -> insert("end", $comment, "comment");
+		}
 		$mw -> update;
 		$console -> yview (moveto=>1);
 	    }
-	    if ($line =~ m/#PIRANA/) {
+	    if ($line =~ m/#PIRANA_OUT/) {
 		my $script_output = $line;
-		$script_output =~ s/#PIRANA//;
-		$script_output =~ s/\>//; #remove R's >
+		$script_output =~ s/#PIRANA_OUT//;
+		$script_output = substr ($script_output, length($`), -1) ;
+		$script_output =~ s/\>//; #remove >
+		$script_output =~ s/\"//; #remove quotes
 		$script_output =~ s/^\s+//; #remove leading spaces
 		chomp ($script_output);
 		my $viewer = "";
@@ -1237,13 +1430,10 @@ sub run_command_in_console {
 		if ($script_output =~ m/\.html/i ) {
 		    $viewer = $software{browser}
 		}
-		my $add_fork = " &";
-		if ($^O =~ m/MSWin/i) {
-		    $add_fork = "";
-		}
 		if (-e $script_output) {
-		    system ('"'.$viewer.'" '.$script_output.$add_fork);
+		    start_command ($viewer, $script_output.$add_fork);
 		}
+		$console -> insert('end', "Pirana: Trying to load file ".$script_output."\n", "pirana");
 	    };
 	}
     }
@@ -1282,12 +1472,11 @@ sub restart_msf {
   $msf_dialog_frame -> Button (-text=>'Create', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton,-command=>sub {
     my $overwrite_bool=1;
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
-	$overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
+	$overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
     } else {$overwrite_bool=1};
     if ($overwrite_bool==1) {
       my $file = $cwd."/".@ctl_show[@runs[0]].".".$setting{ext_ctl};
       my $new_file = $cwd."/".$new_ctl_name.".".$setting{ext_ctl};
-      print $new_file;
       open (OUT, ">".$new_file);
       my $theta_area=0; my $omega_area=0; my $sigma_area=0;
       foreach $line (@lines) {
@@ -1556,10 +1745,12 @@ sub show_estim_window {
 		$estim_grid -> itemCreate($i, 0, -text => $i, -style=>$header_right);
 	    }
 	    my $th_text = rnd($th,4);
+	    my $th_rse = "";
 	    if (($th!=0)&&(@th_se[$i-1]!=0)) {
-		$th_text .= " (".rnd((@th_se[$i-1]/$th*100),3)."%)";
+		$th_rse = " (".rnd((@th_se[$i-1]/$th*100),3)."%)";
 	    }
 	    $estim_grid -> itemCreate($i, 2, -text => $th_text, -style=>$estim_style);
+	    $estim_grid -> itemCreate($i, 3, -text => $th_rse, -style=>$estim_style_light);
 	    $estim_grid -> itemCreate($i, 1, -text => @theta_names[$i-1], -style=>$align_left);
 	    $i++;
 	}
@@ -1649,7 +1840,7 @@ sub save_log {
     }
 }
 
-sub add_nm_inst_local {
+sub add_nm_inst {
 ### Purpose : Add a local NM installation to Pirana
 ### Compat  : W+L+
   my $nm_inst_w = $mw -> Toplevel(-title=>"Add existing NONMEM installation to Piraña");
@@ -1677,57 +1868,67 @@ sub add_nm_inst_local {
       $nm_inst_w -> focus();
   })->grid(-row=>3, -column=>2, -rowspan=>1, -sticky => 'nse');
   $help->attach($browse_button, -msg => "Browse filesystem");
-  $nm_inst_frame -> Optionmenu (-options=>["Local","Remote"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
+  $nm_inst_frame -> Optionmenu (-options=>["Local","Remote (SSH)"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
     -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue)
          ->grid(-column=>2,-row=>1,-sticky=>"w");
   $nm_inst_frame -> Optionmenu (-options=>["5","6","7"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
     -background=>$lightblue, -activebackground=>$darkblue)
          ->grid(-column=>2,-row=>4,-sticky=>"w");
   $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
+  my $nm_ini_file;
   $nm_inst_frame -> Button (-text=>"Add", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     if ($nm_dirs{$nm_name}) {
       message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
     } else {
       $valid_nm = 0;
-      $nm_ini_file = "nm_inst_local.ini";
       if ($nm_locality eq "Local") {
-        # look if it is maybe an NMQual NM isntallation
-        $nmq_name = get_nmq_name($nm_dir);
-        if (-e unix_path($nm_dir."/test/".$nmq_name.".pl")) {
-          $nm_type = "nmqual";
-          $valid_nm = 1;
-        }
-        # regular installation
-        if ((-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
-          $nm_type = "regular";
-          $valid_nm = 1;
-        }
-      } else { # just assume it is the correct location
-        $valid_nm = 1;
-        $nm_type = "regular";
+	  $nm_ini_file = "nm_inst_local.ini";
+	  # look if it is maybe an NMQual NM isntallation
+	  $nmq_name = get_nmq_name($nm_dir);
+	  if (-e unix_path($nm_dir."/test/".$nmq_name.".pl")) {
+	      $nm_type = "nmqual";
+	      $valid_nm = 1;
+	  }
+	  # regular installation
+	  if ((-e unix_path($nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
+	      $nm_type = "regular";
+	      $valid_nm = 1;
+	  }
+      } else { # SSH, just assume it is the correct location and regular installation
+	  $nm_ini_file = "nm_inst_cluster.ini";
+	  $valid_nm = 1;
+	  $nm_type = "regular";
       }
     }
     if ($valid_nm==1) {
-      $nm_dirs{$nm_name} = $nm_dir; $nm_vers{$nm_name} = $nm_ver; $nm_types{$nm_name} = $nm_type;
-      save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers);
-      chdir($cwd);
-      unless ($nm_type eq "regular") {
-        nmqual_compile_script ($nm_dir, $nmq_name);
-      };
-      $run_method = "NONMEM";
-      undef $nm_versions_menu;
-      $nm_inst_w -> destroy;
-      $sizes_w -> destroy;
+	if ($nm_locality eq "Local") {
+	    $nm_dirs{$nm_name} = $nm_dir;
+	    $nm_vers{$nm_name} = $nm_ver;
+	    $nm_types{$nm_name} = $nm_type;
+	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers);
+	    chdir($cwd);
+	    unless ($nm_type eq "regular") {
+		nmqual_compile_script ($nm_dir, $nmq_name);
+	    };
+	} else {
+	    $nm_dirs_cluster{$nm_name} = $nm_dir;
+	    $nm_vers_cluster{$nm_name} = $nm_ver;
+	    $nm_types_cluster{$nm_name} = $nm_type;
+	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs_cluster, \%nm_vers_cluster);
+	}
+	undef $nm_versions_menu;
+	$nm_inst_w -> destroy;
+	$sizes_w -> destroy;
 
-      # (re)load NM help files
-      my $nm_help_ref = get_nm_help_keywords ($nm_dir."/html");
-      our @nm_help_keywords = @$nm_help_ref;
-      if ($nm_help_entry) {
-	  $nm_help_entry -> configure(-state=>'normal');
-      }
+	# (re)load NM help files
+	my $nm_help_ref = get_nm_help_keywords ($nm_dir."/html");
+	our @nm_help_keywords = @$nm_help_ref;
+	if ($nm_help_entry) {
+	    $nm_help_entry -> configure(-state=>'normal');
+	}
 
     } else {
-      message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
+	message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
     };
   })-> grid(-row=>6,-column=>2,-sticky=>"w");
   $nm_inst_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
@@ -2005,9 +2206,9 @@ sub read_sizes {
 sub refresh_sizes {
 ### Purpose : Refresh the sizes values in the dialog
 ### Compat  : W+L+
-    my ($nm_type_chosen, $nm_vers_chosen, $nm_dir_chosen, $nm_chosen) = @_;
+    my ($nm_type_chosen, $nm_vers_chosen, $nm_dir_chosen, $nm_chosen, $nm_manage_frame) = @_;
     if ($nm_type_chosen ne "SSH") {
-       our $sizes_frame = $nm_manage_frame ->  Frame(-background=>$bgcol) -> grid(-ipadx=>'10',-ipady=>'10',-sticky=>'nws',-column=>1,-row=>6,-columnspan=>3);
+       my $sizes_frame = $nm_manage_frame ->  Frame(-background=>$bgcol) -> grid(-ipadx=>'10',-ipady=>'10',-sticky=>'nws',-column=>1,-row=>6,-columnspan=>3);
        my @sizes; my @sizes_key; my @sizes_value; my @sizes_comment;
        my @sizes_refs = read_sizes($nm_dir_chosen);
        my ($sizes_key_ref,$sizes_value_ref,$sizes_comment_ref) = @sizes_refs;
@@ -2034,8 +2235,6 @@ sub refresh_sizes {
       if ($sizes_frame) {$sizes_frame -> destroy(); undef $sizes_frame;}
       $nm_manage_frame -> update();
     };
-    if ($nm_type_chosen =~ m/nmq/i) {$nm_save_recompile->configure(-state=>"disabled")} else {$nm_save_recompile->configure(-state=>"normal")};
-    if ($nm_type_chosen =~ m/nmq/i) {$nm_save->configure(-state=>"disabled")} else {$nm_save->configure(-state=>"normal")};
 }
 
 sub save_sizes {
@@ -2142,7 +2341,7 @@ sub install_nonmem_nmq_window {
        $perl_file = get_nmq_name ($target);
        print $target."/test/".$perl_file.".pl";
        if (-e $target."/test/".$perl_file.".pl") {
-	   my $add_to_pirana = message_yesno ("NONMEM installations seems valid.\n Do you want to add this installation to Piraña?");
+	   my $add_to_pirana = message_yesno ("NONMEM installations seems valid.\n Do you want to add this installation to Piraña?", $mw, $bgcol, $font_normal);
            if ($add_to_pirana == 1) {
 	       $nm_dirs{$nm_name} = $target;
 	       $nm_vers{$nm_name} = $version;
@@ -2213,7 +2412,7 @@ sub install_nonmem_window {
         chdir($nm_install_drive.":\\");
         system "start /wait cdsetup6.bat ".$nm_install_drive." ".$nm_to_drive." ".$nm_to_dir." ".$setting{compiler}." ".$def_optimize." link";
         if (-e unix_path($nm_install_to."/util/nmfe6.bat")) {
-           my $add_to_pirana = message_yesno ("NONMEM installation seems successful.\nDo you want to add this installation to Piraña?");
+           my $add_to_pirana = message_yesno ("NONMEM installation seems successful.\nDo you want to add this installation to Piraña?", $mw, $bgcol, $font_normal);
            if( $add_to_pirana == 1) {
               $nm_dirs{$nm_install_name} = $nm_install_to;
               $nm_vers{$nm_install_name} = 6;
@@ -2238,19 +2437,19 @@ sub manage_nm_window {
   $sizes_w -> resizable( 0, 0 );
   center_window($sizes_w);
 
-  our $nm_manage_frame = $sizes_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  my $nm_manage_frame = $sizes_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $nm_manage_frame -> Label (-text=>"NONMEM Installation: ", -background=>$bgcol)->grid(-column=>1, -row=>1,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Location: ", -background=>$bgcol)->grid(-column=>1, -row=>2,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Version: ",-background=>$bgcol)->grid(-column=>1, -row=>3,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"\nNote: Only SIZES files of local NM installations can be read. Versions will be read\nfrom pirana ini-files, and psn.conf (if found). Only regular (non-NMQual) installations\ncan be altered and recompiled. Hover over records to view description.",-background=>$bgcol,-font=>$font_normal,-justify=>'left')
     ->grid(-column=>1, -row=>5, -columnspan=>4, -sticky=>"nws");
 
-  $nm_save = $nm_manage_frame -> Button (-text=>"Save", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
+  my $nm_save = $nm_manage_frame -> Button (-text=>"Save", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
     save_sizes($nm_chosen, \@sizes_key, \@sizes_value);
     $sizes_w->destroy;
     message("SIZES saved.\nFor settings to take effect,\nyou have to re-compile NONMEM.");
   })->grid(-row=>10,-column=>2);
-  $nm_save_recompile = $nm_manage_frame -> Button (-text=>"Save and recompile NM", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+  my $nm_save_recompile = $nm_manage_frame -> Button (-text=>"Save and recompile NM", -width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     save_sizes($nm_chosen, \@sizes_key, \@sizes_value);
     chdir ($nm_dirs{$nm_chosen});
     rmtree(["NM","PR","TL","TR"]);
@@ -2277,58 +2476,83 @@ sub manage_nm_window {
      $sizes_w->destroy;
   })-> grid(-row=>10,-column=>1);
 
-  $nm_dir_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_dirs{$nm_chosen}, -background=>$white,-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
+  my $nm_dir_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_dirs{$nm_chosen}, -background=>$white,-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>2,-sticky=>"we");
-  $nm_ver_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_vers{$nm_chosen}, -background=>$white,-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
+  my $nm_ver_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_vers{$nm_chosen}, -background=>$white,-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>3,-sticky=>"w");
 
+  my $nm_chosen;
   my $button_frame = $nm_manage_frame -> Frame (-background=>$bgcol)->grid(-row=>1, -column=>3,-sticky=>"wns");
   $del_nm_button = $button_frame -> Button (-image=>$gif{trash}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{
-      my $delete = message_yesno ("Do you really want to delete this NONMEM installation?\nNB. The actual installation will not be removed, only the link from Piraña.");
+      my $delete = message_yesno ("Do you really want to delete this NONMEM installation?\nNB. The actual installation will not be removed, only the link from Piraña.", $mw, $bgcol, $font_normal);
       if( $delete == 1) {
 	  delete $nm_dirs{$nm_chosen};
 	  delete $nm_vers{$nm_chosen};
 	  delete $nm_types{$nm_chosen};
-	  foreach (keys(%nm_dirs)) {if (($_ =~ m/PsN:/)||($_ eq "")) { delete $nm_dirs{$_}; delete $nm_vers{$_};  delete $nm_types{$_};}}
-	  save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers);
-	  ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
-	  our %nm_dirs = %$nm_dirs_ref; our %nm_vers = %$nm_vers_ref;
+	  print keys(%nm_dirs);
+	  foreach (keys(%nm_dirs)) {
+	      if (($_ =~ m/PsN:/)||($_ eq "")||($_ =~ m/Retrieving/i)) {
+		  delete $nm_dirs{$_};
+		  delete $nm_vers{$_};
+		  delete $nm_types{$_};
+	      }
+	  }
+	  if ($nm_chosen =~ m/Remote:/g) {
+	      save_ini ($home_dir."/ini/nm_inst_cluster.ini", \%nm_dirs, \%nm_vers);
+	  } else {
+	      save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers);
+	  }
+	  my ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+	  my ($nm_dirs_cluster_ref,$nm_vers_clusters_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+	  our %nm_dirs = %$nm_dirs_ref;
+	  our %nm_vers = %$nm_vers_ref;
+	  our %nm_dirs_cluster = %$nm_dirs_cluster_ref;
+	  our %nm_vers_cluster = %$nm_vers_cluster_ref;
 	  chdir($cwd);
 	  refresh_pirana($cwd);
 	  $sizes_w -> destroy;
       }
   })-> grid(-row=>1,-column=>1,-sticky=>"wns");
-
   $help->attach($del_nm_button, -msg => "Remove NM installation");
+
   $new_nm_button = $button_frame -> Button (-image=>$gif{plus}, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
-     foreach (keys(%nm_dirs)) {if ($_ =~ m/PsN:/) { delete $nm_dirs{$_}; delete $nm_vers{$_}; delete $nm_types{$_};}}
-     add_nm_inst_local();
-     #refresh_pirana($cwd);
+     foreach (keys(%nm_dirs)) {
+	 if (($_ =~ m/PsN:/)||($_ =~ m/Retrieving/)) {
+	     delete $nm_dirs{$_};
+	     delete $nm_vers{$_};
+	     delete $nm_types{$_};
+	 }
+     }
+     add_nm_inst();
   })-> grid(-row=>1,-column=>2,-sticky=>"wns");
   $help->attach($new_nm_button, -msg => "Add new NM installation");
-
 
   my $nm_optionmenu = $nm_manage_frame -> Optionmenu (-options => ["Retrieving NM installations. Please wait..."], -border=>$bbw,
         -variable => \$nm_chosen, -width=>25, -background=>$lightblue,-activebackground=>$darkblue,-font=>$font_normal,
         -command=>sub{
-          refresh_sizes($nm_types{$nm_chosen},$nm_vers{$nm_chosen},$nm_dirs{$nm_chosen},$nm_chosen);
-          if ($nm_chosen =~ m/PsN/) {$del_nm_button -> configure (-state=>'disabled')} else {$del_nm_button -> configure (-state=>'normal')};
-          $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_chosen});
-          $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_chosen});
+	    refresh_sizes( $nm_types{$nm_chosen},$nm_vers{$nm_chosen},$nm_dirs{$nm_chosen}, $nm_chosen, $nm_manage_frame);
+	    if ($nm_chosen =~ m/PsN/) {$del_nm_button -> configure (-state=>'disabled')} else {$del_nm_button -> configure (-state=>'normal')};
+	    if ($nm_type_chosen =~ m/nmq/i) { $nm_save_recompile->configure(-state=>"disabled")} else { $nm_save_recompile -> configure(-state=>"normal") };
+	    if ($nm_type_chosen =~ m/nmq/i) { $nm_save->configure(-state=>"disabled")} else { $nm_save -> configure(-state=>"normal") };
+	    $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_chosen});
+	    $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_chosen});
     })->grid(-row=>1,-column=>2, -sticky => 'wens');
 
   # get NM installations and fill in Optionmenu
   my @nm6_installations = ();
   my ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
   my %nm_dirs = %$nm_dirs_ref; my %nm_vers = %$nm_vers_ref; my %nm_types;
+
   # Add remote NM versions
   my ($nm_dirs_remote_ref, $nm_vers_remote_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
   my %nm_dirs_remote = %$nm_dirs_remote_ref; my %nm_vers_remote = %$nm_vers_remote_ref;
   $nm_manage_frame -> update();
+
   # add Perl NM-versions
   my ($psn_nm_versions_ref, $psn_nm_versions_vers_ref) = get_psn_nm_versions(\%setting, \%software);
   my %psn_nm_versions = %$psn_nm_versions_ref;
   my %psn_nm_versions_vers = %$psn_nm_versions_vers_ref;
+
   foreach(keys(%psn_nm_versions)) {
     $nm_types{"PsN: ".$_} = "PsN";
     $nm_dirs{"PsN: ".$_} = $psn_nm_versions{$_};
@@ -2339,14 +2563,14 @@ sub manage_nm_window {
     $nm_dirs{"Remote: ".$_} = $nm_dirs_remote{$_};
     $nm_vers{"Remote: ".$_} = $nm_vers_remote{$_};
   }
+  my @nm6_installations;
   foreach(keys(%nm_vers)) {   # filter out only NM6 installations
     #if (($nm_vers{$_} =~ m/6/)||($nm_vers{$_} =~ m/7/)&&($nm_type{_})) {
       push (@nm6_installations, $_)
     #};
   };
-  @nm6_installations = sort (@nm6_installations);
+  my @nm6_installations = sort (@nm6_installations);
   $nm_optionmenu -> configure(-options => [@nm6_installations]);
-
 
 }
 
@@ -2370,7 +2594,7 @@ sub csv_tab_window {
    $csv_tab_frame -> Button(-text=> "Convert", -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
      my $overwrite_bool = 1;
      if (-e $new_file) {
-	 $overwrite_bool = message_yesno ("Datafile ".$new_file." already exists.\n Do you want to overwrite?");
+	 $overwrite_bool = message_yesno ("Datafile ".$new_file." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
      }
      if ($overwrite_bool==1) {
        if (substr($new_file,length($new_file)-4,4) =~ m/.$setting{ext_csv}/i) {tab2csv($file,$new_file)} ;
@@ -2489,7 +2713,7 @@ sub show_console_output {
 #  my @lines = <FILE>;
 #  close (FILE);
     my $text = shift;
-    my $console = text_window($text, "Command output");
+    my $console = text_window($text, "Script / command output");
     return($console);
 }
 
@@ -2506,28 +2730,6 @@ sub message {
 	return(1);
     }) -> grid(-row=>2, -column=>1);
     $message_box -> focus ();
- # $mw -> messageBox(-type=>'ok', -message=>@_[0]);
-}
-
-sub message_yesno {
-### Purpose : Show a small window with a text and an OK button
-### Compat  : W+L+
-    my $text = shift;
-    my $bool = 0;
-    my $message_box = $mw -> Toplevel (-title => "Pirana message", -background=> $bgcol);
-    center_window($message_box);
-    my $message_frame = $message_box -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
-    $message_frame -> Label (-text=> $text."\n ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 2);
-    $message_frame -> Button (-text=>"No", -font=>$font_normal,-border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>5,  -command => sub{
-	$message_box -> destroy();
-    }) -> grid(-row=>2, -column=>1);
-    $message_frame -> Button (-text=>"Yes", -font=>$font_normal, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>5, -command => sub{
-	$message_box -> destroy();
-	$bool = 1;
-    }) -> grid(-row=>2, -column=>2);
-    $message_box -> focus ();
-    $message_box -> waitWindow; # wait until destroyed
-    return($bool);
  # $mw -> messageBox(-type=>'ok', -message=>@_[0]);
 }
 
@@ -2681,14 +2883,14 @@ sub initialize {
 
     our $font_normal = 'Verdana 7';
     our $font_small = 'Verdana 6';
-    our $font_fixed = "Courier 8 bold";
+    our $font_fixed = "Courier 8";
     our $font_bold = 'Verdana 8 bold';
 
     if ($setting{font_size}==2) {
 	our $font_normal = 'Verdana 8';
 	our $font_small = 'Verdana 7';
-	our $font_fixed = "Courier 9 bold";
-	our $font_fixed2 = "Courier 10";
+	our $font_fixed = "Courier 9";
+	our $font_fixed2 = "LucidaSansUnicode 10";
 	our $font_bold = 'Verdana 8 bold';
     }
     if ($setting{font_size}==3) {
@@ -2775,7 +2977,8 @@ sub initialize {
 	}
     }
     ($nm_dirs_cluster_ref,$nm_vers_cluster_ref,$nm_types_cluster_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
-    %nm_dirs_cluster = %$nm_dirs_cluster_ref; %nm_vers_cluster = %$nm_vers_cluster_ref;
+    our %nm_dirs_cluster = %$nm_dirs_cluster_ref;
+    our %nm_vers_cluster = %$nm_vers_cluster_ref;
 
     # Read NM help files
     my @dirs = values (%nm_dirs);
@@ -2789,6 +2992,12 @@ sub initialize {
     unless (-e $home_dir."/scripts/template.R") {
 	copy ($base_dir."/scripts/template.R", $home_dir."/scripts/template.R")
     }
+
+    # Read settings for run reports
+    my ($run_reports_ref, $run_reports_descr_ref) = read_ini ($home_dir."/ini/run_reports.ini");
+    our %run_reports = %$run_reports_ref;
+    our %run_reports_descr = %$run_reports_descr_ref;
+
     close (LOG);
 }
 
@@ -3101,7 +3310,7 @@ sub duplicate_model_window {
 
   $dupl_dialog_frame -> Button (-text=>'Duplicate', -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton,-command=>sub {
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
-      $overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
+      $overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
     } else {$overwrite_bool=1};
     if ($new_ctl_name eq "") {
 	message ("Please specify a valid model name.");
@@ -3153,7 +3362,7 @@ sub new_ctl {
 
   $new_ctl_frame -> Button (-text=>'Create model', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
     if (-e $cwd."/".$new_ctl_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
-        $overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?");
+        $overwrite_bool = message_yesno ("Control stream with name ".$new_ctl_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
       }
     if ($new_ctl_name eq "") {
 	message ("Please specify a valid model name.");
@@ -3210,7 +3419,7 @@ sub rename_ctl {
   $ren_dialog_frame -> Checkbutton (-background=>$bgcol, -text=>"Change model name in \$PROB / \$TABLE / \$EST sections?", -selectcolor=>$selectcol, -activebackground=>$bgcol,-variable=>\$change_run_nos)->grid(-row=>2,-column=>2,-columnspan=>2,-sticky=>'w');
   $ren_dialog_frame -> Button (-text=>"Rename", -width=>12, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=>sub{
     if ((-e $cwd."/".$ren_ctl_name.".".$setting{ext_ctl})||((-e $cwd."/".$ren_ctl_name.".".$setting{ext_res}))) {  # check if control stream already exists;
-	$overwrite_bool = message_yesno ("Model- or result-file for ".$ren_ctl_name." already exists.\n Do you want to overwrite?");
+	$overwrite_bool = message_yesno ("Model- or result-file for ".$ren_ctl_name." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
     }
     if ($overwrite_bool==1) {
 	if ($change_run_nos == 0) {
@@ -3578,7 +3787,7 @@ sub read_tab_files {
   }
   if (chdir ($dir)) {
   if ($show_data eq "tab") {
-    my @tab_files = <*.$setting{ext_tab}>;
+    my @tab_files = dir ("./",'.'.$setting{ext_tab});
     our @xp_tabs = <??tab*>;
     my @vpc_tabs = <vpctab*>;
     push (@xp_tabs, @vpc_tabs);
@@ -3638,8 +3847,12 @@ sub read_tab_files {
   }
   if ($show_data eq "*") {
     our @all_files = <*>;
-    @tabcsv_files = @all_files;
-    @tabcsv_files_loc = @all_files;
+    foreach (@all_files) {
+	unless (-d $_) {
+	    push(@tabcsv_files, $_);
+	    push(@tabcsv_files_loc, $_);
+	}
+    }
   }
 
   # get table/file info from databases and put in hash
@@ -3743,14 +3956,29 @@ sub print_note {
 }
 
 sub update_nmfe_run_script_area {
-    my ( $command_area, $script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref) = @_;
+    my ( $command_area, $script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref, $nm_versions_menu) = @_;
     #build_nmfe_run_command ($script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref);
-    my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), $model_list, $run_in_new_dir, $new_dirs_ref, $clusters_ref);
+    my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), $model_list, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref);
     my @script = @$script_ref;
     if ($command_area) {
 	$command_area -> delete("0.0", "end");
 	$command_area -> insert("0.0", join ("", @script));
     }
+    my %ssh = %$ssh_ref;
+    if ($ssh {connect_ssh} == 1 ) {
+	my ($nm_dirs_cluster_ref, $nm_vers_cluster_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
+	my @nm_installations = keys(%$nm_dirs_cluster_ref);
+	if ($nm_versions_menu) {
+	    $nm_versions_menu -> configure (-options=> [@nm_installations]);
+	}
+    } else {
+	my ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+	my @nm_installations = keys(%$nm_dirs_ref);
+	if ($nm_versions_menu) {
+	    $nm_versions_menu -> configure (-options=> [@nm_installations]);
+	}
+    }
+
     # update global settings
     my %clusters = %$clusters_ref;
     $setting{sge_parameters} = $clusters{sge_parameters};
@@ -3783,7 +4011,7 @@ sub build_nmfe_run_command {
     my %nm_vers_run = %$nm_vers_ref;
     my %ssh = %$ssh_ref;
     my @nm_installations = keys(%nm_dirs_run);
-    my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_inst, os_specific_path($cwd), \@files, $run_in_new_dir, $new_dirs_ref, $clusters_ref);
+    my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_inst, os_specific_path($cwd), \@files, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref);
     if (@nm_installations > 0) {
 	my $command;
 	if ($nm_dir_check==1) { # start NM run in a new folder
@@ -3815,14 +4043,14 @@ sub build_nmfe_run_command {
 	} else {
 	    $command .= 'bash '.$run_script;
 	}
-	if (($run_in_background == 0)&&($ssh{connect_ssh} != 1)) {
+	if (($run_in_background == 0)) {
 	    if ($os =~ m/MSWin/i) {
 		$command = "start ".$command ;
 	    } else {
 		if ($setting{quit_shell}==0) { # don't close terminal window after completion
 		    $command .= ';read -n1';
 		}
-		$command = 'xterm -e "'.$command.'" ';
+		$command = $setting{terminal}.' -e "'.$command.'" ';
 	    }
 	} else {
 	    if ($os =~ m/MSWin/i) {
@@ -3833,7 +4061,7 @@ sub build_nmfe_run_command {
 	unless ($os =~ m/MSWin/ ) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
-	message("Please add local NONMEM installation(s) to Pirana first.");
+	return ("Please add local NM installations first", "Please add local NM installations first", "")
     }
 }
 
@@ -3848,17 +4076,24 @@ sub exec_run_nmfe {
 }
 
 sub exec_run_psn {
-    my ($psn_command_line, $ssh_ref, $model, $model_description) = @_;
+    my ($psn_command_line, $ssh_ref, $model, $model_description, $background) = @_;
     my %ssh = %$ssh_ref;
+    print $background;
     status ("Starting run(s) locally using PsN");
     if($os =~ m/MSWin/) {
-	$psn_command_line = "start ".$psn_command_line;
+	if ($background == 0) {
+	    $psn_command_line = "start ".$psn_command_line;
+	}
     } else {
-	if ($setting{terminal} ne "") {
-	    if ($setting{quit_shell}==0) { # don't close terminal window after completion
-		$psn_command_line .= ';read -n1';
+	if ($background == 1) {
+	    $psn_command_line = $psn_command_line." &";
+	} else {
+	    if ($setting{terminal} ne "") {
+		if ($setting{quit_shell}==0) { # don't close terminal window after completion
+		    $psn_command_line .= ';read -n1';
+		}
+		$psn_command_line = $setting{terminal}." -e '".$psn_command_line."' &";
 	    }
-	    $psn_command_line = $setting{terminal}." -e '".$psn_command_line."' &";
 	}
     }
     system ($psn_command_line);
@@ -3952,11 +4187,11 @@ sub text_window {
       -scrollbars=>'e', -width=>80, -height=>35,
       -background=>"#FFFFFF",-exportselection => 0,
       -relief=>'groove', -border=>2,
-      -font=>$font,
+      -font=>$font, -wrap=>"none",
       -selectbackground=>'#606060', -highlightthickness =>0
   ) -> grid(-column=>1, -row=>1, -sticky=>'nwes');
   $text_text->insert('end', $text);
-  return ($text_text, $text_window);
+  return ($text_text);
 }
 
 sub text_window_nm_help {
@@ -4015,6 +4250,30 @@ sub text_window_nm_help {
     });
 
     $keywords_list -> insert(0, @keyworsd);
+}
+
+sub pcluster_get_available_nodes {
+    my @available;
+    $i = 0;
+    my ($total_cpus_ref, $busy_cpus_ref, $pc_names_ref) = get_active_nodes ($setting{cluster_drive}, \%clients);
+    my %total_cpus = %$total_cpus_ref;
+    my %busy_cpus = %$busy_cpus_ref;
+    my %pc_names = %$pc_names_ref;
+    my %clients_status; my %clients_status_text;
+    my @clients = keys(%total_cpus);
+    foreach (@clients) {
+	if ($busy_cpus{$_} < $total_cpus{$_}) {$clients_status{$_} = ($total-$runs); $clients_status_text {$_} = ($total_cpus{$_}-$busy_cpus{$_})." of ".$total_cpus{$_}." CPU(s) available" };
+	if ($busy_cpus{$_} == $total_cpus{$_}) {$clients_status{$_} = 0; $clients_status_text{$_} = "All busy: ".$busy_cpus{$_}." CPU(s)" };
+    }
+    foreach (@clients) {
+	if (($clients_status{$_} == 0)&&($clients_status_text{$_}) ne "") {
+	    push (@available, $_." - ".$pc_names{$_}." - ".$clients_status_text{$_});
+	    # print $_." - ".$clients{$_}." - ".$clients_status_text{$_};
+	}
+	$i++;
+    }
+    @available = sort { $a <=> $b } @available;
+    return (@available)
 }
 
 sub distribute {
@@ -4087,7 +4346,7 @@ sub cluster_report {
 ### Compat  : W+L?
     $successfull_comps=@_[0];
     $used_clients = @_[1];
-    my $see_comp_log = message_yesno ($successfull_comps." runs were succesfully copied to cluster\nClient(s):\n".$used_clients."\n There were ".$comp_errors." unsuccesful compilations.\n Do you want to view the compilation log?");
+    my $see_comp_log = message_yesno ($successfull_comps." runs were succesfully copied to cluster\nClient(s):\n".$used_clients."\n There were ".$comp_errors." unsuccesful compilations.\n Do you want to view the compilation log?", $mw, $bgcol, $font_normal);
     if ( $see_comp_log == 1) {
 	chdir ($base_dir);
 	edit_model (unix_path("log\\compilation.txt"));
@@ -4166,7 +4425,7 @@ sub get_nmq_name {
 }
 
 sub exec_run_pcluster { # (nm_inst, client)
-### Purpose : Run a model on PCluseter (using nmfe-method)
+### Purpose : Run a model on PCluster (using nmfe-method)
 ### Compat  : W+L?
   if ($setting{zink_host} eq "") {
     message ("Please specify a Zink-host under preferences, and try again.");
@@ -4448,10 +4707,11 @@ sub frame_tab_show {
         -selectbackground => $pirana_orange,
         -font       => $font_normal,
         -command    => sub {
+
            my $tabsel = $tab_hlist -> selectionGet ();
            my $tab_file = os_specific_path(@tabcsv_loc[@$tabsel[0]]);
-           if (-e $tab_file) {
-             unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, $software{r_dir}, \$gif{r_in}, \$gif{close} );}
+           if (($tab_file ne "")&&(-e $tab_file)) {
+	         edit_model(unix_path($tab_file));
            }
         },
         -browsecmd   => sub{
@@ -4485,7 +4745,7 @@ sub frame_tab_show {
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -sticky => 'we', -ipady=>0);
+  })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
   $b++;
   $help->attach($show_tab_button, -msg => "Show .".$setting{ext_tab}." files");
   $show_csv_button = $tab_frame -> Button(-text=>'CSV', -width=>@tab_button_widths[1],-background=>$button, -font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
@@ -4495,7 +4755,7 @@ sub frame_tab_show {
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -sticky => 'we', -ipady=>0);
+  })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
   $b++;
   $help->attach($show_csv_button, -msg => "Show .CSV files");
   $show_xpose_button = $tab_frame -> Button(-text=>'Xpose',-width=>@tab_button_widths[2],-background=>$button,-font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
@@ -4505,7 +4765,7 @@ sub frame_tab_show {
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(disabled disabled disabled normal disabled disabled disabled normal normal);
     bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -columnspan=>2, -ipady=>0, -sticky => 'we');
+  })-> grid(-row=>1,-column=>$b, -columnspan=>2, -ipady=>0, -sticky => 'nswe');
   $help->attach($show_xpose_button, -msg => "Show XPose data");
   $b = $b+2;
   $show_r_button = $tab_frame -> Button(-text=>'R',-width=>@tab_button_widths[3],-background=>$button,-font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
@@ -4515,7 +4775,7 @@ sub frame_tab_show {
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -columnspan=>1, -ipady=>0, -sticky => 'we');
+  })-> grid(-row=>1,-column=>$b, -columnspan=>1, -ipady=>0, -sticky => 'nswe');
   $help->attach($show_r_button, -msg => "Show R/S scripts");
   $b++;
   $show_all_button = $tab_frame -> Button(-text=>'*',-width=>@tab_button_widths[4],-background=>$button,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
@@ -4525,7 +4785,7 @@ sub frame_tab_show {
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(disabled normal disabled normal disabled disabled disabled disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -ipady=>0, -sticky => 'we');
+  })-> grid(-row=>1,-column=>$b, -ipady=>0, -sticky => 'nswe');
   $b++;
   $help->attach($show_all_button, -msg => "Show all files in folder");
 
@@ -4577,10 +4837,12 @@ sub bind_tab_menu {
 	     if ($^O =~ m/MSWin/i) {
 		 $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
 	     }
-	     unless ($tab_file =~ m/.$setting{ext_csv}/i ) {
-		 tab2csv ($tab_file,$tab_file."_pirana.".$setting{ext_csv});
-		 start_command($software{spreadsheet},'"'.win_path($tab_file.'_pirana.'.$setting{ext_csv}).'"');
-	     } else {start_command($software{spreadsheet},'"'.win_path($tab_file).'"'); }
+	     if (($tab_file =~ m/.$setting{ext_tab}/i)&&($software{spreadsheet} =~ m/excel/i)) {  # Excel is not able to read the table files correctly
+		 tab2csv ($tab_file, $tab_file."_pirana.".$setting{ext_csv});
+		 start_command($software{spreadsheet},'"'.$tab_file.'_pirana.'.$setting{ext_csv}.'"');
+	     } else {
+		 start_command($software{spreadsheet},'"'.$tab_file.'"'); 
+	     }
          } else {message("Spreadsheet application not found. Please check settings.")};
        }],
        [Button => " Open file in code editor",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{notepad},-compound=>"left", -state=>@tab_menu_enabled[1], -command => sub{
@@ -4605,7 +4867,7 @@ sub bind_tab_menu {
 	   if ($^O =~ m/MSWin/i) {
 	       $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
 	   }
-	   my $delete = message_yesno ( "Do you really want to delete ".$tab_file."?");
+	   my $delete = message_yesno ( "Do you really want to delete ".$tab_file."?", $mw, $bgcol, $font_normal);
 	   if( $delete ==1 ) {unless(unlink (unix_path($cwd."/".$tab_file))) {message("For some reason, ".$tab_file." could not be deleted.\nCheck file/folder permissions.")} else {refresh_pirana($cwd, $filter,1)} };
        }],
        [Button => " Check dataset", -background=>$bgcol, -font=>$font_normal, -image=>$gif{check},-compound=>"left", -state=>@tab_menu_enabled[4], -command => sub{
@@ -4614,37 +4876,31 @@ sub bind_tab_menu {
 	   my $html = check_out_dataset($tab_file);
 	   start_command ($software{browser}, '"file:///'.unix_path($cwd).'/'.$html.'"');
         }],
-       [Button => " Load data in R or run R-script", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{r_in},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
+       [Button => " Load in PiranaR", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{pirana_r},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);
 	   if (-e $script_file) {
 	       if ($show_data eq "R") {
-		   run_script ('"'.$software{r_dir}.'\\bin\\R" --vanilla <'.$script_file.' |');
+#		   open ()
 	       }
 	       if ($show_data eq "csv") {
-		   open (RPROF,">.Rprofile");
-		   #print RPROF "cat ('".unix_path($script_file)." is available as data-frame: csv\n') \n";
-		   print RPROF "library(graphics)\n";
-		   print RPROF "library(utils)\n";
-		   print RPROF "cat ('csv <- data.frame(read.csv (file=\"".unix_path($script_file)."\"))\n')\n";
-		   print RPROF "csv <- data.frame(read.csv (file='".unix_path($script_file)."'))\n";
-		   close (RPROF);
-		   start_command($software{r_dir}.'/bin/rgui.exe');
+		   my $script = "library(utils)\n".
+				"csv <- data.frame(read.csv (file='".unix_path($cwd."/".$script_file)."'))\n";
+		   $script .= "head(tab)\n";
+		   create_window_piranaR ($mw, $script, 1, "temp");
 	       }
 	       if ($show_data eq "tab") {
-		   open (RPROF,">.Rprofile");
-		   # determine if tab has headers
-		   open (TAB, $script_file);
-		   $line1 = <TAB>;
-		   close TAB;
-		   my ($header, $skip);
-		   if ($line1 =~ m/TABLE/) {$header="T"; $skip=1} else {$header="F"; $skip=0};
-		   #print RPROF 'cat ("'.unix_path($script_file).' is available as data-frame: tab\n")'."\n";
-		   print RPROF "library(utils)\n";
-		   print RPROF "cat ('tab <- read.table (file=\"".unix_path($script_file)."\", skip=".$skip.", header=".$header.")\n')\n";
-		   print RPROF "tab <- read.table (file='".unix_path($script_file)."', skip=".$skip.", header=".$header.")\n";
-		   close (RPROF);
-		   start_command($software{r_dir}.'/bin/rgui.exe');
+		   open (DATA, "<".$script_file);
+		   my @dat = <DATA>;
+		   close DATA;
+		   my $script = "library(utils)\n";
+		   if (@dat[0] =~ m/TABLE.NO/) {
+		       $script .= "tab <- data.frame(read.table (file='".unix_path($script_file)."', skip=1, header=T))\n";
+		   } else {
+		       $script .= "tab <- data.frame(read.table (file='".unix_path($script_file)."', skip=0, header=F))\n";
+		   };
+		   $script .= "head(tab)\n";
+		   create_window_piranaR ($mw, $script, 1);
 	       }
 	   }
         }],
@@ -4731,10 +4987,13 @@ sub show_links {
   $nm_help_entry -> bind('<Any-KeyPress>' => sub {
      if (length($nm_help_search)>0) {
 	 our $nm_box_on = 1;
+	 print $nm_help_search;
 	 $filtered_keywords_ref = nm_help_filter_keywords ($nm_help_search, \@nm_help_keywords);
 	 my @filtered_keywords = @$filtered_keywords_ref;
 	 unless ($text_window_keywords) {
 	     text_window_nm_help ( \@filtered_keywords, "NONMEM help files");
+	     $keywords_list -> delete(0,"end");
+	     $keywords_list -> insert(0, @filtered_keywords);
 	 } else {
 	     $keywords_list -> delete(0,"end");
 	     $keywords_list -> insert(0, @filtered_keywords);
@@ -4745,6 +5004,9 @@ sub show_links {
 	     undef($text_window_keywords); undef $text_window_keywords_frame;
 	 }
      }
+     $nm_help_entry -> focus();
+     $mw -> raise();
+     $mw -> update();
      ;
   });
 
@@ -4840,9 +5102,9 @@ sub show_links {
      }
   });
  if ($os =~ m/MSWin/i) {
-   $help->attach($command_button, -msg => "Run command in a command-console (or TTY on linux-cluster)");
+   $help -> attach($command_button, -msg => "Run command in a command-console");
  } else {
-   $help->attach($command_button, -msg => "Run command in a command-shell (or TTY on linux-cluster)");
+   $help -> attach($command_button, -msg => "Run command in a command-shell");
  }
   }
 }
@@ -4851,26 +5113,19 @@ sub show_links {
 sub run_command {
 ### Purpose : Run a command, either using CMD.exe in windows, or using ssh on the cluster (when using the linux-cluster functionality and when the cluster is enabled)
 ### Compat  : W+L?
-  my $com = shift;
-  unless (($setting{cluster_type}!=0)&&($cluster_active==1)) {
-    open (RUN, ">pirana_run_command.bat");
-    print RUN $com."\n";
-    close RUN;
-    if ($stdout) {$stdout -> insert('end', "\n".$com);}
-    system ("start pirana_run_command.bat");
-    sleep 1;
-    unlink ("pirana_run_command.bat");
-  } else {  # on cluster using SSH
-      @cur_dir = split('/',unix_path($cwd));
-      shift(@cur_dir);
-      $cur_dir_unix = join('/',@cur_dir);
-      my $command = $setting{ssh_login}.' "cd ~/'.$cur_dir_unix.'; '.$com.'"';
-      system "start ".$command."&";
-      #open (OUT, ">".$base_dir."/internal/run_ssh_command.bat");
-      #print OUT "CALL ".$command."\n";
-      #close OUT;
-      #if ($stdout) {$stdout -> insert('end', "\n".$command);}
-      #system 'start "'.win_path($base_dir."/internal/run_ssh_command.bat").'"';
+    my $com = shift;
+    if ($^O =~ m/MSWin/i) {
+	open (RUN, ">pirana_run_command.bat");
+	print RUN $com."\n";
+	close RUN;
+	if ($stdout) {$stdout -> insert('end', "\n".$com);}
+	system ("start pirana_run_command.bat");
+	sleep 1;
+	unlink ("pirana_run_command.bat");
+    } else {  # on Linux
+	$com = $setting{terminal}." -e '".$com."; bash' &";
+	print $com;
+	system ($com);
   }
 }
 
@@ -4968,52 +5223,19 @@ sub nmfe_run_window {
 
     # build notebook
     my $nmfe_frame = $nmfe_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
-    my $nmfe_notebook = $nmfe_frame ->NoteBook(-tabpadx=>5, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
+    my $nmfe_notebook = $nmfe_frame ->NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
     my $nmfe_run_frame = $nmfe_notebook -> add("general", -label=>"General");
     my $nmfe_sge_frame = $nmfe_notebook -> add("sge", -label=>"Clusters");
     my $nmfe_ssh_frame = $nmfe_notebook -> add("ssh", -label=>"SSH");
 
-    my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>10,-sticky=>'nws');
+    my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>15,-sticky=>'nws');
     my $command_area = $nmfe_run_frame -> Text (
       -width=>60, -height=>5, -yscrollcommand => ['set' => $command_area_scrollbar],
       -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none',
       -border=>1, -font=>$font_normal, -relief=>'groove',
       -selectbackground=>'#606060', -highlightthickness =>0
-    ) -> grid(-row=>10,-column=>2,-sticky=>"nwe");
+    ) -> grid(-row=>15,-column=>2,-sticky=>"nwe");
     $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
-
-    $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
-    $nmfe_run_frame -> Label (-text=>$file_string, -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>2,-sticky=>"w");
-
-    $nmfe_run_frame -> Label (-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"w");
-    my $dir = $cwd;
-    my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>4,-column=>2,-sticky=>"w");
-    $nmfe_run_frame -> Checkbutton (-text=>"Run in separate folder(s)", -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_new_dir, -font=>$font_normal, -command=> sub{
-	update_nmfe_run_script_area ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
-    }) -> grid(-row=>5,-column=>2,-sticky=>"w");
-
-    ### Run command and start script
-    $nmfe_run_frame -> Label (-text=>"Run command:\n", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
-    (my $script_file, our $nmfe_run_command, my $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
-    my $nmfe_run_script = $nmfe_run_frame -> Entry (-textvariable=> \$nmfe_run_command,
-       -background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
-    ) -> grid(-row=>9,-column=>2,-sticky=>"nwe");
-    $nmfe_run_frame -> Label (-text=>"Run script:", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>10,-column=>1,-sticky=>"ne");
-
-    $nmfe_run_frame -> Checkbutton (-text=>"Run in background",-font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_background, -command=> sub{
-	 my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
-	 $nmfe_run_command = $run_command;
-    }) -> grid(-row=>6,-column=>2,-sticky=>"w");
-
-    $nmfe_run_frame -> Label (-text=>"NB. If runs are started in the background, execution will continue\nwhen Pirana is closed, or when logging out from a cluster.",
-			    -font=>$font_normal, -background=>$bgcol, -justify=>"left") -> grid(-row=>7,-column=>2,-sticky=>"w");
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
-
-    # NM installations
-    $nmfe_run_frame -> Label (-text=>"NONMEM installation", -font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>3,-column=>1,-sticky=>"w");
     my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
       -variable => \$nm_version_chosen,
       -border=>$bbw,
@@ -5023,97 +5245,160 @@ sub nmfe_run_window {
         if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
-	update_nmfe_run_script_area ($command_area,$script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
     }) -> grid(-row=>3,-column=>2,-sticky => 'wns');
+
+    $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"e");
+    $nmfe_run_frame -> Label (-text=>$file_string, -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>2,-sticky=>"w");
+
+    $nmfe_run_frame -> Label (-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
+    my $dir = $cwd;
+    my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>4,-column=>2,-sticky=>"w");
+    if ($clusters{run_on_sge} == 1) {
+         $run_in_new_dir = 1;
+    }
+    $nmfe_run_frame -> Checkbutton (-text=>"Run in separate folder(s)", -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_new_dir, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
+	update_nmfe_run_script_area ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
+    }) -> grid(-row=>5,-column=>2,-sticky=>"w");
+
+    ### Run command and start script
+    $nmfe_run_frame -> Label (-text=>"Script contents:\n", -font=>$font_normal, -background=>$bgcol
+    ) -> grid(-row=>15,-column=>1,-sticky=>"ne");
+    (my $script_file, our $nmfe_run_command, my $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
+    my $nmfe_run_script = $nmfe_run_frame -> Entry (-textvariable=> \$nmfe_run_command,
+       -background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
+    ) -> grid(-row=>13,-column=>2,-sticky=>"nwe");
+    $nmfe_run_frame -> Label (-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
+    ) -> grid(-row=>13,-column=>1,-sticky=>"ne");
+
+    $nmfe_run_frame -> Checkbutton (-text=>"Run in background",-font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_background,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
+	 my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
+	 $nmfe_run_command = $run_command;
+    }) -> grid(-row=>6,-column=>2,-sticky=>"w");
+
+    $nmfe_run_frame -> Label (-text=>"NB. If runs are started in the background, execution will continue\nwhen Pirana is closed, or when logging out from a cluster.",
+			    -font=>$font_normal, -background=>$bgcol, -justify=>"left") -> grid(-row=>7,-column=>2,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
+
+    # NM installations
+    $nmfe_run_frame -> Label (-text=>"NONMEM installation:", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>3,-column=>1,-sticky=>"e");
     delete $nm_dirs{""};
     my $nm_dirs_ref; my $nm_vers_ref ;
-    unless ($cluster_active==1) {
-      ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_local.ini");
+    my @nm_installations;
+    unless ($ssh{connect_ssh} == 0) {
+	@nm_installations = keys(%nm_dirs);
     } else {
-      ($nm_dirs_ref, $nm_vers_ref) = read_ini ($home_dir."/ini/nm_inst_cluster.ini");
+	@nm_installations = keys(%nm_dirs_cluster);
     }
     if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [@nm_installations] )} ;
 
-    my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
+    my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
     ssh_notebook_tab ($nmfe_ssh_frame, 1, \@params);
 
     ### SGE options
-    $nmfe_sge_frame -> Label (-text=>"Submit to SGE", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>1,-column=>1,-sticky=>"ne");
+#    $nmfe_sge_frame -> Label (-text=>"Submit to SGE", -font=>$font_normal, -background=>$bgcol
+#    ) -> grid(-row=>1,-column=>1,-sticky=>"ne");
     $nmfe_sge_frame -> Label (-text=>"Submit command", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>2,-column=>1,-sticky=>"ne");
     my $sge_submit_entry = $nmfe_sge_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$clusters{sge_submit_command}, -width=>10, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>2,-column=>2,-sticky=>"nw");
-    $sge_submit_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh); });
+    $sge_submit_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); });
 
     $nmfe_sge_frame -> Label (-text=>"Run priority", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>3,-column=>1,-sticky=>"ne");
     my $sge_priority_entry = $nmfe_sge_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$clusters{sge_priority}, -width=>4, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>3,-column=>2,-sticky=>"nw");
-    $sge_priority_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen,$run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh); });
+    $sge_priority_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen,$run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); });
 
     $nmfe_sge_frame -> Label (-text=>"Additional parameters", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>4,-column=>1,-sticky=>"ne");
     my $sge_parameters_entry = $nmfe_sge_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$clusters{sge_parameters}, -width=>20, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>4,-column=>2,-sticky=>"nw");
-    $sge_parameters_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh); });
+    $sge_parameters_entry -> bind('<Any-KeyPress>' => sub { bind_update_nmfe_run_script ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); });
 
     $nmfe_sge_frame -> Label (-text=>"\n\n", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>5,-column=>1,-sticky=>"nw");
-    $nmfe_sge_frame -> Checkbutton (-text=>"", -variable=> \$clusters{run_on_sge}, -font=>$font_normal, -background=>$bgcol, -command=>sub{
-	 update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters );
-    }) -> grid(-row=>1,-column=>2,-sticky=>"nw");
     $nmfe_sge_frame -> Label (-text=>"Use project/model-name as job-name", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>5,-column=>1,-sticky=>"ne");
-    $nmfe_sge_frame -> Checkbutton (-text=>"", -variable=> \$clusters{sge_model_as_jobname}, -font=>$font_normal, -background=>$bgcol, -command=>sub{
-	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters );
+    $nmfe_sge_frame -> Checkbutton (-text=>"", -variable=> \$clusters{sge_model_as_jobname}, -font=>$font_normal, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%SSH, $nm_versions_menu );
     }) -> grid(-row=>5,-column=>2,-sticky=>"nw");
 
-    $nmfe_sge_frame -> Label (-text=>"Submit to PCluster", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>6,-column=>1,-sticky=>"ne");
-    $nmfe_sge_frame -> Checkbutton (-text=>"", -variable=> \$clusters{run_on_pcluster}, -font=>$font_normal, -background=>$bgcol, -command=>sub{
-	$clusters{run_on_sge} = 0;
-	bind_update_nmfe_run_script ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
-    }) -> grid(-row=>6,-column=>2,-sticky=>"nw");
+    $nmfe_run_frame -> Label (-text=>"Submit to:", -font=>$font_normal, -background=>$bgcol
+    ) -> grid(-row=>10,-column=>1,-sticky=>"ne");
+    $nmfe_run_frame -> Checkbutton (-text=>"Sun Grid Engine", -variable=> \$clusters{run_on_sge}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+	if ($clusters{run_on_sge} == 1) {
+	    $run_in_new_dir = 1;
+	    $clusters{run_on_pcluster} = 0;
+	    $nmfe_run_script -> configure (-state=>'normal');
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu );
+    }) -> grid(-row=>10,-column=>2,-sticky=>"nw");
+    $nmfe_run_frame -> Checkbutton (-text=>"PCluster", -variable=> \$clusters{run_on_pcluster}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+	if ($clusters{run_on_pcluster} == 1) {
+	    $clusters{run_on_sge} = 0;
+	    $nmfe_run_script -> configure (-state=>'disabled');
+	} else {
+	    $nmfe_run_script -> configure (-state=>'normal');
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu );
+    }) -> grid(-row=>11,-column=>2,-sticky=>"nw");
 
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>11,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>12,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>14,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>16,-column=>1,-sticky=>"w");
 
     my $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -border=>$bbw, -command=> sub {
 	unless ($nm_version_chosen eq "") { #NM installed?
 	    my $script_text = $command_area -> get("0.0", "end");
-	    my ($script_file, $script_text_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), \@files, $run_in_new_dir, \@new_dirs, \%$clusters);
+	    my ($script_file, $script_text_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), \@files, $run_in_new_dir, \@new_dirs, \%$clusters, \%ssh);
 	    write_nm_start_script ($script_file, \$script_text);
-	    foreach my $file (@files) {
-		my $new_dir = shift (@new_dirs);
-		unless ($new_dir eq "") {
-		    move_nm_files ($file.".".$setting{ext_ctl}, $new_dir) ;
-		    db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command, $setting{name_researcher});
+	    if ($run_in_new_dir == 1) {
+		foreach my $file (@files) {
+		    my $new_dir = shift (@new_dirs);
+		    unless ($new_dir eq "") {
+			move_nm_files ($file.".".$setting{ext_ctl}, $new_dir) ;
+			db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command, $setting{name_researcher});
+		    }
 		}
 	    }
-	    exec_run_nmfe ($nmfe_run_command);
+	    if ($clusters{run_on_pcluster} == 1) {
+		pcluster_get_available_nodes ();
+		exec_run_pcluster($nm_version_chosen, );
+	    } else {
+		exec_run_nmfe ($nmfe_run_command);
+	    }
 	    save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr);
-	} else {
-	    message("Please add NONMEM installation to Piraña");
 	}
 #	$help -> detach($nmfe_run_button);
 	$nmfe_run_window -> destroy();
-    })-> grid(-row=>12, -column=>2,-sticky=>"wns");
-
+    })-> grid(-row=>17, -column=>2,-sticky=>"wns");
+    if (keys(%nm_dirs)+keys(%nm_dirs_cluster) == 0) {
+	$nmfe_run_button -> configure (-state => "disabled");
+    }
 #    $help -> attach($nmfe_run_button, "Start run");
 
     # update
     my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
     $nmfe_run_command = $run_command;
-    update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters);
+    update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
 
     $nmfe_run_window -> resizable( 0, 0 );
     $nmfe_run_window -> raise();
     $nmfe_run_window -> update();
 }
 
+sub pcluster_select_node_window {
+
+
+    return ($node_selected);
+}
+
 sub ssh_notebook_tab {
     my ($nmfe_ssh_frame, $bind_subroutine, $params_ref) = @_;
     my @params = @$params_ref;
+
     ### SSH options
     $nmfe_ssh_frame -> Label (-text=>"Note: To enable passwordless access, make sure you have an SSH-keypair installed,\nor supply the SSH password as extra parameter.\n",
        -font=>$font_normal, -background=>$bgcol, -justify=>"left"
@@ -5176,10 +5461,10 @@ sub ssh_notebook_tab {
 }
 
 sub bind_update_nmfe_run_script {
-    my ($command_area, $script_file, $files_ref, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref) = @_;
+    my ($command_area, $script_file, $files_ref, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref, $nm_versions_menu ) = @_;
     my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, $files_ref, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref);
     $nmfe_run_command = $run_command;
-    update_nmfe_run_script_area ($command_area, $script_file, $files_ref, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref );
+    update_nmfe_run_script_area ($command_area, $script_file, $files_ref, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref, $nm_versions_menu );
     return();
 }
 sub bind_update_psn_run_script {
@@ -5213,7 +5498,7 @@ sub psn_run_window {
 
   # build notebook
   my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
-  my $psn_notebook = $psn_run_frame -> NoteBook(-tabpadx=>5, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
+  my $psn_notebook = $psn_run_frame -> NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
   my $psn_run_frame = $psn_notebook -> add("general", -label=>"General");
   my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
   my $psn_ssh_frame = $psn_notebook -> add("ssh", -label=>"SSH");
@@ -5236,17 +5521,22 @@ sub psn_run_window {
   my $psn_command_line_entry = $psn_run_frame -> Text (
       -width=>64, -relief=>'sunken', -border=>1, -height=>4,
       -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
-  )->grid(-column=>1, -row=>9, -columnspan=>2, -sticky=>'nwe', -ipadx=>0);
+  )->grid(-column=>1, -row=>10, -columnspan=>2, -sticky=>'nwe', -ipadx=>0);
   $psn_command_line_entry -> delete("1.0","end");
   $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
   $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton)
-   -> grid(-row=>9, -column=>3,-sticky=>"wns");
+   -> grid(-row=>10, -column=>3,-sticky=>"wns");
   $help -> attach($psn_run_button, "Start run");
 
   $psn_run_frame -> Label (-text=>"NM installation:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7,-column=>1,-sticky=>"w");
-  $psn_run_frame -> Label (-text=>"\nPsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
-  $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
+#  my $psn_background = 0;
+  $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
+  $psn_run_frame -> Checkbutton (-text=>" ", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
+   }) -> grid(-row=>6,-column=>2,-sticky=>"w");
+
+  $psn_run_frame -> Label (-text=>"\nPsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>9,-column=>1,-sticky=>"w");
+ # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
   our $nm_versions_menu = $psn_run_frame -> Optionmenu(
       -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
       -font=>$font_normal, -background=>"#c0c0c0",
@@ -5291,10 +5581,10 @@ sub psn_run_window {
       $psn_params =~ s/\"+$//;  #remove trailing spaces
       my $psn_nm_version = "";
       @runs = $models_hlist -> selectionGet ();
-      $psn_commands{$psn_option} = $psn_parameters;
+      $psn_commands{$psn_option} = $psn_params;
       save_ini ($home_dir."/ini/psn.ini", \%psn_commands, \%psn_commands_descr);
 
-      exec_run_psn ($psn_command_line, \%ssh, $modelfile, $model_description);
+      exec_run_psn ($psn_command_line, \%ssh, $modelfile, $model_description, $psn_background);
 
       status ();
       #if ($stdout) {$stdout -> yview (scroll=>1, units);}
@@ -5407,64 +5697,98 @@ sub frame_models_show {
     $models_hlist -> bind ('<Control-r>' => sub {
 	nmfe_command();
     });
+    $models_hlist -> bind ('<Control-R>' => sub {
+	nmfe_command();
+    });
     $models_hlist -> bind ('<Control-e>' => sub {
 	psn_command("execute");
     });
-    our $models_menu = $models_hlist->Menu(-tearoff => 0, -background=>$bgcol, -title=>'None');
-    $models_menu -> command (-label=> " Run (nmfe)", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_hlist -> bind ('<Control-E>' => sub {
+	psn_command("execute");
+    });
+    $models_hlist -> bind ('<Control-b>' => sub {
+	psn_command("bootstrap");
+    });
+    $models_hlist -> bind ('<Control-B>' => sub {
+	psn_command("bootstrap");
+    });
+    $models_hlist -> bind ('<Control-t>' => sub {
+        generate_report_command(\%run_reports);
+    });
+    $models_hlist -> bind ('<Control-T>' => sub {
+        generate_report_command(\%run_reports);
+    });
+    $models_hlist -> bind ('<Control-d>' => sub {
+        duplicate_model_command();
+    });
+    $models_hlist -> bind ('<Control-D>' => sub {
+        duplicate_model_command();
+    });
+    $models_hlist -> bind ('<Control-l>' => sub {
+        view_outputfile_command();
+    });
+    $models_hlist -> bind ('<Control-L>' => sub {
+        view_outputfile_command();
+    });
+    $models_hlist -> bind ('<Delete>' => sub {
+	delete_models_command();
+    });
+
+    our $models_menu = $models_hlist -> Menu(-tearoff => 0, -background=>$bgcol, -title=>'None');
+    $models_menu -> command (-label=> " Run (nmfe)", -font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        nmfe_command();
     });
-    our $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
-    $models_menu_psn -> command (-label=> " execute", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    our $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
+    $models_menu_psn -> command (-label=> " execute",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
-    $models_menu_psn -> command (-label=> " vpc", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " vpc",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("vpc");
     });
-    $models_menu_psn -> command (-label=> " npc", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " npc", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("npc");
     });
-    $models_menu_psn -> command (-label=> " bootstrap", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " bootstrap",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("bootstrap");
     });
-    $models_menu_psn -> command (-label=> " cdd", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " cdd", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("cdd");
     });
-    $models_menu_psn -> command (-label=> " llp", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " llp",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("llp");
     });
-    $models_menu_psn -> command (-label=> " sse", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("sse");
     });
-    $models_menu_psn -> command (-label=> " sumo", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
+    $models_menu_psn -> command (-label=> " sumo", -font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
     });
     if ($os =~ m/MSWin/i) {
-      our $models_menu_wfn = $models_menu -> cascade (-label=> " WFN", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
-      $models_menu_wfn -> command (-label=> " NMGO", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+      our $models_menu_wfn = $models_menu -> cascade (-label=> " WFN", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
+      $models_menu_wfn -> command (-label=> " NMGO", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
            wfn_command("NMGO");
          });
-      $models_menu_wfn -> command (-label=> " NMBS", -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+      $models_menu_wfn -> command (-label=> " NMBS", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
            wfn_command("NMBS");
          });
     }
     $models_menu -> separator (-background=>$bgcol) ;
-    $models_menu -> command (-label=>" Model properties...", -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=>" Model properties...",-font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
            properties_command ();
          });
-    $models_menu -> command (-label=>" Edit model", -image=>$gif{notepad}, -compound=>'left',  -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=>" Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left',  -background=>$bgcol, -command => sub{
            edit_model_command();
          });
-     $models_menu -> command (-label=> " Rename model",  -image=>$gif{rename}, -compound=>'left', -background=>$bgcol, -command => sub{
+     $models_menu -> command (-label=> " Rename model", -font=>$font, -image=>$gif{rename}, -compound=>'left', -background=>$bgcol, -command => sub{
            rename_model_command();
          });
-    $models_menu -> command (-label=> " Duplicate model", -image=>$gif{duplicate}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=> " Duplicate model",-font=>$font, -image=>$gif{duplicate}, -compound=>'left', -background=>$bgcol, -command => sub{
            duplicate_model_command();
          });
-    $models_menu -> command (-label=> " Duplicate model for MSF restart",  -image=>$gif{msf}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=> " Duplicate model for MSF restart", -font=>$font, -image=>$gif{msf}, -compound=>'left', -background=>$bgcol, -command => sub{
            duplicate_msf_command();
           });
-    $models_menu -> command (-label=> " Delete model(s) / result(s)",  -image=>$gif{trash}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=> " Delete model(s) / result(s)", -font=>$font, -image=>$gif{trash}, -compound=>'left', -background=>$bgcol, -command => sub{
            delete_models_command();
          });
 
@@ -5472,34 +5796,22 @@ sub frame_models_show {
 
     create_scripts_menu ($models_menu, "script", 1, $base_dir."/scripts", "Scripts");
     create_scripts_menu ($models_menu, "script", 1, $home_dir."/scripts", "User scripts");
-    $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -command => sub{
-           generate_report_command(\%include_html);
+    $models_menu -> command (-label=> " Send model info to PiranaR", -image=>$gif{pirana_r}, -font=>$font,-compound=>'left', -background=>$bgcol, -command => sub{
+	send_model_info_to_R_command();
          });
 
-
-#    $models_menu_R = $models_menu -> cascade (-label=> " R / XPose", -image=>$gif{HTML}, -compound=>'left', -background=>$bgcol, -tearoff=>0);
-
-#    $models_menu_R -> command (-label=> "Model convergence", -background=>$bgcol, -command => sub{
-#	R_model_convergence_command ();
-#    });
-#    $models_menu_R -> command (-label=> "Histograms of eta-distribution", -background=>$bgcol, -command => sub{
-#	R_plot_etas_distribution_command ();
-#    });
-#    $models_menu_R -> command (-label=> "Correlation plot", -background=>$bgcol, -command => sub{
-#	R_correlation_plot_command ();
-#    });
-#    $models_menu_R -> command (-label=> "XPose: VPC from folder", -background=>$bgcol, -command => sub{
-#	R_xpose_VPC_command ();
-#    });
-
-    $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex}, -compound=>'left', -background=>$bgcol, -command => sub{
-           generate_LaTeX_command();
+    $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -font=>$font,-compound=>'left', -background=>$bgcol, -command => sub{
+           generate_report_command(\%run_reports);
          });
-    $models_menu -> command (-label=> " View NM output file",  -image=>$gif{notepad}, -compound=>'left', -background=>$bgcol, -command => sub{
+
+    $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
+#           generate_LaTeX_command();
+         });
+    $models_menu -> command (-label=> " View NM output file",  -image=>$gif{notepad},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
            view_outputfile_command();
          });
     $models_menu -> separator ( -background=>$bgcol) ;
-    $models_menu -> command (-label=> " Close this menu",  -image=>$gif{close}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu -> command (-label=> " Close this menu", -font=>$font, -image=>$gif{close},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
        $models_menu -> unpost();
     });
 
@@ -5525,6 +5837,7 @@ sub frame_models_show {
   our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -background=>'#c0d0ff', -font => $font_normal);
   our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#d5e5ff', -font => $font_normal);
   our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#ffffe5', -font => $font_normal);
 
@@ -5609,7 +5922,7 @@ sub frame_models_show {
   our $show_inter_button = $mod_buttons->Button(-image=>$gif{edit_inter},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
       chdir($cwd);
-      show_inter_window();
+      show_inter_window($cwd);
       if ($inter_window) {$inter_window -> focus();}
       })->grid(-row=>1,-column=>8,-sticky=>'wens');
   $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
@@ -5630,7 +5943,18 @@ sub frame_models_show {
   $help->attach($tree_txt_button, -msg => "Generate run record as tree");
 
   $mod_buttons -> Label (-text=>"   ", -background=>$bgcol)->grid(-row=>1,-column=>11,-sticky=>'we');
-  $cluster_active = $setting{cluster_default};
+
+  unless ($^O =~ m/MSWin/) {
+      our $sge_monitor_button = $mod_buttons -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton,
+		  -command=>sub {sge_monitor_window();
+      })->grid(-row=>1,-column=>12,-columnspan=>1,-sticky=>'wens');
+      $help->attach($sge_monitor_button, -msg => "Open SGE montitor");
+  }
+
+  our $piranaR_button = $mod_buttons -> Button(-image=>$gif{pirana_r}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
+      create_window_piranaR ($mw, "", 0);
+  }) ->grid(-row=>1,-column=>13,-columnspan=>1,-sticky=>'wens');
+  $help->attach($piranaR_button, -msg => "Open PiranaR interface");
 
   $copy_dir_res_button = $mod_buttons->Button(-image=>$gif{folderout},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
@@ -6222,8 +6546,10 @@ sub show_exec_runs_window {
 sub show_inter_window {
 ### Purpose : Show a dialog that displays intermediate OFVs, param.estims and gradients for runs in the current folder and below
 ### Compat  : W+
+    my $wd = shift;
+    unless (-d $wd) {$wd = $cwd}
     unless ($inter_window) { # build the dialog
-      our $inter_window = $mw -> Toplevel(-title=>'Progress of runs in '.$cwd, -background=>$bgcol);
+      our $inter_window = $mw -> Toplevel(-title=>'Progress of runs in '.$wd, -background=>$bgcol);
       $inter_window -> resizable( 0, 0 );
       $inter_window -> OnDestroy ( sub{
         undef $inter_window; undef $inter_window_frame;
@@ -6237,7 +6563,7 @@ sub show_inter_window {
       $inter_frame_buttons -> Button (-text=>'Rescan directories',  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
-        @n = get_runs_in_progress();
+        @n = get_runs_in_progress($wd);
         if ( int(@n) == 1 ) {
           inter_status ("No active runs found");
         } else {inter_status()};
@@ -6247,9 +6573,9 @@ sub show_inter_window {
          foreach (@info) {
            my $dir = $_;
            if ($dir ne "") {
-             if (-e $cwd."/".$dir."/OUTPUT") {edit_model(unix_path($cwd."/".$dir."/OUTPUT"));}
-             if (-e $cwd."/".$dir."/INTER") {edit_model(unix_path($cwd."/".$dir."/INTER"));}
-             if (-e $cwd."/".$dir."/psn.lst") {edit_model(unix_path($cwd."/".$dir."/psn.lst"))}
+             if (-e $wd."/".$dir."/OUTPUT") {edit_model(unix_path($wd."/".$dir."/OUTPUT"));}
+             if (-e $wd."/".$dir."/INTER") {edit_model(unix_path($wd."/".$dir."/INTER"));}
+             if (-e $wd."/".$dir."/psn.lst") {edit_model(unix_path($wd."/".$dir."/psn.lst"))}
            }
          }
       }) -> grid(-column => 2, -row=>1, -sticky=>"w");
@@ -6258,7 +6584,7 @@ sub show_inter_window {
          foreach (@inter_dirs) { };
          @info = $grid->infoSelection();
          $grid_inter -> delete("all");
-         inter_results ($cwd."/".@info[0]);
+         inter_results ($wd."/".@info[0]);
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
 
       ## Stop run functionality: not yet implemented (has issues)
@@ -6274,11 +6600,11 @@ sub show_inter_window {
       $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nws");
       $inter_intermed_frame -> Label (
         -text=>"\nNote: to obtain intermediate estimates from runs, the specification\nof MSF files are needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the $EST block.",
-        -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
+        -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
       $inter_intermed_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>3, -sticky=>"w");
     } else {$inter_window -> focus};
     inter_status ("Searching sub-directories for active runs...");
-    chdir ($cwd);
+    chdir ($wd);
 
     my @headers = ( "MSF", "Iterations","OFV");
     my @headers_widths = (60, 60, 60, 160,240);
@@ -6343,8 +6669,8 @@ sub show_inter_window {
             our $last_chosen = @info[0];
             chdir ("./".@info[0]);
             my ($sub_iter, $sub_ofv, $descr, $minimization_done) = get_run_progress();
-            chdir ($cwd);
-            inter_results ($cwd."/".@info[0]);
+            chdir ($wd);
+            inter_results ($wd."/".@info[0]);
             $gradients_plot -> clearDatasets;
             my $lines_ref = update_gradient_plot($sub_iter);
             my $gradient_info = $plot_frame -> Balloon();
@@ -6365,7 +6691,7 @@ sub show_inter_window {
             $gradients_plot -> plot;
           }
    });
-   our @n = get_runs_in_progress();
+   our @n = get_runs_in_progress($wd);
    if ( int(@n) == 1 ) {
          inter_status ("No active runs found");
   } else {inter_status()};
@@ -6473,8 +6799,10 @@ sub inter_window_add_item {
 sub get_runs_in_progress {
 ### Purpose : return a hash of runs that are currently in progress in the current directory, or in PsN/nmfe directories below
 ### Compat  : W+L?
+    my $wd = shift();
+    unless (-d $wd) {$wd = $cwd}
   $dir = fastgetcwd()."/";
-  @dirs = read_dirs_win();
+  @dirs = read_dirs($wd, "");
   %dir_results = new ;
   %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
   # First check main directory
@@ -6511,7 +6839,7 @@ sub get_runs_in_progress {
     }
     # Check sub-directories
     if ($sub =~ m/_/) { # only do this for PsN- or nmfe directories, to save speed
-    @dirs_sub = read_dirs_win("NM_run"); # PsN directories
+    @dirs_sub = read_dirs (".", "NM_run"); # PsN directories
     foreach $subdir (@dirs_sub) {
       chdir ($subdir);
       if ((-e "nonmem.exe")||(-e "nonmem")) {
@@ -6765,7 +7093,6 @@ sub combine_wfn_bootstraps {
       start_command($software{spreadsheet},'"'.win_path("bs.txt").'"');
   } else {message("Spreadsheet application not found. Please check settings.")};
 }
-
 
 sub create_duplicates_window {
 ### Purpose : Create dialog window for making n duplicates from model(s)
