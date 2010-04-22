@@ -5,7 +5,8 @@ package pirana_modules::data_inspector;
 use strict;
 use Tk::Balloon;
 use List::Util qw(max min);
-use pirana_modules::misc  qw(win_path unix_path win_start center_window);
+use pirana_modules::misc  qw(win_path unix_path win_start);
+use pirana_modules::misc_tk  qw(center_window);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -43,6 +44,7 @@ sub create_plot_window {
 ### Purpose : Create the dataInspector window
 ### Compat  : W+L?
     ($main_window, $plot_table, $table_type, $r_dir, $r_in_gif_ref, $r_delete_ref) = @_;
+    unless (-e $plot_table) {return()};
     our $plot_window = $main_window -> Toplevel(-title=>"Piraña Data Inspector (".$plot_table.")", -background=>$bgcol);
     $plot_window -> resizable( 0, 0 );
 
@@ -73,6 +75,10 @@ sub create_plot_window {
 
     # read the table file
     #status ("Reading table file...");
+    if ($table_type eq "*") {
+	$table_type = "tab"; # assume it is a table
+	if ($plot_table =~ m/\.csv/i) {$table_type = "csv"}
+    }
     my ($colname_ref, $values_ref, $cols) = read_table ($plot_table, $table_type);
 
     #status ();
@@ -204,7 +210,7 @@ sub show_plot {
     my @x_sel = $x_var_list -> curselection;
     my @y_sel = $y_var_list -> curselection;
     my $x_var = @colname[@x_sel[0]];
-    my $xdat = $values{$x_var};
+    my $xdat  = $values{$x_var};
     @xdata = ();
     my @xdata_unfiltered = @$xdat; # or get unfiltered data
     my @filterdata2_filtered;

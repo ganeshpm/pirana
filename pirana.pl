@@ -34,6 +34,7 @@ use Tk::PNG;
 use File::Copy;             # File info and operations
 use File::stat;             # ..
 use File::Path;             # ..
+use File::Basename;
 use Time::HiRes;
 use HTTP::Date;             # Date and time functions
 use List::Util qw(max maxstr min minstr reduce); # some basic functions
@@ -89,8 +90,10 @@ use pirana_modules::editor    qw(text_edit_window text_edit_window_build refresh
 use pirana_modules::nm        qw(get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::sge       qw(stop_job qstat_get_nodes_info qstat_get_jobs_info qstat_get_specific_job_info);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs start_command);
+use pirana_modules::misc      qw(find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs start_command);
+use pirana_modules::misc_tk   qw(message_yesno center_window);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
+use pirana_modules::R         qw(R_insert_multiple_lines R_create_script_text_box R_create_R_box R_insert_line R_start_process R_stop_process R_run_script);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 if ($^O =~ m/MSWin32/) {
   require pirana_modules::windows_specific ; #qw(nonmem_priority get_processes);
@@ -102,7 +105,6 @@ initialize();  # read ini-files: preferences, software, nm-installations etc.
 $setting{frame2_vis} = 1;
 
 #*** Windows & Colors **********************************************************
-our $run_msf        = 0;
 our $blue           = "#D0F0FF";
 our $pirana_orange  = "#ffEE99";
 our $lighterblue    = "#d3d3e3";
@@ -117,6 +119,10 @@ our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
 our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
+our $bgcol          = "#ece9d8";
+our $button         = "#dddac9";
+our $abutton        = "#cecbba";
+our $status_col     = "#fffdec";
 our $bbw            = 0; # button border width;
 if ($^O =~ m/MSWin/i) {
     our $selectcol = $white;
@@ -126,12 +132,10 @@ if ($^O =~ m/MSWin/i) {
 our $filter         = "";
 
 #*** Main Window ***************************************************************
-our $bgcol      = "#ece9d8";
-our $button     = "#dddac9";
-our $abutton    = "#cecbba";
-our $status_col = "#fffdec";
+
 our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 $mw -> setPalette ($bgcol);
+our $font = $mw -> fontCreate('main_normal', -family=>'verdana', -size=>int(-11));
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
 $mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
@@ -157,10 +161,10 @@ foreach my $file (@images) {
 }
 
 if ($^O =~ m/MSWin/) {
-    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
+    our  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
     $mw -> Icon (-image=> $icon);
 } else {
-    my  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
+    our  $icon = $mw -> Photo (-file=>$base_dir.'/images/pirana_blue.png', -format=>'PNG', -width => 32, -height => 32);
 }
 
 #*** Menu bar ******************************************************************
@@ -171,8 +175,8 @@ $mw -> optionAdd('*BorderWidth' => 1);
 $mw -> update();
 
 renew_pirana();
-our $pirana_normal_width = $mw->width;
-our $pirana_normal_height = $mw->height;
+our $pirana_normal_width = $mw  -> width;
+our $pirana_normal_height = $mw -> height;
 
 if ($first_time_flag==1) { # save to home folder
   $first_time_flag = 0;

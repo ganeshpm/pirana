@@ -8,7 +8,7 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(find_R get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab center_window read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(find_R get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
 
 sub find_R {
 ### Purpose : Find the newest R version on Windows
@@ -25,7 +25,7 @@ sub find_R {
         }
     }
     # find newest R version available
-    my $highest_version_number; 
+    my $highest_version_number;
     my $version;
     foreach my $R (keys(%all_R)) {
 	my $R_num = $R;
@@ -34,7 +34,7 @@ sub find_R {
 	my $version_number = @spl[0]*10000 + @spl[1]*100 + @spl[2];
 	if ($version_number > $highest_version_number) {
 	    $highest_version_number = $version_number;
-	    $version = $R;   
+	    $version = $R;
 	}
     }
     return ($all_R{$version});
@@ -264,21 +264,6 @@ sub tab2csv {
   close (OUT);
 }
 
-sub center_window {
-### Purpose : Sort ascending
-### Compat  : W+L+
-### Notes   : Doesn't work properly on Linux correct yet...
-    my $win = shift;
-    if ($^O =~ m/MSWin32/) {
-	$win -> withdraw;   # Hide the window while we move it about
-	$win -> update;     # Make sure width and height are current
-	my $xpos = int(($win->screenwidth  - $win->width ) / 2);
-	my $ypos = int(($win->screenheight - $win->height) / 2);
-	$win -> geometry("+$xpos+$ypos");
-	$win -> deiconify;  # Show the window again
-    }
-}
-
 sub read_dirs {
 ### Purpose : Return all directories in the current directory
 ### Compat  : W+L?
@@ -290,7 +275,7 @@ sub read_dirs {
     foreach (@dir_all) {
 	if (-d $_) {
 	    if (($_ ne ".")&&($_ ne "..")) {
-		unless (($filter ne "")&!($_ =~ m/$filter/)) {
+		unless (($filter ne "")&!($_ =~ m/$filter/i)) {
 		    push (@dirs, $_);
 		}
 	    }
@@ -336,20 +321,16 @@ sub win_start {
 }
 sub linux_start {
     my $curr_dir = cwd();
-    if (@_[1] ne "") {chdir (@_[1]); }
     system (@_[0]." ".@_[1]." &");
-    chdir ($curr_dir);
+    print @_[0]." ".@_[1]." &";
 }
 
 sub start_command {
     my $os = "$^O";
     if ($os =~ m/MSWin/i) {
 	win_start (@_);
-    }
-    if ($os =~ m/linux/) {
+    } else {
 	linux_start(@_);
-    }
-    if ($os =~ m/linux/) {
     }
 }
 

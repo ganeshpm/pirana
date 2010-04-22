@@ -3,7 +3,7 @@
 package pirana_modules::PsN;
 
 use strict;
-use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab center_window read_dirs_win win_start);
+use pirana_modules::misc qw(generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(get_psn_info get_psn_help get_psn_nm_versions);
@@ -66,7 +66,7 @@ sub get_psn_nm_versions {
       unless (($line =~ m/Valid choices/gi)||($line =~ m/the default is/i)) {
        	  chomp($line);
        	  unless ($line eq "") {
-       	      $line =~ s/will call //i; # older PsN versions 
+       	      $line =~ s/will call //i; # older PsN versions
        	      my ($nm_name, $nm_loc) = split(/\(/,$line);
        	      my ($nm_loc, $nm_ver) = split (/,/, $nm_loc);
        	      $nm_name =~ s/\s//g;
