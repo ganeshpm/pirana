@@ -6,8 +6,7 @@ use strict;
 use File::stat;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_insert_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
-
+our @EXPORT_OK = qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_insert_model_info db_remove_model_info db_insert_table_info db_remove_table_info db_read_exec_runs db_read_model_info db_read_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 our $db_name = "pirana.dir";
 our $dbargs = {AutoCommit => 0, PrintError => 1};
 
@@ -32,68 +31,68 @@ sub db_rename_model {
 sub db_get_project_info {
 ### Purpose : Get project info from database
 ### Compat  : W+L+
-  my $sql = "SELECT proj_name, descr, modeler, collaborators, start_date, end_date, notes FROM project_info LIMIT 1;";
-  my $dbargs = {AutoCommit => 0, PrintError => 1};
-  my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-  my $db_results = $db -> selectall_arrayref($sql);
+    my $sql = "SELECT proj_name, descr, modeler, collaborators, start_date, end_date, notes FROM project_info LIMIT 1;";
+    my $dbargs = {AutoCommit => 0, PrintError => 1};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    my $db_results = $db -> selectall_arrayref($sql);
     $db -> disconnect ();
-  return($db_results);
+    return($db_results);
 }
 
 sub db_insert_project_info {
 ### Purpose : Insert project info into database
 ### Compat  : W+L+
-  my $proj_record_ref = shift;
-  my %proj_record = %$proj_record_ref;
-  my $keys = join (",", keys(%proj_record));
-  my $values;
-  foreach my $key (keys(%proj_record)) {
-    $values .= "'".$proj_record{$key}."',";
-  }
-  chop ($values);
-  my $sql = "INSERT INTO project_info (".$keys.") VALUES (".$values.")";
-  db_execute ($sql);
+    my $proj_record_ref = shift;
+    my %proj_record = %$proj_record_ref;
+    my $keys = join (",", keys(%proj_record));
+    my $values;
+    foreach my $key (keys(%proj_record)) {
+	$values .= "'".$proj_record{$key}."',";
+    }
+    chop ($values);
+    my $sql = "INSERT INTO project_info (".$keys.") VALUES (".$values.")";
+    db_execute ($sql);
 }
 
 sub db_create_tables {
 ### Purpose : Create tables in the db(pirana.dir) if they are not already created
 ### Compat  : W+L+
-  my @tables = (
-    "CREATE TABLE IF NOT EXISTS model_db (".
-      "model_id VARCHAR(20), date_mod INTEGER, date_res INTEGER, ref_mod VARCHAR(20), ".
-      "descr VARCHAR(80), method VARCHAR(12), ofv DOUBLE, suc VARCHAR(2), cov VARCHAR(2), bnd VARCHAR(2), sig VARCHAR(4), ".
-      "note TEXT, note_small VARCHAR(80), note_color VARCHAR(9), dataset VARCHAR(40)) ",
-   # "ALTER TABLE model_db ADD COLUMN dataset VARCHAR(60)",
-    "CREATE TABLE IF NOT EXISTS table_db (".
-      "table_id VARCHAR(50), date_mod INTEGER, ref_table VARCHAR(50), descr VARCHAR(160), ".
-      "creator VARCHAR(40), link_to_script VARCHAR(80), note TEXT, table_color VARCHAR(9)) ",
-    "CREATE TABLE IF NOT EXISTS executed_runs (".
-      "model_id VARCHAR(20), descr VARCHAR(80), date_executed INTEGER, name_modeler VARCHAR(30), nm_version VARCHAR(20), ".
-      "method VARCHAR(12), exec_where VARCHAR(16), command VARCHAR(120)) ",
-    "CREATE TABLE IF NOT EXISTS project_info (".
-      "proj_name VARCHAR(50), descr VARCHAR(120), modeler VARCHAR(40), collaborators VARCHAR (80), start_date INTEGER, ".
-      "end_date INTEGER, notes TEXT, tstamp TIMESTAMP)",
-    "INSERT INTO project_info (proj_name, descr, modeler, collaborators, start_date, end_date, notes) VALUES (".
-      "('', '', '', '', '', '', '')");
-  if (-w "./") {db_execute_multiple(\@tables);}
+    my @tables = (
+	"CREATE TABLE IF NOT EXISTS model_db (".
+	"model_id VARCHAR(20), date_mod INTEGER, date_res INTEGER, ref_mod VARCHAR(20), ".
+	"descr VARCHAR(80), method VARCHAR(12), ofv DOUBLE, suc VARCHAR(2), cov VARCHAR(2), bnd VARCHAR(2), sig VARCHAR(4), ".
+	"note TEXT, note_small VARCHAR(80), note_color VARCHAR(9), dataset VARCHAR(40)) ",
+	# "ALTER TABLE model_db ADD COLUMN dataset VARCHAR(60)",
+	"CREATE TABLE IF NOT EXISTS table_db (".
+	"table_id VARCHAR(50), date_mod INTEGER, ref_table VARCHAR(50), descr VARCHAR(160), ".
+	"creator VARCHAR(40), link_to_script VARCHAR(80), note TEXT, table_color VARCHAR(9)) ",
+	"CREATE TABLE IF NOT EXISTS executed_runs (".
+	"model_id VARCHAR(20), descr VARCHAR(80), date_executed INTEGER, name_modeler VARCHAR(30), nm_version VARCHAR(20), ".
+	"method VARCHAR(12), exec_where VARCHAR(16), command VARCHAR(120)) ",
+	"CREATE TABLE IF NOT EXISTS project_info (".
+	"proj_name VARCHAR(50), descr VARCHAR(120), modeler VARCHAR(40), collaborators VARCHAR (80), start_date INTEGER, ".
+	"end_date INTEGER, notes TEXT, tstamp TIMESTAMP)",
+	"INSERT INTO project_info (proj_name, descr, modeler, collaborators, start_date, end_date, notes) VALUES (".
+	"('', '', '', '', '', '', '')");
+    if (-w "./") {db_execute_multiple(\@tables);}
 }
 
 sub db_log_execution {
 ### Purpose : Log the starting of runs/PsN-commands to a the database
 ### Compat  : W+L+
-  my ($model, $descr, $nm_type, $where, $command, $modeler) = @_;
-  my $datetime = gmtime();
-  my $SQL = "INSERT INTO executed_runs (model_id, descr, date_executed, name_modeler, method, exec_where, command) VALUES ".
-    "('$model', '$descr', '$datetime', '$modeler', '$nm_type', '$where', '$command')";
-  db_execute ($SQL);
+    my ($model, $descr, $nm_type, $where, $command, $modeler) = @_;
+    my $datetime = gmtime();
+    my $SQL = "INSERT INTO executed_runs (model_id, descr, date_executed, name_modeler, method, exec_where, command) VALUES ".
+	"('$model', '$descr', '$datetime', '$modeler', '$nm_type', '$where', '$command')";
+    db_execute ($SQL);
 }
 
 sub delete_run_results {
 ### Purpose : Delete a NM results file, and delete the results from the database
 ### Compat  : W+L+
-  my $mod = shift;
-  status ("Deleting model results for run ".$mod);
-  db_execute ("DELETE FROM model_db WHERE model_id='".$mod."'");
+    my $mod = shift;
+    status ("Deleting model results for run ".$mod);
+    db_execute ("DELETE FROM model_db WHERE model_id='".$mod."'");
 }
 
 sub db_add_note {
@@ -134,6 +133,7 @@ sub db_execute_multiple {
     $db -> disconnect ();
   }
 }
+
 sub db_insert_table_info {
 ### Purpose : Inserts table information into db (notes/creator etc)
 ### Compat  : W+L+
@@ -145,11 +145,25 @@ sub db_insert_table_info {
   }
 }
 
+sub db_remove_table_info {
+### Purpose : Remove all table info from database
+### Compat  : W+L+
+  my ($table_id) = @_;
+  db_execute ("DELETE FROM table_db WHERE table_id='".$table_id."'");
+}
+
 sub db_insert_model_info {
 ### Purpose : Inserts model information into db (notes/description etc)
 ### Compat  : W+L+
   my ($model_id, $descr, $note) = @_;
   db_execute ("UPDATE model_db SET descr='$descr', note='$note' WHERE model_id='$model_id'");
+}
+
+sub db_remove_model_info {
+### Purpose : Remove all mode info from database
+### Compat  : W+L+
+  my ($model_id) = @_;
+  db_execute ("DELETE FROM model_db WHERE model_id='".$model_id."'");
 }
 
 sub db_add_color {

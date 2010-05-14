@@ -31,7 +31,6 @@ sub generate_zink_file {
   if (-e $filename) {return 1} else {return 0};
 }
 
-
 sub get_active_nodes {
 ### Purpose : Return the CPUs in the PCluster
 ### Compat  : W+L?
