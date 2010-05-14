@@ -19,7 +19,7 @@ sub get_psn_info {
   while (my $line = <OUT>) {
     $psn_text .= $line;
     $flag = $flag + 0.5;
-    if (($psn_command =~ m/execute/gi)&&($flag = int($flag))) {chomp ($psn_text); $psn_text .= "\t"}
+#    if (($psn_command =~ m/execute/gi)&&($flag = int($flag))) {chomp ($psn_text); $psn_text .= "\t"}
   }
   close (OUT);
   return ($psn_text);
@@ -36,7 +36,6 @@ sub get_psn_help {
   while (my $line = <OUT>) {
     $psn_text .= $line;
     $flag = $flag + 0.5;
-    if (($psn_command =~ m/execute/gi)&&($flag = int($flag))) {chomp ($psn_text); $psn_text .= "\t"}
   }
   close (OUT);
   return ($psn_text);

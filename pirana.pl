@@ -53,6 +53,7 @@ if ($os =~ m/MSWin/i) {
   Win32::SetChildShowWindow(0); # don't open new console windows
   require Win32::DriveInfo;     # needed for NM install
 }
+
 our $user = getlogin();
 
 #*** include pirana modules in INC
@@ -84,16 +85,16 @@ our %clients, our %clients_descr; our $active_project; our %vars; our %psn_comma
 our $first_time_flag= 0; our $condensed_model_list = 1;
 
 #*** Read all Pirana modules ***************************************************
-do ($base_dir."/subs.pl");
-use pirana_modules::db        qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_insert_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
+do ($base_dir."/internal/subs.pl");
+do ($base_dir."/internal/subs_custom.pl"); # Custom subroutines
+use pirana_modules::db        qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_remove_model_info db_insert_table_info db_remove_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 use pirana_modules::editor    qw(text_edit_window text_edit_window_build refresh_edit_window save_model);
-use pirana_modules::nm        qw(get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
+use pirana_modules::nm        qw(create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
 use pirana_modules::sge       qw(stop_job qstat_get_nodes_info qstat_get_jobs_info qstat_get_specific_job_info);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
 use pirana_modules::misc      qw(find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs start_command);
-use pirana_modules::misc_tk   qw(message_yesno center_window);
+use pirana_modules::misc_tk   qw(text_window message_yesno center_window);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
-use pirana_modules::R         qw(R_insert_multiple_lines R_create_script_text_box R_create_R_box R_insert_line R_start_process R_stop_process R_run_script);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
 if ($^O =~ m/MSWin32/) {
   require pirana_modules::windows_specific ; #qw(nonmem_priority get_processes);
@@ -107,9 +108,11 @@ $setting{frame2_vis} = 1;
 #*** Windows & Colors **********************************************************
 our $blue           = "#D0F0FF";
 our $pirana_orange  = "#ffEE99";
-our $lighterblue    = "#d3d3e3";
-our $lightblue      = "#b3c3ea";
-our $darkblue       = "#a5b5dc";
+our $lightestblue   = "#d3d3e3";
+our $lighterblue    = "#b3c3ea";
+our $lightblue      = "#4060D0";
+our $darkblue2      = "#4060D0";
+our $darkblue       = "#2040C0";
 our $lightred       = "#FFC9a4";
 our $darkred        = "#efb894";
 our $darkerred      = "#BE5040";
@@ -168,7 +171,10 @@ if ($^O =~ m/MSWin/) {
 }
 
 #*** Menu bar ******************************************************************
+do ($base_dir."/internal/menus.pl");
+do ($base_dir."/internal/menus_custom.pl");
 create_menu_bar();
+menu_bar_add_custom (); # allow developers to easily add menu items (located in internal/menu_custom.pl)
 
 #*** Main Loop ***********************************************************
 $mw -> optionAdd('*BorderWidth' => 1);
