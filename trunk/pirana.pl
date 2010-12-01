@@ -18,9 +18,24 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Piraña.  If not, see <http://www.gnu.org/licenses/>.
 #
+our $debug_mode = 0;
+foreach (@ARGV) {
+  if ($_ =~ m/debug/) {
+    $debug_mode = 1;
+  }
+}
 
+sub pirana_debug {
+  (my $debug_mode, my $text) = @_;
+  if ($debug_mode == 1) {
+    print $text."\n";
+  }
+}
+
+pirana_debug ($debug_mode, "1. Loading basic modules.");
 use strict;                 #
 use Cwd qw (fastgetcwd cwd realpath); # Basic functions
+pirana_debug ($debug_mode, "2. Loading Tk modules.");
 use Tk;                     # Tk
 use Tk::NoteBook;
 use Tk::Balloon;            # Help balloon widget
@@ -31,6 +46,7 @@ use Tk::Text;               # Textarea widget
 use Tk::PlotDataset;        # For DataInspector
 use Tk::LineGraphDataset;   # ..
 use Tk::PNG;
+pirana_debug ($debug_mode, "3. Loading other modules.");
 use File::Copy;             # File info and operations
 use File::stat;             # ..
 use File::Path;             # ..
@@ -42,9 +58,10 @@ use POSIX qw(ceil floor);   # some basic functions
 use DBI;                    # database connection to sqlite
 
 #*** Some parameter initalisation **********************************************
-our $version = "2.3.0b";     # version "Oahu"
+our $version = "2.3.2b";
 our $os      = $^O;
 if ($os =~ m/MSWin/i) {
+  pirana_debug ($debug_mode, "3b. Loading Windows-based modules.");
   require Win32::PerfLib;
   require Win32::Process;
   require Getopt::Std;
@@ -56,12 +73,16 @@ if ($os =~ m/MSWin/i) {
 
 our $user = getlogin();
 
+pirana_debug ($debug_mode, "4. Setting directories.");
 #*** include pirana modules in INC
 eval 'exec $PERLLOCATION/bin/perl -x $0;'
   if 0;
 $| = 1;
 use File::Basename;
 our $base_dir;
+our $home_dir;
+our $portable_mode = 0;
+our $use_scripts = 1;
 our $cwd = fastgetcwd();
 BEGIN{
    $base_dir = &File::Basename::dirname(realpath($0));
@@ -69,30 +90,48 @@ BEGIN{
 }
 
 #*** Set $home directory
-if ($os =~ m/MSWin/i) {
-  if ($ENV{APPDATA} eq "") {
-    our $home_dir = $base_dir;
-  } else {
-    our $home_dir = $ENV{APPDATA}."/pirana";
-  }
-} else {
-  our $home_dir = $ENV{HOME}."/.pirana";
+foreach (@ARGV) {
+    if ($_ =~ m/port/) {
+        $home_dir = $base_dir;
+	mkdir ($base_dir."/ini");
+	$portable_mode = 1;
+    }
+    if ($_ =~ m/noscript/) {
+ 	$use_scripts = 0;
+    }
 }
+if ($portable_mode == 0) {
+    if ($os =~ m/MSWin/i) {
+	if ($ENV{APPDATA} eq "") {
+	    our $home_dir = $base_dir;
+	} else {
+	    our $home_dir = $ENV{USERPROFILE}."/Application Data/pirana";
+	    unless (-d $home_dir) { $home_dir = $base_dir };
+	}
+    } else { # Linux
+	our $home_dir = $ENV{HOME}."/.pirana";
+    }
+}
+
 our %setting, our %setting_descr, our %nm_dirs, our %nm_vers;
 our %software, our %software_descr; our $nm_reg_chosen; our $nm_reg_chosen;
 our %project, our %project_dir, our %project_nr = (); our %scripts; our %scripts_descr;
 our %clients, our %clients_descr; our $active_project; our %vars; our %psn_commands; our %psn_commands_descr;
 our $first_time_flag= 0; our $condensed_model_list = 1;
 
+
 #*** Read all Pirana modules ***************************************************
+pirana_debug ($debug_mode, "5. Loading pirana modules");
+
 do ($base_dir."/internal/subs.pl");
 do ($base_dir."/internal/subs_custom.pl"); # Custom subroutines
+our $base_drive     = base_drive ($base_dir);
 use pirana_modules::db        qw(check_db_file_correct db_rename_model db_get_project_info db_insert_project_info db_create_tables db_log_execution db_read_exec_runs db_read_model_info db_read_table_info db_insert_model_info db_remove_model_info db_insert_table_info db_remove_table_info delete_run_results db_add_note db_add_color db_read_all_model_data db_execute db_execute_multiple);
 use pirana_modules::editor    qw(text_edit_window text_edit_window_build refresh_edit_window save_model);
-use pirana_modules::nm        qw(create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX);
-use pirana_modules::sge       qw(stop_job qstat_get_nodes_info qstat_get_jobs_info qstat_get_specific_job_info);
+use pirana_modules::nm        qw(create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R);
+use pirana_modules::sge       qw(stop_job qstat_get_nodes_info qstat_process_nodes_info qstat_get_jobs_info qstat_process_jobs_info qstat_get_specific_job_info);
 use pirana_modules::pcluster  qw(generate_zink_file get_active_nodes);
-use pirana_modules::misc      qw(find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs start_command);
+use pirana_modules::misc      qw(block_size base_drive get_max_length_in_array find_R get_file_extension make_clean_dir generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs start_command );
 use pirana_modules::misc_tk   qw(text_window message_yesno center_window);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
@@ -101,32 +140,43 @@ if ($^O =~ m/MSWin32/) {
 }
 
 #*** Initialization ************************************************************
+pirana_debug ($debug_mode, "6. Initializing Pirana");
+
 read_log();    # read last settings for Project / NONMEM
 initialize();  # read ini-files: preferences, software, nm-installations etc.
-$setting{frame2_vis} = 1;
 
+pirana_debug ($debug_mode, "7. Setting variables");
 #*** Windows & Colors **********************************************************
 our $blue           = "#D0F0FF";
 our $pirana_orange  = "#ffEE99";
 our $lightestblue   = "#d3d3e3";
 our $lighterblue    = "#b3c3ea";
 our $lightblue      = "#4060D0";
-our $darkblue2      = "#4060D0";
-our $darkblue       = "#2040C0";
+#our $darkblue2      = "#4060D0";
+our $darkblue2      = "#7190c9";
+#our $darkblue       = "#2040C0";
+our $darkblue = "#4271c9";
 our $lightred       = "#FFC9a4";
 our $darkred        = "#efb894";
 our $darkerred      = "#BE5040";
-our $lightyellow    = "#EFEFc7";
+#our $lightyellow    = "#EFEFc7";
+our $lightyellow    = "#ececd4";
+#our $yellow         = "#f8f8e6";
+our $yellow    = "#e3e3e6";
 our $darkyellow     = "#DFDF95";
 our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
-our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
-our $bgcol          = "#ece9d8";
-our $button         = "#dddac9";
-our $abutton        = "#cecbba";
+#our $bgcol          = "#ece9d8";
+our $bgcol          = "#efebe7";
+#our $button         = "#dddac9";
+our $button         = "#dad7d3";
+#our $abutton        = "#cecbba";
+our $abutton        = "#c6c3c0";
 our $status_col     = "#fffdec";
 our $bbw            = 0; # button border width;
+our $dir_bgcol      = "#cbd4e5";
+our $entry_color    = $white;
 if ($^O =~ m/MSWin/i) {
     our $selectcol = $white;
 } else {
@@ -134,7 +184,16 @@ if ($^O =~ m/MSWin/i) {
 };
 our $filter         = "";
 
+#*** Some other variables *****************************************************
+our $full_screen = 0;
+our $show_tab_list = 1;
+our $show_model_info = 1;
+our $process_monitor = 0;
+our $show_console = 1;
+$setting{frame2_vis} = 1;
+
 #*** Main Window ***************************************************************
+pirana_debug ($debug_mode, "8. Building Pirana main window.");
 
 our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 $mw -> setPalette ($bgcol);
@@ -151,7 +210,8 @@ our $models_hlist_width=112;
 our $help = $mw->Balloon();
 
 #*** Load Icons (from http://sourceforge.net/projects/icon-collection **********
-our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>0,-column=>1, -columnspan=>10, -ipadx=>5,-ipady=>0,-sticky=>'nws', -rowspan=>2);
+pirana_debug ($debug_mode, "9. Loading icons to memory.");
+our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>1,-column=>1, -columnspan=>1, -ipadx=>5,-ipady=>0,-sticky=>'nws', -rowspan=>1);
 chdir ($base_dir."/images");
 my @images = <*.gif>;
 chdir ($cwd);
@@ -171,6 +231,8 @@ if ($^O =~ m/MSWin/) {
 }
 
 #*** Menu bar ******************************************************************
+pirana_debug ($debug_mode, "10. Building menu bar.");
+our $mbar;
 do ($base_dir."/internal/menus.pl");
 do ($base_dir."/internal/menus_custom.pl");
 create_menu_bar();
@@ -180,7 +242,9 @@ menu_bar_add_custom (); # allow developers to easily add menu items (located in 
 $mw -> optionAdd('*BorderWidth' => 1);
 $mw -> update();
 
+pirana_debug ($debug_mode, "11. Renewing Pirana interface.");
 renew_pirana();
+
 our $pirana_normal_width = $mw  -> width;
 our $pirana_normal_height = $mw -> height;
 
@@ -188,8 +252,14 @@ if ($first_time_flag==1) { # save to home folder
   $first_time_flag = 0;
   first_time_dialog($user);
 }
-$mw -> resizable( 0, 0);
+
+#$mw -> resizable( 0, 0);
 $mw -> raise;
-MainLoop;
+
+pirana_debug ($debug_mode, "12. Preparing Pirana for use.");
+MainLoop; # Tk: start main window process
+pirana_debug ($debug_mode, "\nPirana closed.");
+
+
 #***********************************************************************
 
