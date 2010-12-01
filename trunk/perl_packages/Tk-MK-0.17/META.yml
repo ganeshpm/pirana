@@ -1,0 +1,14 @@
+--- #YAML:1.0
+name:                Tk-MK
+version:             0.17
+abstract:            Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)
+license:             ~
+generated_by:        ExtUtils::MakeMaker version 6.36
+distribution_type:   module
+requires:     
+    Tk:                            804.027
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
+    version: 1.2
+author:
+    - M. Krause

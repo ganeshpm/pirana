@@ -1,0 +1,146 @@
+Tk-MK version 0.17
+==================
+
+Files in Tk-MK are my personal favorite Tk-add-ons. developed in the
+past as a side effect of several huge perl projects.
+
+
+INCLUDED WIDGETS
+
+	Tk::Buttonplus      - extended Tk::Button with ability to show a bitmap/image AND a text label
+	Tk::HListplus       - extended Tk::HList with movable columns based on ResizeButton.pm
+	Tk::DHList          - extended Tk::HList with data column and ability of sorting, ...  
+	Tk::DTree           - extended Tk::Tree widget with data column and ability of sorting, ... 
+	Tk::Checkbox        - a nice alternative to the standard check-button widget
+	Tk::Optionbox       - a nice alternative to the default MenuButton (multi-level selection)
+	Tk::PopUpSelectBox  - a dialog based selectionlist alternative to Tk::Optionbox (multi-level selection)
+	Tk::Statusbox       - a view-a-status-by-colors widget with flashing ,...
+	Tk::BootSplash      - an improved Splash screen based on Stephen.O.Lidie's Splashscreen.pm
+implicitely used widgets:
+	Tk::HdrResizeButton - an reworked alternative HList-Header-Button (based on Tk::ResizeButton) for resizing
+	Tk::ProgressBarPlus - A clone of the std. Progressbar that supports percentage display (was send to Nick-Ing S.,
+						  but for time reasons he did not manage to put it in the Tk 805.027 release.
+						  Thus as a work-around we have here a renamed clone to avoid namespace conflicts.
+
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+
+DEPENDENCIES
+
+This module requires Tk800.x preferable Tk804.027
+
+
+COPYRIGHT AND LICENCE
+
+This package is free software and is provided "as is"
+without expressed or implied warranty.  It may be used,
+redistributed and/or modified under the terms of the Perl
+(see Perls Artistic License for details).
+
+Copyright (C) 2002 - 2009 Michael Krause KrauseM_AT_gmx_DOT_net
+
+
+
+HISTORY:
+
+ Version 0.01 Initial release
+
+	o modules are running, initial pod is done
+
+ Version 0.02 Update release
+
+	o 2 new modules added Tk::ExtTree, Tk::ExtHList
+	
+
+ Version 0.03 Update release
+
+	o renamed Tk::ExtTree -> Tk::DTree, Tk::ExtHList -> Tk::DHList
+	  for making the names more intuitive
+	  
+	o added 2 new modules added Tk::HListplus, Tk::BootSplash,
+	   (and the stand-alone Tk::ResizeButton for completeness)
+	
+
+ Version 0.04 Update release
+
+	o 1 new module added Tk::Buttonplus - Button with Text AND Image
+
+
+ Version 0.05 Update release
+
+	o enhanced Tk::Checkbox to support user-customizable size
+
+
+ Version 0.06 Update release
+
+	o enhanced Tk::Optionbox - added second hierarchy for the options
+
+
+ Version 0.07 Bugfix release
+
+	o fixed Tk::HListplus - was complaining with Tk 804.xxx
+	o fixed inconsistency in buttonplus-demo
+
+
+ Version 0.08 Update release
+
+	o Update the POD docs
+
+
+ Version 0.09 Update release
+
+	o Update Tk::Optionbox - added TRUE multilevel-selection and validating support
+
+
+ Version 0.10 Update release
+
+	o Update Tk::Optionbox - added loop invocation detection to avoid segviolations
+	o Update Tk::HListplus - based on feedback from Rob Seegel (Thx a lot!) added 'auto-blank last column'
+	o Update Tk::BootSplash - see note below
+
+	o Added the ProgressBarPlus Widget to make 'BootSplash' work for users not using a patched Tk 804 ProgressBar
+
+
+ Version 0.11 Update release
+	 
+	o resolved some CPAN issues
+	o enhanced Tk::Buttonplus - added side default based on option-database	
+
+ Version 0.12 Update release
+	 
+	o enhanced Tk::Optionbox - added quick-popup for non-changed options
+	o 1 new module added Tk::PopUpSelectBox - A scrolled pop-up selection-widget (with MULTI-level selections)
+		useful where a Tk::Optionbox would have too many entries
+
+ Version 0.13 Update release
+	 
+	o Renamed DataHList and DataTree to DHList and DHTree to avoid name-space conflicts in CPAN
+	o Bugfix for Tk::DHList - Deleting the FIRST entry in a DHList messed up the reverse function.
+
+
+0.14 Fri Oct 24 13:50:23 CEST 2008
+	 
+	o resolved some CPAN checker issues
+
+
+0.15 Mon Apr  6 20:19:01 CEST 2009
+	 
+	o resolved issue on ListHeader-Bttn: Double-Click for column resizing should NOT invoke Single-Click-CB
+
+0.16 Mon Apr  6 20:53:44 CEST 2009
+
+	o replacement release for 0.15 (which was incomplete)
+
+0.17 Tue Apr  7 12:26:14 CEST 2009
+
+	o update release - added configuration option forClosedColumnWidth and ResizerAreaWidth
+
+__END__

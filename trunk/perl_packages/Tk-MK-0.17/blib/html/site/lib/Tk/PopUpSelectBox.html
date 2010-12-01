@@ -1,0 +1,253 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::PopUpSelectBox - A new scrolled pop-up selection-widget</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::PopUpSelectBox - A new scrolled pop-up selection-widget</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::PopUpSelectBox - A new scrolled pop-up selection-widget (with MULTI-level selections)</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::PopUpSelectBox</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$current_class</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">@all_classes</span> <span class="operator">=</span> <span class="string">qw(cat dog bird)</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">$demo_xpm</span><span class="operator">;</span>
+        
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+        
+    <span class="comment"># prepare some graphics</span>
+    <span class="variable">setup_pixmap</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="comment"># create a demo </span>
+    <span class="keyword">my</span> <span class="variable">$popupselectbox</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">PopUpSelectBox</span> <span class="operator">(</span>
+        <span class="string">-text</span>     <span class="operator">=&gt;</span> <span class="string">"Class"</span><span class="operator">,</span>
+        <span class="string">-image</span>    <span class="operator">=&gt;</span> <span class="variable">$demo_xpm</span><span class="operator">,</span> <span class="comment"># use this line for personal pics or</span>
+        <span class="comment">#-bitmap  =&gt; '@' . Tk-&gt;findINC('cbxarrow.xbm'));</span>
+        <span class="string">-command</span>  <span class="operator">=&gt;</span> <span class="operator">\&amp;</span><span class="variable">class_cb</span><span class="operator">,</span>
+        <span class="string">-options</span>  <span class="operator">=&gt;</span> <span class="operator">[</span> <span class="variable">@all_classes</span> <span class="operator">]</span><span class="operator">,</span>
+        <span class="string">-variable</span> <span class="operator">=&gt;</span> <span class="operator">\</span><span class="variable">$current_class</span><span class="operator">,</span> 
+                <span class="string">-tearoff</span>  <span class="operator">=&gt;</span> <span class="string">'1'</span><span class="operator">,</span>
+                <span class="string">-listmaxheight</span> <span class="operator">=&gt;</span> <span class="number">10</span><span class="operator">,</span>
+                <span class="string">-activate</span> <span class="operator">=&gt;</span> <span class="string">'0'</span><span class="operator">,</span>
+       <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">;</span>
+        
+    <span class="variable">Tk::MainLoop</span><span class="operator">;</span>
+        
+    <span class="keyword">sub</span><span class="variable"> class_cb
+    </span><span class="operator">{</span>
+        <span class="keyword">print</span> <span class="string">"class_cb called with [</span><span class="variable">@_</span><span class="string">], \$current_class = &gt;</span><span class="variable">$current_class</span><span class="string">&lt;\n"</span><span class="operator">;</span>
+    <span class="operator">}</span>
+    <span class="keyword">sub</span><span class="variable"> setup_pixmap
+    </span><span class="operator">{</span>
+        <span class="keyword">my</span> <span class="variable">$cbxarrow_data</span> <span class="operator">=</span> <span class="operator">&lt;&lt;</span><span class="default">'cbxarrow_EOP'</span><span class="operator">;</span><span class="string">
+        /* XPM */
+        static char *cbxarrow[] = {
+        "11 14 2 1",
+        ". c none",
+        "  c black",
+        "...........",
+        "....   ....",
+        "....   ....",
+        "....   ....",
+        "....   ....",
+        "....   ....",
+        ".         .",
+        "..       ..",
+        "...     ...",
+        "....   ....",
+        "..... .....",
+        "...........",
+        ".         .",
+        ".         ."
+        };
+    </span><span class="default">cbxarrow_EOP</span>
+</pre>
+<pre>
+        <span class="variable">$demo_xpm</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Pixmap</span><span class="operator">(</span><span class="string">-data</span> <span class="operator">=&gt;</span> <span class="variable">$cbxarrow_data</span><span class="operator">);</span>
+            <span class="operator">}</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>A new dialog style widget that can replace the custom Optionbox whenever the itemlist is too long.
+Useful in applications that want to use a more flexible option menu. 
+It's a 1:1 replacement for the custom Optionbox, supporting the same Options / commands.</p>
+<p>You can tie a scalar-value to the Optionbox widget, enable/disable it,
+assign a callback, that is invoked each time the Optionbox is changed,
+as well as set Option-values and configure any of the options
+understood by Tk::Frame(s) like -relief, -bg, ... .
+(see docs of TK::Optionmenu) for details</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="set_option" class="item"><strong>set_option()</strong></a></strong></dt>
+
+<dd>
+<p>'set_option($newvalue)' allows to set/reset the widget methodically,
+$newvalue will be aplied to the labeltext (if visible) and the internal
+variable regardless if it is a list previously store in options.</p>
+<p>NOTE: You should prefer interacting with the widget via a variable.</p>
+</dd>
+<dt><strong><a name="add_options" class="item"><strong>add_options()</strong></a></strong></dt>
+
+<dd>
+<p>'add_options(@newoptions)' allows to enter additonal options that will be
+displayed in the pull-down menu list.</p>
+<p>You should prefer to use a Configure ('-options' =&gt; ...).</p>
+<p>NOTE: Unless You specify -activate =&gt; 0 for the widget each time you use
+add_options the first item will be set to be the current one and any assigned
+callback gets called.</p>
+</dd>
+<dt><strong><a name="popup" class="item"><strong>popup()</strong></a></strong></dt>
+
+<dd>
+<p>'popup()' allows to immediately popup the menu to force the user
+to do some selection.</p>
+</dd>
+<dt><strong><a name="itemtable" class="item"><strong>itemtable()</strong></a></strong></dt>
+
+<dd>
+<p>'itemtable()' retrieves a list of all current selection items.
+Requesting a listcontext retrieves a label/value based hash, retrieving
+a scalar retrieves a hash-ref. NOTE the <strong>-separator</strong> setting for
+the hierarchical delimiter wherever applied.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="variable3" class="item"><strong>-variable</strong></a></strong></dt>
+
+<dd>
+<p>'-variable' allows to specify a reference to a scalar-value.
+Each time the widget changes by user interaction, the variable
+is changed too. Every variable change is immediately mapped in the
+widget too.</p>
+</dd>
+<dt><strong><a name="command5" class="item"><strong>-command</strong></a></strong></dt>
+
+<dd>
+<p>'-command' can be used to supply a callback for processing after
+each change of the Option value.
+This callback receives as parameters 'current' value + label + full-label
+for hierarcical (sub)lists. NOTE the <strong>-separator</strong> setting for
+the hierarchical delimiter applied for full-label.</p>
+</dd>
+<dt><strong><a name="image3" class="item"><strong>-image</strong></a></strong></dt>
+
+<dd>
+<p>'-image' can be used to supply a personal bitmap for the menu-button.
+In difference to the original Optionmenu the std. menu-indicator is
+switched off, if a graphic/bitmap is used , although it might
+be re-enabled manually with a <strong>'-indicatoron =\</strong> 1'&gt; setting.
+If no image and no bitmap is specified the text given with <strong>'-text'</strong>
+or the current selected optiontext is displayed in the button.</p>
+</dd>
+<dt><strong><a name="options2" class="item"><strong>-options</strong></a></strong></dt>
+
+<dd>
+<p>'-options' expects a reference to a list of options.</p>
+<p>plain format: label, label, [ label, value ], [ label, value ], [ label, value ], ...
+multi-level selection: The methodology is the same as before:
+Whenever instead of a label an Array-reference is found it is suggested as a subitem-list.
+It is poosible to mix plain items, items with spec'd values other than the label in any level.
+example: label, label, [ label, value ], [[keylabel, \@subopts], undef], [ label, value ],
+See the supplied example for further information.</p>
+</dd>
+<dt><strong><a name="activate2" class="item"><strong>-activate</strong></a></strong></dt>
+
+<dd>
+<p>'-activate' expects 0/1 and rules whether the first item applied with -options gets
+set 'current'. see NOTE above.</p>
+</dd>
+<dt><strong><a name="listmaxheight_or_rows" class="item"><strong>-listmaxheight</strong> or <strong>-rows</strong></a></strong></dt>
+
+<dd>
+<p>'-listmaxheight' defines the height of the selection list. default is 20.</p>
+</dd>
+<dt><strong><a name="separator2" class="item"><strong>-separator</strong></a></strong></dt>
+
+<dd>
+<p>'-separator' defines the separator character that is used for the internal representation
+of the tree delimiter. Invoking a callback via set_options the target function get [value,
+label &amp; full-hierarchical label]. The f-h-label uses the specified separator. Default is '.'</p>
+</dd>
+<dt><strong><a name="autolistwidth" class="item"><strong>-autolistwidth</strong></a></strong></dt>
+
+<dd>
+<p>'-autolistwidth' expects 0/1 and defines whether the pop'd up list will dynamically adapt its width.</p>
+</dd>
+<dt><strong><a name="autolimitheight" class="item"><strong>-autolimitheight</strong></a></strong></dt>
+
+<dd>
+<p>'-autolistwidth' expects 0/1 and defines whether the pop'd up list will not be heigher than the value
+definable via '-listmaxheight'</p>
+</dd>
+<dt><strong><a name="validatecommand2" class="item"><strong>-validatecommand</strong></a></strong></dt>
+
+<dd>
+<p>'-validatecommand' defines a Callback function to evaluate the current selection.
+It is invoked with <strong>the_widget</strong>, <strong>value</strong>, <strong>label</strong>, <strong>full_label</strong>, <strong>old_value</strong> and <strong>old_label</strong>.
+Returning <strong>FALSE</strong> will reject the current selection.</p>
+</dd>
+</dl>
+<p>Please see the TK:Optionmenu docs for details on all other aspects
+of these widgets.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V0.02  (C) March 2008</p>
+
+</body>
+
+</html>

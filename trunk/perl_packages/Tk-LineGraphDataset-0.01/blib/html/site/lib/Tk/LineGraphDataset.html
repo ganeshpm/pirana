@@ -1,0 +1,116 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>LinePlotDataset - An Object into which to store data to be plotted by the LineGraph widget.</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>LinePlotDataset - An Object into which to store data to be plotted by the LineGraph widget.</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#constructor">CONSTRUCTOR</a></li>
+	<li><a href="#example">EXAMPLE</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#keywords">KEYWORDS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>LinePlotDataset is an object into which data and meta data can be stored.  
+This object can be plotted by the LineGraph widget.</p>
+<p>
+</p>
+<hr />
+<h1><a name="constructor">CONSTRUCTOR</a></h1>
+<p>new(-yArray =&gt; Y data array
+    -name =&gt; dataset name,
+    -yAxis =&gt; &quot;Y|Y1&quot;,
+    -color =&gt; line Color,
+    -xArray =&gt; X data array);</p>
+<p>The Y array data and the dataset name are required.  Other parameters are optional.
+The yAxis defaults to the Y (left hand) axis.  The color for the graph of the dataset defaults
+to one the plot default colors.  The X array data defaults to the integers (0 .. size of yArray).</p>
+<p>The Dataset objects copies the data arrays.</p>
+<p>
+</p>
+<hr />
+<h1><a name="example">EXAMPLE</a></h1>
+<pre>
+     <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+     <span class="keyword">use</span> <span class="variable">Tk::LineGraph</span><span class="operator">;</span>
+     <span class="keyword">use</span> <span class="variable">Tk::LineGraphDataset</span><span class="operator">;</span>
+</pre>
+<pre>
+     <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">;</span>
+</pre>
+<pre>
+     <span class="keyword">my</span> <span class="variable">$cp</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">LineGraph</span><span class="operator">(</span><span class="string">-width</span><span class="operator">=&gt;</span><span class="number">500</span><span class="operator">,</span> <span class="string">-height</span><span class="operator">=&gt;</span><span class="number">500</span><span class="operator">,</span> <span class="string">-background</span> <span class="operator">=&gt;</span> <span class="variable">snow</span><span class="operator">)-&gt;</span><span class="variable">grid</span><span class="operator">;</span>
+</pre>
+<pre>
+     <span class="keyword">my</span> <span class="variable">@yArray</span> <span class="operator">=</span> <span class="operator">(</span><span class="number">1</span><span class="operator">..</span><span class="number">5</span><span class="operator">,</span><span class="number">11</span><span class="operator">..</span><span class="number">18</span><span class="operator">,</span><span class="number">22</span><span class="operator">..</span><span class="number">23</span><span class="operator">,</span><span class="number">99</span><span class="operator">..</span><span class="number">300</span><span class="operator">,</span><span class="number">333</span><span class="operator">..</span><span class="number">555</span><span class="operator">,</span><span class="number">0</span><span class="operator">,</span><span class="number">0</span><span class="operator">,</span><span class="number">0</span><span class="operator">,</span><span class="number">0</span><span class="operator">,</span><span class="number">600</span><span class="operator">,</span><span class="number">600</span><span class="operator">,</span><span class="number">600</span><span class="operator">,</span><span class="number">600</span><span class="operator">,</span><span class="number">599</span><span class="operator">,</span><span class="number">599</span><span class="operator">,</span><span class="number">599</span><span class="operator">);</span>
+     <span class="keyword">my</span> <span class="variable">$ds</span> <span class="operator">=</span> <span class="variable">LineGraphDataset</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">(</span><span class="string">-yData</span><span class="operator">=&gt;\</span><span class="variable">@yArray</span><span class="operator">,</span><span class="string">-name</span><span class="operator">=&gt;</span><span class="string">"setOne"</span><span class="operator">);</span>
+     <span class="variable">$cp</span><span class="operator">-&gt;</span><span class="variable">linePlot</span><span class="operator">(</span><span class="string">-dataset</span><span class="operator">=&gt;</span><span class="variable">$ds</span><span class="operator">);</span>
+</pre>
+<pre>
+     <span class="variable">MainLoop</span><span class="operator">;</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="get" class="item"><strong>get(option);</strong></a></strong></dt>
+
+<dd>
+<pre>
+
+    Returns the current value of the option.   Options are listed in the constructor.</pre>
+</dd>
+<dt><strong><a name="set" class="item"><strong>set(option , value);</strong></a></strong></dt>
+
+<dd>
+<pre>
+    Sets the option to value.  Options are listed in the constructor.</pre>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Tom Clifford (<a href="mailto:Still_Aimless@yahoo.com">Still_Aimless@yahoo.com</a>)</p>
+<p>Copyright (C) Tom Clifford.  All rights reserved.</p>
+<p>This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.</p>
+<p>
+</p>
+<hr />
+<h1><a name="keywords">KEYWORDS</a></h1>
+<p>Graph 2D Axis Graph Dataset</p>
+
+</body>
+
+</html>

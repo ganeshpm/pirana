@@ -1,0 +1,150 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::Buttonplus - Enhanced Button widget with a bitmap/image B&lt;AND&gt; a text label</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::Buttonplus - Enhanced Button widget with a bitmap/image B&lt;AND&gt; a text label</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::Buttonplus - Enhanced Button widget with a bitmap/image <strong>AND</strong> a text label</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::Buttonplus</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$downangle_data</span> <span class="operator">=</span> <span class="operator">&lt;&lt;</span><span class="default">'downangle_EOP'</span><span class="operator">;</span><span class="string">
+    /* XPM */
+    static char *arrow[] = {
+    "14 9 2 1",
+    ". c none",
+    "X c black",
+    "..............",
+    "..............",
+    ".XXXXXXXXXXXX.",
+    "..XXXXXXXXXX..",
+    "...XXXXXXXX...",
+    "....XXXXXX....",
+    ".....XXXX.....",
+    "......XX......",
+    "..............",
+    };
+    </span><span class="default">downangle_EOP</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$downangle</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Pixmap</span><span class="operator">(</span> <span class="string">-data</span> <span class="operator">=&gt;</span> <span class="variable">$downangle_data</span><span class="operator">);</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$text</span> <span class="operator">=</span> <span class="string">'bttn-text'</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">$bt1</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Buttonplus</span><span class="operator">(</span>
+        <span class="string">-text</span> <span class="operator">=&gt;</span> <span class="string">'Enable'</span><span class="operator">,</span>
+        <span class="comment">#-image =&gt; $downangle,</span>
+        <span class="string">-bitmap</span> <span class="operator">=&gt;</span> <span class="string">'error'</span><span class="operator">,</span>
+        <span class="string">-command</span> <span class="operator">=&gt;</span> <span class="operator">\&amp;</span><span class="variable">bttn_pressed_cb1</span><span class="operator">,</span>
+        <span class="comment">#-borderwidth =&gt; '12',</span>
+        <span class="comment">#-relief =&gt; 'ridge',</span>
+        <span class="comment">#-bg =&gt; 'orange',</span>
+        <span class="comment">#-fg =&gt; 'green',</span>
+        <span class="string">-textvariable</span> <span class="operator">=&gt;</span> <span class="operator">\</span><span class="variable">$text</span><span class="operator">,</span>
+        <span class="comment">#-side =&gt; 'bottom',</span>
+        <span class="comment">#-activeforeground =&gt; 'skyblue',</span>
+    <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">(</span><span class="string">-padx</span> <span class="operator">=&gt;</span> <span class="number">50</span><span class="operator">,</span> <span class="string">-pady</span> <span class="operator">=&gt;</span> <span class="number">50</span><span class="operator">);</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$bt2</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Button</span><span class="operator">(</span>
+            <span class="string">-text</span> <span class="operator">=&gt;</span> <span class="string">'Disable'</span><span class="operator">,</span>
+            <span class="string">-command</span> <span class="operator">=&gt;</span> <span class="operator">[</span><span class="operator">\&amp;</span><span class="variable">bttn_pressed_cb2</span><span class="operator">,</span> <span class="variable">$bt1</span><span class="operator">]</span><span class="operator">,</span>
+            <span class="comment">#-image =&gt; $downangle,</span>
+    <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">;</span>
+</pre>
+<pre>
+        
+            <span class="variable">Tk::MainLoop</span><span class="operator">;</span>
+        
+            <span class="keyword">sub</span><span class="variable"> bttn_pressed_cb1
+            </span><span class="operator">{</span>
+        <span class="keyword">print</span> <span class="string">"bttn 1 pressed.\n"</span><span class="operator">;</span>
+</pre>
+<pre>
+    <span class="operator">}</span>
+    <span class="keyword">sub</span><span class="variable"> bttn_pressed_cb2
+    </span><span class="operator">{</span>
+        <span class="keyword">print</span> <span class="string">"bttn 2 pressed.\n"</span><span class="operator">;</span>
+        <span class="variable">$_</span><span class="operator">[</span><span class="number">0</span><span class="operator">]</span><span class="operator">-&gt;</span><span class="variable">configure</span><span class="operator">(</span><span class="string">-state</span> <span class="operator">=&gt;</span> <span class="operator">(</span><span class="variable">$_</span><span class="operator">[</span><span class="number">0</span><span class="operator">]</span><span class="operator">-&gt;</span><span class="variable">cget</span><span class="operator">(</span><span class="string">'-state'</span><span class="operator">)</span> <span class="keyword">eq</span> <span class="string">'normal'</span> <span class="operator">?</span> <span class="string">'disabled'</span> <span class="operator">:</span> <span class="string">'normal'</span><span class="operator">));</span>
+    <span class="operator">}</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>A Button widget that can be used as a replacement for the
+standard Button, if you need to display a bitmap/image <strong>AND</strong> a text label.</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<p>for details on supported methods  - see <strong>Tk::Button</strong></p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="side" class="item"><strong>-side</strong></a></strong></dt>
+
+<dd>
+<p>-side =&gt; '<em>value</em>' allows to specify the side at which the bitmap/image is 
+positioned. Value may be one of <strong>top</strong>, <strong>left</strong>, <strong>bottom</strong> or <strong>right</strong>.</p>
+<p>for details on all other options  - see <strong>Tk::Button</strong></p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V0.2  (C) 2004, - 2007</p>
+
+</body>
+
+</html>

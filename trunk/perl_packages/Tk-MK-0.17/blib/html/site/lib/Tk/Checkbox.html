@@ -1,0 +1,151 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::Checkbox - Yet Another Checkbutton widget</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::Checkbox - Yet Another Checkbutton widget</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::Checkbox - Yet Another Checkbutton widget (with a sizable marker)</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::Checkbox</span><span class="operator">;</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$var</span> <span class="operator">=</span> <span class="string">'Up'</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$cb1</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Checkbox</span> <span class="operator">(</span>
+        <span class="string">-variable</span> <span class="operator">=&gt;</span> <span class="operator">\</span><span class="variable">$var</span><span class="operator">,</span>
+        <span class="string">-command</span>  <span class="operator">=&gt;</span> <span class="operator">\&amp;</span><span class="variable">test_cb</span><span class="operator">,</span>
+        <span class="string">-onvalue</span>  <span class="operator">=&gt;</span> <span class="string">'Up'</span><span class="operator">,</span>
+        <span class="string">-offvalue</span> <span class="operator">=&gt;</span> <span class="string">'Down'</span><span class="operator">,</span>
+        <span class="comment">#-noinitialcallback =&gt; '1',</span>
+                <span class="comment">#-size =&gt; '8',</span>
+       <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">;</span>
+        
+    <span class="variable">Tk::MainLoop</span><span class="operator">;</span>
+        
+    <span class="keyword">sub</span><span class="variable"> test_cb
+    </span><span class="operator">{</span>
+        <span class="keyword">print</span> <span class="string">"test_cb called with [</span><span class="variable">@_</span><span class="string">], \$var = &gt;</span><span class="variable">$var</span><span class="string">&lt;\n"</span><span class="operator">;</span>
+    <span class="operator">}</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>Another check button style widget that uses a check mark in a fixed
+box. Useful as a boolean field. 
+It's based on Damion K. Wilson's version from Tk-DKW-0.03, suitable
+for perl Tk800.x (developed with Tk800.024).</p>
+<p>You can tie a scalar-value to the Checkbox widget, enable/disable it,
+assign a callback, that is invoked each time the Checkbox is changed,
+as well as set ON- and OFF-values and configure any of the options
+understood by Tk::Frame(s) like -relief, -bg, ... .</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="set" class="item"><strong>set()</strong></a></strong></dt>
+
+<dd>
+<p>'set($newvalue)' allows to set/reset the the widget methodically,
+$newvalue must be either 'onvalue' or 'offvalue'.</p>
+<p>You should prefer interacting with the widget via a variable.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="variable" class="item"><strong>-variable</strong></a></strong></dt>
+
+<dd>
+<p>'-variable' allows to specify a reference to a scalar-value.
+Each time the widget changes by user interaction, the variable
+is changed too. Every variable change is immediately mapped in the
+widget too.</p>
+</dd>
+<dt><strong><a name="command" class="item"><strong>-command</strong></a></strong></dt>
+
+<dd>
+<p>'-command' can be used to supply a callback for processing after
+each change of the Checkbox value.</p>
+</dd>
+<dt><strong><a name="onvalue" class="item"><strong>-onvalue</strong></a></strong></dt>
+
+<dd>
+<p>'-onvalue' can be used to supply a value that is used/returned,
+if the checkmark is 'checked'. default is '1'.</p>
+</dd>
+<dt><strong><a name="offvalue" class="item"><strong>-offvalue</strong></a></strong></dt>
+
+<dd>
+<p>'-offvalue' is the opposite of 'onvalue', it isused/returned,
+if the checkmark is 'unchecked'. default is '0'.</p>
+</dd>
+<dt><strong><a name="noinitialcallback" class="item"><strong>-noinitialcallback</strong></a></strong></dt>
+
+<dd>
+<p>'-noinitialcallback' can be used to suppress the invocation of an (assigned)
+callback, immediate after a (new) variable has been configured with -variable.</p>
+</dd>
+<dt><strong><a name="size" class="item"><strong>-size</strong></a></strong></dt>
+
+<dd>
+<p>'-size' can be used to specify the widget- (and checker) size (default 15 pt)</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V2.6  (C) April 2007</p>
+
+</body>
+
+</html>
