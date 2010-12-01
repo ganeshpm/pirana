@@ -1,0 +1,181 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::BootSplash - wrapper for the common Tk::SplashScreen</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::BootSplash - wrapper for the common Tk::SplashScreen</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::BootSplash - wrapper for the common Tk::SplashScreen</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::BootSplash</span><span class="operator">;</span>
+</pre>
+<pre>
+    <span class="variable">$bootpicture</span> <span class="operator">=</span> <span class="variable">$main</span><span class="operator">-&gt;</span><span class="variable">Pixmap</span><span class="operator">(</span><span class="string">-file</span> <span class="operator">=&gt;</span> <span class="string">"xxx.xpm"</span><span class="operator">);</span> 
+    <span class="variable">SetupBootSplash</span><span class="operator">(</span>
+       <span class="string">-totaltime</span> <span class="operator">=&gt;</span> <span class="string">'5000'</span><span class="operator">,</span> <span class="comment"># time is msecs</span>
+       <span class="string">-parent</span> <span class="operator">=&gt;</span> <span class="variable">$main</span><span class="operator">,</span>
+       <span class="string">-application_name</span> <span class="operator">=&gt;</span> <span class="variable">$app_name</span><span class="operator">,</span>
+       <span class="string">-size</span> <span class="operator">=&gt;</span> <span class="string">'60'</span><span class="operator">,</span>
+       <span class="string">-image</span> <span class="operator">=&gt;</span> <span class="variable">$bootpicture</span><span class="operator">,</span>
+       <span class="string">-width</span> <span class="operator">=&gt;</span> <span class="string">'208'</span><span class="operator">,</span>
+       <span class="string">-height</span> <span class="operator">=&gt;</span> <span class="string">'120'</span><span class="operator">,</span>
+       <span class="string">-x1</span> <span class="operator">=&gt;</span> <span class="string">'10'</span><span class="operator">,</span> <span class="string">-y1</span> <span class="operator">=&gt;</span> <span class="string">'4'</span><span class="operator">,</span>  <span class="comment"># Line 1 Txt 'Booting'</span>
+       <span class="string">-x2</span> <span class="operator">=&gt;</span> <span class="string">'4'</span><span class="operator">,</span>  <span class="string">-y2</span> <span class="operator">=&gt;</span> <span class="string">'10'</span><span class="operator">,</span> <span class="comment"># Application Name in HUGE Letters</span>
+       <span class="string">-x3</span> <span class="operator">=&gt;</span> <span class="string">'20'</span><span class="operator">,</span> <span class="string">-y3</span> <span class="operator">=&gt;</span> <span class="string">'87'</span><span class="operator">,</span> <span class="comment"># Line 3 TxtCurrent bootphase</span>
+    <span class="operator">);</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This module is a fully customizable wrapper for the common Tk:SplashScreen, which can
+be used to ease handling of a standardized boot splash screen with picture,
+texts and a progress bar. (see <em>Tk::SplashScreen</em> for details).</p>
+<p>NOTE: This module is less a gimmick than a feature, since we
+need to wait some time until all the Windows and/or Widgets
+are layed out in their final positions/sizes. If we won't
+wait we'd run the risk of having them messed up on the same position.</p>
+<p>The TOTALTIME is the maximum time the Splash is shown.</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="setupbootsplash" class="item"><strong>SetupBootSplash()</strong></a></strong></dt>
+
+<dd>
+<p>'SetupBootSplash()' allows to intialize / configure the upcoming Splashsceen.
+See <em>Options</em> for a detailed description of the parameters understood.</p>
+</dd>
+<dt><strong><a name="setbootphase" class="item"><strong>SetBootPhase()</strong></a></strong></dt>
+
+<dd>
+<p><a href="#setbootphase"><code>SetBootPhase()</code></a> Sets a new Bootphase Text and the
+belonging border in percent (0..100). Ex.: You can specify 20 (%) as the new border
+for the next call to <a href="#waitsplash"><code>WaitSplash()</code></a>.</p>
+</dd>
+<dt><strong><a name="waitsplash" class="item"><strong>WaitSplash()</strong></a></strong></dt>
+
+<dd>
+<p><a href="#waitsplash"><code>WaitSplash()</code></a> will delay the execution for faster (external) setup operations.
+It will either keep waiting until the current applied border is reached
+(and concurrently increase the progress-bar by 1%) or just do nothing.</p>
+</dd>
+<dt><strong><a name="updatesplash" class="item"><strong>UpdateSplash()</strong></a></strong></dt>
+
+<dd>
+<p><a href="#updatesplash"><code>UpdateSplash()</code></a> will promote any new bootphase and or current percentage
+using <strong>SetBootPhase()</strong> on screen. It may be used for spreading in any
+external custom-initialization code to keep the Splash-texts up-to-date.</p>
+</dd>
+<dt><strong><a name="finalizesplash" class="item"><strong>FinalizeSplash()</strong></a></strong></dt>
+
+<dd>
+<p><a href="#finalizesplash"><code>FinalizeSplash()</code></a> is a helper function for the Boot-Splash-Screen finalization.
+It will necessary wait until the TOTALTIME is reached and safely shutdown
+the Splash afterwards.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="parent" class="item"><strong>-parent</strong></a></strong></dt>
+
+<dd>
+<p>'-parent' allows to specify a reference to a valid parent window.
+In almost every case this will be the toplevel reference,
+received by MainWindow::-&gt;<code>new()</code>.</p>
+</dd>
+<dt><strong><a name="application_name" class="item"><strong>-application_name</strong></a></strong></dt>
+
+<dd>
+<p>'-application_name' can be used to supply the Name of the application.
+It will be displayed in a dithred font across the BootImage.
+Note: Currently the <strong>size</strong> has to be adapted manually to the imagesize
+with the <strong>-size</strong> option.</p>
+</dd>
+<dt><strong><a name="image" class="item"><strong>-image</strong></a></strong></dt>
+
+<dd>
+<p>'-image' must be used to supply a reference to a valid pixmap, such as
+generated with $main-&gt;Pixmap( -file =&gt; &quot;xxx.xpm&quot;) .</p>
+</dd>
+<dt><strong><a name="width" class="item"><strong>-width</strong></a></strong></dt>
+
+<dd>
+<p>'-width' current width of the SplashScreen, should match to used image-size.</p>
+</dd>
+<dt><strong><a name="height" class="item"><strong>-height</strong></a></strong></dt>
+
+<dd>
+<p>'-height' current height of the SplashScreen, should match to used image-size.</p>
+</dd>
+<dt><strong><a name="x1_y1" class="item"><strong>-x1</strong>, <strong>-y1</strong></a></strong></dt>
+
+<dd>
+<p>'-x1, -y1' must be used to define the x/y Position of the Line1 Text('Booting...').</p>
+</dd>
+<dt><strong><a name="x2_y2" class="item"><strong>-x2</strong>, <strong>-y2</strong></a></strong></dt>
+
+<dd>
+<p>'-x2, -y2' must be used to define the x/y Position of the Line2 Text(ApplicationName).</p>
+</dd>
+<dt><strong><a name="x3_y3" class="item"><strong>-x3</strong>, <strong>-y3</strong></a></strong></dt>
+
+<dd>
+<p>'-x3, -y3' must be used to define the x/y Position of the Line3 Text(Current BootPhase).</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V1.0  (C) December 2003</p>
+
+</body>
+
+</html>

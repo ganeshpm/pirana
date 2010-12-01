@@ -1,0 +1,224 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::DHList - A HList widget with a visible/hidden data column</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::DHList - A HList widget with a visible/hidden data column</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::DHList - A HList widget with a visible/hidden data column</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::DHList</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="comment">#my $listbox = $mw-&gt;DHList(</span>
+    <span class="keyword">my</span> <span class="variable">$listbox</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Scrolled</span><span class="operator">(</span><span class="string">'DHList'</span><span class="operator">,</span> 
+        <span class="string">-scrollbars</span>          <span class="operator">=&gt;</span> <span class="string">'e'</span><span class="operator">,</span>
+        <span class="string">-cursor</span>              <span class="operator">=&gt;</span> <span class="string">'right_ptr'</span><span class="operator">,</span>
+        <span class="string">-relief</span>              <span class="operator">=&gt;</span> <span class="string">'sunken'</span><span class="operator">,</span>
+        <span class="string">-borderwidth</span>         <span class="operator">=&gt;</span> <span class="string">'2'</span><span class="operator">,</span>
+        <span class="string">-width</span>               <span class="operator">=&gt;</span> <span class="string">'10'</span><span class="operator">,</span>  <span class="comment"># columns</span>
+        <span class="string">-height</span>              <span class="operator">=&gt;</span> <span class="string">'15'</span><span class="operator">,</span>  <span class="comment"># lines</span>
+        <span class="string">-background</span>          <span class="operator">=&gt;</span> <span class="string">'orange'</span><span class="operator">,</span>
+        <span class="string">-selectmode</span>          <span class="operator">=&gt;</span> <span class="string">'single'</span><span class="operator">,</span>
+                <span class="string">-sizecmd</span>             <span class="operator">=&gt;</span> <span class="operator">\&amp;</span><span class="variable">size_cb</span><span class="operator">,</span>
+                <span class="comment">#new options</span>
+        <span class="string">-viewtype</span>            <span class="operator">=&gt;</span> <span class="string">'withdata'</span><span class="operator">,</span>
+                <span class="string">-datastyle</span>           <span class="operator">=&gt;</span> <span class="variable">$datastyle</span><span class="operator">;</span>
+                <span class="string">-databackground</span>      <span class="operator">=&gt;</span> <span class="string">'skyblue'</span><span class="operator">,</span>
+        <span class="string">-numeric_primary_sort</span>   <span class="operator">=&gt;</span> <span class="string">'0'</span><span class="operator">,</span>
+        <span class="string">-numeric_secondary_sort</span> <span class="operator">=&gt;</span> <span class="string">'1'</span><span class="operator">,</span>
+    <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">;</span>
+</pre>
+<pre>
+        
+            <span class="variable">Tk::MainLoop</span><span class="operator">;</span>
+        
+            <span class="keyword">sub</span><span class="variable"> add_data
+            </span><span class="operator">{</span>
+        <span class="comment"># 1) insert a complete array with texts and data, keys become 'visible' entry,</span>
+        <span class="comment"># values are stored as data and are shown in transient column.</span>
+        <span class="variable">$listbox</span><span class="operator">-&gt;</span><span class="variable">add</span><span class="operator">(</span><span class="variable">$key</span><span class="operator">,</span> <span class="string">-data</span> <span class="operator">=&gt;</span> <span class="string">'i02'</span><span class="operator">,</span>
+                                        <span class="string">-itemtype</span> <span class="operator">=&gt;</span> <span class="string">'imagetext'</span><span class="operator">,</span>
+                                        <span class="string">-text</span> <span class="operator">=&gt;</span> <span class="string">'Dummy'</span><span class="operator">,</span>
+                                        <span class="string">-image</span> <span class="operator">=&gt;</span> <span class="variable">$xpms</span><span class="operator">{</span><span class="string">dummy</span><span class="operator">}</span><span class="operator">,</span>
+                                        <span class="comment">#-datastyle =&gt; $datastyle,</span>
+                <span class="operator">);</span>
+           <span class="operator">}</span>
+           <span class="keyword">sub</span><span class="variable"> size_cb
+           </span><span class="operator">{</span>
+              <span class="keyword">print</span> <span class="string">"we have resized\n"</span><span class="operator">;</span>
+           <span class="operator">}</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>A HList derived widget that offers several add-on functions like in-place-editing,
+sorting, reordering and inserting/retrieving of item text &amp; data, 
+suitable for perl Tk800.x (developed with Tk800.024).</p>
+<p>You can insert item-texts or item-text/-value pair/s into the DHList widget with
+the standard-like  <strong>add()</strong> method .
+The <strong>delete</strong> removes visible list-items as well as the associated data.</p>
+<p><strong>get_item()</strong>, <strong>get_item_text()</strong>, <strong>get_item_value()</strong> retrieve either a scalar or lists,
+depending on the context it was invoked. In scalar mode they return
+the first item only (/first item-text/-text/-value/). In list context
+they return the text AND the belonging data.</p>
+<p><strong>getcurselection()</strong>, <strong>getcurselection_text()</strong>, <strong>getcurselection_value()</strong>,
+and <strong>getcurselection_index()</strong> also retrieve either a scalar or a list,
+depending on the context but for the currently selected listitem. 
+For scalar mode same rule applies as for <strong>get_item</strong>.</p>
+<p><strong>reverse()</strong> reverses the whole list and all item values.</p>
+<p><strong>sort()</strong> sorts the whole list alphanumerical and reorders and all items and belonging</p>
+<p><strong>Configure()</strong> understands the new editing-related options <strong>-editactivationEvent</strong>,
+<strong>-editfinishonLeave</strong>, <strong>-posteditcommand</strong> and <strong>-validate</strong>. The first one allows to
+specify an event descriptor for the activation of the Editing features, 
+the second enables the automatic finish-edit feature if the mouse leaves the edit-area,
+The others may be used to specify callbacks: One for postprocessing after editing is
+finished and the other one, which can be used to perform validation operations
+during editing.</p>
+<p><strong>viewtype()</strong> might be invoked directly or via <em>configure</em> to switch between
+'withdata' or 'normal' listbox view.</p>
+<p>If the Listbox has the input focus the key '<strong>Control-Key-[</strong>' makes the data-list
+visible and '<strong>Control-Key-]</strong>' hides it.</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="add" class="item"><strong>add()</strong></a></strong></dt>
+
+<dd>
+<p>'add($path, &lt;options&gt; )' inserts item text &amp; data
+in the list. Inserting without '-data' just uses the HList the with a 
+default 'undef'-data per item.</p>
+</dd>
+<dt><strong><a name="delete" class="item"><strong>delete()</strong></a></strong></dt>
+
+<dd>
+<p>'delete(what [, $path] )' removes item text &amp; data
+from/to the specified positions in the list
+-acts as the default <a href="#delete"><code>delete()</code></a>.</p>
+</dd>
+<dt><strong><a name="get_item" class="item"><strong>get_item()</strong></a></strong></dt>
+
+<dd>
+<p>'get_item($path )' retrieves item text &amp; data
+from/to the specified positions in the list. 
+<strong>get_item_text()</strong> and <strong>get_item_value()</strong> work analogous but for
+texts/values only</p>
+</dd>
+<dt><strong><a name="getcurselection" class="item"><strong>getcurselection()</strong></a></strong></dt>
+
+<dd>
+<p>'getcurselection()' retrieves item-text &amp; -data from the current selected
+position in the list.
+<strong>getcurselection_text()</strong>, <strong>getcurselection_value()</strong> and <strong>getcurselection_index()</strong>
+work anlogous but for texts/values only</p>
+</dd>
+<dt><strong><a name="reverse" class="item"><strong>reverse()</strong></a></strong></dt>
+
+<dd>
+<p>'reverse()' reverses the whole list and all belonging item values.</p>
+</dd>
+<dt><strong><a name="sort" class="item"><strong>sort()</strong></a></strong></dt>
+
+<dd>
+<p>'sort($direction)' sorts the whole list alphanumerical. The direction parameter
+may be '<em>ascending</em>' or '<em>descending</em>'</p>
+</dd>
+<dt><strong><a name="viewtype" class="item"><strong>viewtype()</strong></a></strong></dt>
+
+<dd>
+<p>'viewtype()' switches the listbox' visible area between the 'normal' view and
+the extended one 'withdata', that shows a second column with all the belonging data.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><strong>viewtype()</strong></strong></dt>
+
+<dd>
+<p>'-viewtype()' switches the listbox' visible area between the 'normal' view and
+the extended one 'withdata', that shows a second column with all the belonging data.</p>
+</dd>
+<dt><strong><a name="datastyle" class="item"><strong>datastyle()</strong></a></strong></dt>
+
+<dd>
+<p>'-datastyle()' allows to specify an ItemStyle for the data column (see Tk::ItemStyle for details).</p>
+</dd>
+<dt><strong><a name="databackground" class="item"><strong>databackground()</strong></a></strong></dt>
+
+<dd>
+<p>'-databackground()' allows to specify just a different background color for the data column.
+Note that it still uses the build-in ItemStyle (beside bg-color) for the data column.</p>
+</dd>
+<dt><strong><a name="numeric_primary_sort" class="item"><strong>numeric_primary_sort()</strong></a></strong></dt>
+
+<dd>
+<p>'-numeric_primary_sort()' allows to enable numeric ordering for the internal <a href="#sort"><code>sort()</code></a>
+function (numeric on primary keys / first column).</p>
+</dd>
+<dt><strong><a name="numeric_secondary_sort" class="item"><strong>numeric_secondary_sort()</strong></a></strong></dt>
+
+<dd>
+<p>'-numeric_secondary_sort()' allows to enable numeric ordering for the internal <a href="#sort"><code>sort()</code></a>
+function (numeric on secondary keys / second column).</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V1.1  (C) May 2005</p>
+
+</body>
+
+</html>

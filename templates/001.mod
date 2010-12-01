@@ -1,0 +1,39 @@
+$PROBLEM 1-comp iv, linear elim
+
+$INPUT ID TIME DV AMT CMT MDV EVID
+
+$DATA nm_001.csv ; IGNORE=
+
+$SUBROUTINES ADVAN1 TRANS2
+
+$PK
+CL = THETA(1) * EXP(ETA(1))
+V  = THETA(2) * EXP(ETA(2))
+S1 = V
+
+$ERROR
+IPRED = F
+    Y = IPRED + EPS(1) 
+    W = 1
+  RES = DV-IPRED
+IWRES = RES/W
+
+$THETA
+(1, 5, 50) ; CL
+(1, 50, 150) ; V
+
+$OMEGA BLOCK(2)
+(0.2) ; iiv CL
+(0.1) ; CL~V
+(0.2) ; iiv V
+
+$SIGMA
+(0.2) ; Additional error
+
+$EST METHOD=1 INTER MAXEVAL=2000 NOABORT SIG=3 PRINT=1 POSTHOC
+$COV
+
+; Xpose
+$TABLE ID TIME DV MDV EVID IPRED IWRES FILE=sdtab001
+$TABLE CL V FIRSTONLY FILE=patab001
+

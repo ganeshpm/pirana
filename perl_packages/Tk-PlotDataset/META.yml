@@ -1,0 +1,27 @@
+--- 
+abstract: An extended version of the canvas widget for plotting 2D line graphs. Plots have a legend and zooming capabilities.
+author: I.T. Dev Ltd.
+build_requires: 
+  Pod::Coverage: 0.18
+  Test::More: 0
+  Test::Pod: 1.22
+  Test::Pod::Coverage: 1.08
+distribution_type: module
+generated_by: Module::Install version 0.67
+license: perl
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: Tk-PlotDataset
+no_index: 
+  directory: 
+    - inc
+    - t
+recommends: 
+  Tk::LineGraphDataset: 0
+requires: 
+  Carp: 0
+  POSIX: 0
+  Tk::Balloon: 0
+  Tk::Canvas: 0
+version: 2.02

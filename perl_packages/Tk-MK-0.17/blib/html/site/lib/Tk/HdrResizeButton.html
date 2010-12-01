@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::HdrResizeButton - provides a resizeable button for a HList column header.</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::HdrResizeButton - provides a resizeable button for a HList column header.</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#updates">UPDATES</a></li>
+	<li><a href="#keywords">KEYWORDS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::HdrResizeButton - provides a resizeable button for a HList column header.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::HList</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::HdrResizeButton</span><span class="operator">;</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="comment"># CREATE MY HLIST</span>
+    <span class="keyword">my</span> <span class="variable">$hlist</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Scrolled</span><span class="operator">(</span><span class="string">'HList'</span><span class="operator">,</span>
+         <span class="string">-columns</span><span class="operator">=&gt;</span><span class="number">2</span><span class="operator">,</span> 
+         <span class="string">-header</span> <span class="operator">=&gt;</span> <span class="number">1</span>
+         <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">(</span><span class="string">-side</span> <span class="operator">=&gt;</span> <span class="string">'left'</span><span class="operator">,</span> <span class="string">-expand</span> <span class="operator">=&gt;</span> <span class="string">'yes'</span><span class="operator">,</span> <span class="string">-fill</span> <span class="operator">=&gt;</span> <span class="string">'both'</span><span class="operator">);</span>
+</pre>
+<pre>
+    <span class="comment"># CREATE COLUMN HEADER 0</span>
+    <span class="keyword">my</span> <span class="variable">$headerstyle</span>   <span class="operator">=</span> <span class="variable">$hlist</span><span class="operator">-&gt;</span><span class="variable">ItemStyle</span><span class="operator">(</span><span class="string">'window'</span><span class="operator">,</span> <span class="string">-padx</span> <span class="operator">=&gt;</span> <span class="number">0</span><span class="operator">,</span> <span class="string">-pady</span> <span class="operator">=&gt;</span> <span class="number">0</span><span class="operator">);</span>
+    <span class="keyword">my</span> <span class="variable">$header0</span> <span class="operator">=</span> <span class="variable">$hlist</span><span class="operator">-&gt;</span><span class="variable">HdrResizeButton</span><span class="operator">(</span> 
+          <span class="string">-text</span> <span class="operator">=&gt;</span> <span class="string">'Test Name'</span><span class="operator">,</span> 
+          <span class="string">-relief</span> <span class="operator">=&gt;</span> <span class="string">'flat'</span><span class="operator">,</span> <span class="string">-pady</span> <span class="operator">=&gt;</span> <span class="number">0</span><span class="operator">,</span> 
+          <span class="string">-command</span> <span class="operator">=&gt;</span> <span class="keyword">sub</span><span class="variable"> </span><span class="operator">{</span> <span class="keyword">print</span> <span class="string">"Hello, world!\n"</span><span class="operator">;},</span> 
+          <span class="string">-column</span> <span class="operator">=&gt;</span> <span class="number">0</span>
+    <span class="operator">);</span>
+    <span class="variable">$hlist</span><span class="operator">-&gt;</span><span class="variable">header</span><span class="operator">(</span><span class="string">'create'</span><span class="operator">,</span> <span class="number">0</span><span class="operator">,</span> 
+          <span class="string">-itemtype</span> <span class="operator">=&gt;</span> <span class="string">'window'</span><span class="operator">,</span>
+          <span class="string">-widget</span> <span class="operator">=&gt;</span> <span class="variable">$header0</span><span class="operator">,</span> 
+          <span class="string">-style</span><span class="operator">=&gt;</span><span class="variable">$headerstyle</span>
+    <span class="operator">);</span>
+</pre>
+<pre>
+    <span class="comment"># CREATE COLUMN HEADER 1</span>
+    <span class="keyword">my</span> <span class="variable">$header1</span> <span class="operator">=</span> <span class="variable">$hlist</span><span class="operator">-&gt;</span><span class="variable">HdrResizeButton</span><span class="operator">(</span> 
+          <span class="string">-text</span> <span class="operator">=&gt;</span> <span class="string">'Status'</span><span class="operator">,</span> 
+          <span class="string">-command</span> <span class="operator">=&gt;</span> <span class="keyword">sub</span><span class="variable"> </span><span class="operator">{</span> <span class="keyword">print</span> <span class="string">"Hello, world!\n"</span><span class="operator">;},</span> 
+          <span class="string">-column</span> <span class="operator">=&gt;</span> <span class="number">1</span>
+    <span class="operator">);</span>
+    <span class="variable">$hlist</span><span class="operator">-&gt;</span><span class="variable">header</span><span class="operator">(</span><span class="string">'create'</span><span class="operator">,</span> <span class="number">1</span><span class="operator">,</span>
+          <span class="string">-itemtype</span> <span class="operator">=&gt;</span> <span class="string">'window'</span><span class="operator">,</span>
+          <span class="string">-widget</span>   <span class="operator">=&gt;</span> <span class="variable">$header1</span><span class="operator">,</span> 
+          <span class="string">-style</span>    <span class="operator">=&gt;</span> <span class="variable">$headerstyle</span>
+    <span class="operator">);</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The HdrResizeButton widget provides a resizeable button widget for use
+in an HList column header.  When placed in the column header, the right
+edge of the widget can be selected and dragged to a new location to
+change the size of the HList column.  When resizing the column, a 
+column bar will also be placed over the HList indicating the eventual
+size of the HList column.  A command can also be bound to the button
+to do things like sorting the column.
+On DoubleClicking a Column it is closed / re-opened. A Right-ButtonClick
+will resize the column to the fit the needs of all the column contents.</p>
+<p>The widget takes all the options that a standard Button does.
+Note: For a proper operationthe following option MUST be specified during creation:</p>
+<dl>
+<dt><strong><a name="column" class="item"><strong>-column</strong></a></strong></dt>
+
+<dd>
+<p>The column number that this HdrResizeButton is associated with.
+(It has to be provided to resize the appropriate column).</p>
+</dd>
+</dl>
+<p>In addition, the following options may be specified:</p>
+<dl>
+<dt><strong><a name="command3" class="item"><strong>-command</strong></a></strong></dt>
+
+<dd>
+<p>The default command is associated with an open/close function for the selected
+column. The function is called with a Tk::HdrResizeButton reference for custom usage.</p>
+</dd>
+<dt><strong><a name="activebackground2" class="item"><strong>-activebackground</strong></a></strong></dt>
+
+<dd>
+<p>The background color used for the column Header during active state (Mouse over Header).</p>
+</dd>
+<dt><strong><a name="activeforeground2" class="item"><strong>-activeforeground</strong></a></strong></dt>
+
+<dd>
+<p>The foreground color used for the column Header during active state (Mouse over Header).</p>
+</dd>
+<dt><strong><a name="buttondownrelief2" class="item"><strong>-buttondownrelief</strong></a></strong></dt>
+
+<dd>
+<p>The relief used for the column Header Button during selected state (Button pressed).</p>
+</dd>
+<dt><strong><a name="minwidth2" class="item"><strong>-minwidth</strong></a></strong></dt>
+
+<dd>
+<p>The minwidth is used for the specific column (during resize), default: 30.</p>
+</dd>
+<dt><strong><a name="closedminwidth2" class="item"><strong>-closedminwidth</strong></a></strong></dt>
+
+<dd>
+<p>The closedminwidth is used for the specific column (while in &quot;CLOSED&quot; view), default: 10.</p>
+</dd>
+<dt><strong><a name="resizerwidth2" class="item"><strong>-resizerwidth</strong></a></strong></dt>
+
+<dd>
+<p>The resizerwidth is the resize sensor-area on the right border of the specific column, default: 1.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p><strong>Shaun Wandler</strong> &lt;<a href="mailto:wandler@unixmail.compaq.com">wandler@unixmail.compaq.com</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="updates">UPDATES</a></h1>
+<p>Updated by Slaven Rezic and Frank Herrmann,
+Enhanced/Modified by Michael Krause KrauseM_AT_gmx_DOT_net</p>
+<dl>
+<dt><strong><a name="done" class="item">DONE (MK) position columnbar correctly and only use MoveColumnBar to move it instead
+	of destroying it and re-creating with CreateColumnBar</a></strong></dt>
+
+<dt><strong><a name="subwidget" class="item">(???) use Subwidget('scrolled') if it exists</a></strong></dt>
+
+<dt><strong>DONE (MK) don't give error if -command is not specified</strong></dt>
+
+<dt><strong>DONE (MK) don't let the user hide columns (minwidth?)</strong></dt>
+
+<dt><strong>DONE (MK) * double-click on column should not more execute the single-click command callback</strong></dt>
+
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="keywords">KEYWORDS</a></h1>
+<p>Tk::HList</p>
+
+</body>
+
+</html>

@@ -1,0 +1,258 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::ProgressBarPlus - A graphical progress bar</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::ProgressBarPlus - A graphical progress bar</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#standard_options">STANDARD OPTIONS</a></li>
+	<li><a href="#widget_specific_options">WIDGET-SPECIFIC OPTIONS</a></li>
+	<li><a href="#widget_methods">WIDGET METHODS</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::ProgressBarPlus - A graphical progress bar</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk::ProgressBarPlus</span><span class="operator">;</span>
+</pre>
+<pre>
+    <span class="variable">$progress</span> <span class="operator">=</span> <span class="variable">$parent</span><span class="operator">-&gt;</span><span class="variable">ProgressBarPlus</span><span class="operator">(</span>
+        <span class="string">-width</span> <span class="operator">=&gt;</span> <span class="number">200</span><span class="operator">,</span>
+        <span class="string">-length</span> <span class="operator">=&gt;</span> <span class="number">20</span><span class="operator">,</span>
+        <span class="string">-anchor</span> <span class="operator">=&gt;</span> <span class="string">'s'</span><span class="operator">,</span>
+        <span class="string">-from</span> <span class="operator">=&gt;</span> <span class="number">0</span><span class="operator">,</span>
+        <span class="string">-to</span> <span class="operator">=&gt;</span> <span class="number">100</span><span class="operator">,</span>
+        <span class="string">-blocks</span> <span class="operator">=&gt;</span> <span class="number">10</span><span class="operator">,</span>
+        <span class="string">-colors</span> <span class="operator">=&gt;</span> <span class="operator">[</span><span class="number">0</span><span class="operator">,</span> <span class="string">'green'</span><span class="operator">,</span> <span class="number">50</span><span class="operator">,</span> <span class="string">'yellow'</span> <span class="operator">,</span> <span class="number">80</span><span class="operator">,</span> <span class="string">'red'</span><span class="operator">]</span><span class="operator">,</span>
+        <span class="string">-variable</span> <span class="operator">=&gt;</span> <span class="operator">\</span><span class="variable">$percent_done</span>
+        <span class="comment"># New Options</span>
+        <span class="operator">-</span><span class="string">showvalue</span> <span class="operator">=&gt;</span> <span class="string">'1'</span><span class="operator">,</span>
+        <span class="string">-valuecolor</span> <span class="operator">=&gt;</span> <span class="string">'black'</span><span class="operator">,</span>
+        <span class="string">-font</span> <span class="operator">=&gt;</span> <span class="string">'9x15'</span><span class="operator">,</span>
+        <span class="string">-valueformat</span> <span class="operator">=&gt;</span> <span class="string">'&lt;%s %%&gt;'</span><span class="operator">,</span>
+    <span class="operator">);</span>
+</pre>
+<pre>
+    <span class="variable">$progress</span><span class="operator">-&gt;</span><span class="variable">value</span><span class="operator">(</span><span class="variable">$position</span><span class="operator">);</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>Tk::ProgressBarPlus</strong> provides a widget which will show a graphical representation
+of a value, given maximum and minimum reference values.</p>
+<p>
+</p>
+<hr />
+<h1><a name="standard_options">STANDARD OPTIONS</a></h1>
+<p>The following standard widget options are supported:</p>
+<dl>
+<dt><strong><a name="borderwidth" class="item"><strong>-borderwidth</strong></a></strong></dt>
+
+<dt><strong><a name="highlightthickness" class="item"><strong>-highlightthickness</strong></a></strong></dt>
+
+<dd>
+<p>Defaults to 0.</p>
+</dd>
+<dt><strong><a name="padx" class="item"><strong>-padx</strong></a></strong></dt>
+
+<dd>
+<p>Defaults to 0.</p>
+</dd>
+<dt><strong><a name="pady" class="item"><strong>-pady</strong></a></strong></dt>
+
+<dd>
+<p>Defaults to 0.</p>
+</dd>
+<dt><strong><a name="relief" class="item"><strong>-relief</strong></a></strong></dt>
+
+<dd>
+<p>Defaults to <code>sunken</code></p>
+</dd>
+<dt><strong><a name="troughcolor" class="item"><strong>-troughcolor</strong></a></strong></dt>
+
+<dd>
+<p>The color to be used for the background (trough) of the progress bar.
+Default is to use grey55.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="widget_specific_options">WIDGET-SPECIFIC OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="anchor" class="item"><strong>-anchor</strong></a></strong></dt>
+
+<dd>
+<p>This can be used to position the start point of the bar. Default
+is 'w' (horizontal bar starting from the left). A vertical bar can be
+configured by using either 's' or 'n'.</p>
+</dd>
+<dt><strong><a name="blocks" class="item"><strong>-blocks</strong></a></strong></dt>
+
+<dd>
+<p>This controls the number of blocks to be used to construct the progress
+bar. The default is to break the bar into 10 blocks.</p>
+</dd>
+<dt><strong><a name="colors" class="item"><strong>-colors</strong></a></strong></dt>
+
+<dd>
+<p>Controls the colors to be used for different positions of the progress bar.
+The colors should be supplied as a reference to an array containing pairs
+of positions and colors.</p>
+<pre>
+  -colors =&gt; [ 0, 'green', 50, 'red' ]</pre>
+<p>means that for the range 0 to 50 the progress bar should be green
+and for higher values it should be red.</p>
+</dd>
+<dt><strong><a name="from" class="item"><strong>-from</strong></a></strong></dt>
+
+<dd>
+<p>This sets the lower limit of the progress bar.  If the bar is set to a
+value below the lower limt no bar will be displayed. Defaults to 0.
+See the <a href="#to"><code>-to</code></a> description for more information.</p>
+</dd>
+<dt><strong><a name="gap" class="item"><strong>-gap</strong></a></strong></dt>
+
+<dd>
+<p>This is the spacing (in pixels) between each block. Defaults to 1.
+Use 0 to get a continuous bar.</p>
+</dd>
+<dt><strong><a name="length" class="item"><strong>-length</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the desired long dimension of the ProgressBar in screen
+units (i.e. any of the forms acceptable to Tk_GetPixels). For vertical
+ProgressBars this is the ProgressBars height; for horizontal scales it
+is the ProgressBars width.  The default length is calculated from the
+values of <a href="#padx"><code>-padx</code></a>, <a href="#borderwidth"><code>-borderwidth</code></a>, <a href="#highlightthickness"><code>-highlightthickness</code></a> and the
+difference between <a href="#from"><code>-from</code></a> and <a href="#to"><code>-to</code></a>.</p>
+</dd>
+<dt><strong><a name="resolution" class="item"><strong>-resolution</strong></a></strong></dt>
+
+<dd>
+<p>A real value specifying the resolution for the scale. If this value is greater
+than zero then the scale's value will always be rounded to an even multiple of
+this value, as will tick marks and the endpoints of the scale. If the value is
+less than zero then no rounding occurs. Defaults to 1 (i.e., the value will be
+integral).</p>
+</dd>
+<dt><strong><a name="to" class="item"><strong>-to</strong></a></strong></dt>
+
+<dd>
+<p>This sets the upper limit of the progress bar. If a value is specified
+(for example, using the <a href="#value"><code>value</code></a> method) that lies above this value the
+full progress bar will be displayed. Defaults to 100.</p>
+</dd>
+<dt><strong><a name="variable4" class="item"><strong>-variable</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the reference to a scalar variable to link to the ProgressBar.
+Whenever the value of the variable changes, the ProgressBar will upate
+to reflect this value. (See also the <strong>value</strong> method below.)</p>
+</dd>
+<dt><strong><a name="value" class="item"><strong>-value</strong></a></strong></dt>
+
+<dd>
+<p>The can be used to set the current position of the progress bar
+when used in conjunction with the standard <code>configure</code>. It is
+usually recommended to use the <strong>value</strong> method instead.</p>
+</dd>
+<dt><strong><a name="width2" class="item"><strong>-width</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the desired narrow dimension of the ProgressBar in screen
+units (i.e.  any of the forms acceptable to Tk_GetPixels). For
+vertical ProgressBars this is the ProgressBars width; for horizontal
+bars this is the ProgressBars height.  The default width is derived
+from the values of <a href="#borderwidth"><code>-borderwidth</code></a> and <a href="#pady"><code>-pady</code></a> and <a href="#highlightthickness"><code>-highlightthickness</code></a>.</p>
+</dd>
+<dt><strong><a name="showvalue" class="item"><strong>-showvalue</strong></a></strong></dt>
+
+<dd>
+<p>This enables the current (percentage) value to be displayed.</p>
+</dd>
+<dt><strong><a name="valueformat" class="item"><strong>-valueformat</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the desired text mask for the current value value
+to be displayed. Defaults to '%s%%'</p>
+</dd>
+<dt><strong><a name="valuecolor" class="item"><strong>-valuecolor</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the desired text color for the  current (percentage)
+value to be displayed.</p>
+</dd>
+<dt><strong><a name="font" class="item"><strong>-font</strong></a></strong></dt>
+
+<dd>
+<p>Specifies the desired text font for the  current (percentage)
+value to be displayed.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="widget_methods">WIDGET METHODS</a></h1>
+<dl>
+<dt><strong><em>$ProgressBar</em>-&gt;<strong>value</strong>(?<em>value</em>?)</strong></dt>
+
+<dd>
+<p>If <em>value</em> is omitted, returns the current value of the ProgressBar.  If
+<em>value</em> is given, the value of the ProgressBar is set. If <em>$value</em> is
+given but undefined the value of the option <strong>-from</strong> is used.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Graham Barr &lt;<em class="file"><a href="mailto:gbarr@pobox.com">gbarr@pobox.com</a></em>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright (c) 1997-1998 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.</p>
+<p>ValueText-Add-On 02.2004 by M. Krause, &lt;<em class="file">KrauseM_AT_gmx_DOT_net</em>&gt;</p>
+
+</body>
+
+</html>

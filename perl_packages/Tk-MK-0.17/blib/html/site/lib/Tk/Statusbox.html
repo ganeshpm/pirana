@@ -1,0 +1,165 @@
+<?xml version="1.0" ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<!-- saved from url=(0017)http://localhost/ -->
+<script language="JavaScript" src="../../../displayToc.js"></script>
+<script language="JavaScript" src="../../../tocParas.js"></script>
+<script language="JavaScript" src="../../../tocTab.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../scineplex.css">
+<title>Tk::Statusbox - A recolorable status area that also can flash</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:" />
+</head>
+
+<body>
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<script>writelinks('__top__',3);</script>
+<h1><a>Tk::Statusbox - A recolorable status area that also can flash</a></h1>
+<p><a name="__index__"></a></p>
+
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Tk::Statusbox - A recolorable status area (box) that also can flash</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+    <span class="keyword">use</span> <span class="variable">Tk</span><span class="operator">;</span>
+    <span class="keyword">use</span> <span class="variable">Tk::Statusbox</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$mycolor</span> <span class="operator">=</span> <span class="string">'red'</span><span class="operator">;</span>
+    <span class="keyword">my</span> <span class="variable">$mw</span> <span class="operator">=</span> <span class="variable">MainWindow</span><span class="operator">-&gt;</span><span class="variable">new</span><span class="operator">();</span>
+</pre>
+<pre>
+    <span class="keyword">my</span> <span class="variable">$stbox</span> <span class="operator">=</span> <span class="variable">$mw</span><span class="operator">-&gt;</span><span class="variable">Statusbox</span><span class="operator">(</span>
+        <span class="string">-variable</span>       <span class="operator">=&gt;</span> <span class="operator">\</span><span class="variable">$mycolor</span><span class="operator">,</span>
+        <span class="string">-command</span>        <span class="operator">=&gt;</span> <span class="operator">\&amp;</span><span class="variable">status_changed_cb</span><span class="operator">,</span>
+        <span class="string">-flashintervall</span> <span class="operator">=&gt;</span> <span class="string">'100'</span><span class="operator">,</span>  <span class="comment"># time in msecs</span>
+        <span class="string">-height</span>         <span class="operator">=&gt;</span> <span class="string">'30'</span><span class="operator">,</span>
+        <span class="string">-width</span>          <span class="operator">=&gt;</span> <span class="string">'50'</span><span class="operator">,</span>
+        <span class="comment">#-relief        =&gt; 'sunken',</span>
+        <span class="comment">#-bg            =&gt; 'blue',      </span>
+    <span class="operator">)-&gt;</span><span class="variable">pack</span><span class="operator">;</span>
+</pre>
+<pre>
+        
+            <span class="variable">Tk::MainLoop</span><span class="operator">;</span>
+        
+            <span class="keyword">sub</span><span class="variable"> test_cb
+            </span><span class="operator">{</span>
+        <span class="keyword">print</span> <span class="string">"status_changed_cb called with [</span><span class="variable">@_</span><span class="string">], \$mycolor = &gt;</span><span class="variable">$mycolor</span><span class="string">&lt;\n"</span><span class="operator">;</span>
+        <span class="comment">#$stbox-&gt;color('red');</span>
+        <span class="variable">$mycolor</span> <span class="operator">=</span> <span class="string">'orange'</span><span class="operator">;</span>
+            <span class="operator">}</span>
+</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>A cavas/frame style widget that uses a recolorable indicator box with
+configurable flashing. Useful as an indicator field for common status
+operations, suitable for perl Tk800.x (developed with Tk800.024).</p>
+<p>You can tie a scalar-value to the Statusbox widget, immediate recolor it
+with '-color' option, assign a callback, that is invoked each time
+the Statusbox' color is changed, resize it with '-height' and '-width',
+as well as set the flashintervall with '-flashintervall' and configure
+any of the options understood by Tk::Frame(s) like -relief, -bg, ... .</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<dl>
+<dt><strong><a name="color" class="item"><strong>color()</strong></a></strong></dt>
+
+<dd>
+<p>'color()' setup a new color in the status area</p>
+</dd>
+<dt><strong><a name="flash" class="item"><strong>flash('START')</strong></a></strong></dt>
+
+<dd>
+<p>'flash('START')' starts flashing the status area by swapping the current
+color in the status area with the normal background color
+(the one restorable with the <a href="#clear"><code>clear()</code></a> method).</p>
+</dd>
+<dt><strong><strong>flash('END')</strong></strong></dt>
+
+<dd>
+<p>'flash('END')' stops flashing the status area and restores the normal
+background color (the one set with the <a href="#clear"><code>clear()</code></a> method).</p>
+</dd>
+<dt><strong><a name="clear" class="item"><strong>clear()</strong></a></strong></dt>
+
+<dd>
+<p>'clear()' restores the normal background color in the status area
+(either the apps-background color or the widget's)</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="variable5" class="item"><strong>-variable</strong></a></strong></dt>
+
+<dd>
+<p>'-variable' allows to specify a reference to a scalar-value.
+Each time the widget changes by user interaction, the variable
+is changed too. Every variable change is immediately mapped in the
+widget too.</p>
+</dd>
+<dt><strong><a name="command6" class="item"><strong>-command</strong></a></strong></dt>
+
+<dd>
+<p>'-command' can be used to supply a callback for processing after
+each change of the Checkbox value.</p>
+</dd>
+<dt><strong><a name="flashintervall" class="item"><strong>-flashintervall</strong></a></strong></dt>
+
+<dd>
+<p>'-flashintervall' can be used to set the flash-timing (on/offtime) in msecs.</p>
+</dd>
+<dt><strong><a name="height2" class="item"><strong>-height</strong></a></strong></dt>
+
+<dd>
+<p>'-height' sets the height of the status area widget in <em>pixels</em>.</p>
+</dd>
+<dt><strong><a name="width3" class="item"><strong>-width</strong></a></strong></dt>
+
+<dd>
+<p>'-width' sets the width of the status area widget in <em>pixels</em>.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Michael Krause, KrauseM_AT_gmx_DOT_net</p>
+<p>This code may be distributed under the same conditions as Perl.</p>
+<p>V1.0  (C) October 2002</p>
+
+</body>
+
+</html>
