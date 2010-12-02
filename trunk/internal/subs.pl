@@ -1090,7 +1090,6 @@ sub cov_calc_window {
 ### Compat  : W+L+
   my $cov_calc_dialog = $mw -> Toplevel(-title=>'Cov Calculator');
   $cov_calc_dialog -> resizable( 0, 0 );
-  center_window($cov_calc_dialog);
   my $cov_calc_frame = $cov_calc_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   $cov_calc_frame -> Label (-text=>"Covariance block:",-background=>$bgcol) -> grid(-row=>1, -column=>1);
   my $var1=1; my $covar=1; my $var2=1;
@@ -1108,6 +1107,7 @@ sub cov_calc_window {
   $var1_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var1_sd, -justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>4, -column=>2);
   $var2_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$covar_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>6, -column=>2);
   $covar_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var2_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>5, -column=>2);
+  center_window($cov_calc_dialog);
 }
 
 sub recalc_cov {
@@ -4418,7 +4418,6 @@ sub build_psn_run_command {
     my $ssh_add2 = "";
     my $outputfile= $model.".".$setting{ext_res};
 
-# this was necessary for previous versions of PsN which did not automatically copy back the outputfile
     if ($psn_command eq "execute") {
 	$psn_command_line = update_psn_run_command ($psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
     };
@@ -6052,8 +6051,12 @@ sub psn_run_window {
         $help -> detach($psn_run_button);
         $psn_run_window -> destroy();
                                    });
-    $psn_run_window -> resizable (0,0);
-    $psn_run_window -> update();
+
+    unless ($^O =~ m/MSWin/) {
+       # on Windows, 'resizable' makes window go to background
+	$psn_run_window -> resizable (0,0);
+    }
+
     status ();
 }
 
