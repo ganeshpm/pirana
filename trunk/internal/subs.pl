@@ -3013,18 +3013,27 @@ sub initialize {
     print LOG "Startup time: ".localtime()."\n\n";
     print LOG "Checking pirana installation...\n";
 
-    our ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
-    our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
 
     unless (-d $base_dir."/internal") {$error++; print LOG "Error: Pirana could not find dir containing internal subroutines. Program halted.\n"};
     unless (-d $base_dir."/images") {$error++; print LOG "Error: Pirana could not find images. Program halted.\n"; };
     if ($error>0) {print LOG "Errors were found. Check installation of pirana.\n"; close LOG; intro_msg(1)} else {print LOG "Done\n"};
 
     print LOG "Reading Pirana settings...\n";
-    ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
+    our ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
     %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
     #if ($setting{username}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
     our $models_view = $setting{models_view};
+
+    # check header widths, if not correct number then read from default settings
+    our @models_hlist_widths = split (";", $setting{header_widths});
+    if (int(@models_hlist_widths) != 12) {
+	my ($def_setting_ref, $def_setting_descr_ref) = read_ini($base_dir."/ini_defaults/settings.ini");
+	my %def_setting = %$def_setting_ref;
+	print "test";
+	$setting{header_widths} = $def_setting{header_widths};
+	save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+    }
+    our @models_hlist_widths = split (";", $setting{header_widths});
 
     our $font_normal = 'Verdana 7';
     our $font_small = 'Verdana 6';
@@ -3970,7 +3979,7 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 1, -text => $runno, -style=>$style);
           $models_hlist -> itemCreate($i, 2, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 3, -text => @ctl_descr_copy[$i], -style=>$style );
-          for ($j=4;$j<=11;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
+          for ($j=4; $j<=12; $j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
            $runno=@ctl_show[$i];
 	   my $mod_background = "#FFFFFF";
@@ -3979,8 +3988,8 @@ sub populate_models_hlist {
            }
 	   if (even($i)) {$mod_background = dark_row_color($mod_background)};
            our $style_ofv   = $models_hlist -> ItemStyle( 'text', -anchor => 'ne', -justify=>'l', -padx => 5, -pady=>$hlist_pady, -background=>$mod_background, -font => $font_small, -foreground=>"#000000");
-           our $style       = $models_hlist -> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -pady=>$hlist_pady,-background=>$mod_background, -font => $font_normal);;
-           our $style_small = $models_hlist -> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -pady=>$hlist_pady, -background=>$mod_background, -font => $font_small);;
+           our $style       = $models_hlist -> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -pady=>$hlist_pady,-background=>$mod_background, -font => $font_normal);
+           our $style_small = $models_hlist -> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -pady=>$hlist_pady, -background=>$mod_background, -font => $font_normal);
            our $style_green = $models_hlist -> ItemStyle( 'text', -padx => 5, -pady=>$hlist_pady,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_small);
            our $style_red   = $models_hlist -> ItemStyle( 'text', -padx => 5, -pady=>$hlist_pady,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_small);
            if (($models_ofv{$runno} ne "")&&($models_ofv{$models_refmod{$runno}} ne "")) {
@@ -3997,6 +4006,7 @@ sub populate_models_hlist {
 	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
 	   $runno_text .= $runno;
 	   my $method_temp = $models_method{$runno};
+	   my $dataset_temp = $models_dataset{$runno};
 	   my $ofv_temp    = $models_ofv{$runno};
 	   my $dofv_temp   = $ofv_diff;
 	   my $succ_temp; my $cov_temp; my $bnd_temp; my $sig_temp;
@@ -4036,18 +4046,19 @@ sub populate_models_hlist {
 	   }
           $models_hlist -> itemCreate($i, 0, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $runno_text.$add_condensed, -style=>$style);
-          $models_hlist -> itemCreate($i, 2, -text => $models_refmod{$runno}, -style=>$style_small);
+          $models_hlist -> itemCreate($i, 2, -text => $models_refmod{$runno}, -style=>$style);
           $models_hlist -> itemCreate($i, 3, -text => $models_descr{$runno}, -style=>$style );
           $models_hlist -> itemCreate($i, 4, -text => $method_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 5, -text => $ofv_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 6, -text => $dofv_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 7, -text => $succ_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 8, -text => $cov_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 9, -text => $bnd_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 10, -text => $sig_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 5, -text => $dataset_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 6, -text => $ofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 7, -text => $dofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 8, -text => $succ_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 9, -text => $cov_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 10, -text => $bnd_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 11, -text => $sig_temp, -style=>$style);
           my $note = $models_notes{$runno};
 	  if ($condensed == 1) {$note =~ s/\n/\ /g;}
-          $models_hlist -> itemCreate($i, 11, -text => $note, -style=>$style);
+          $models_hlist -> itemCreate($i, 12, -text => $note, -style=>$style);
         };
       }
     }
@@ -6230,8 +6241,8 @@ sub frame_models_show {
   if (@_[0]==1) {
 #  our $model_hlist_frame = $mw-> Frame(-background=>"$bgcol")->grid(-row=>3,-column=>1,-columnspan=>2,-sticky=>'nswe',-ipadx=>5,-ipady=>0);
   ### Status bar: 
-  @models_hlist_headers = ("", " #", "Ref#","Description", "Method", "OFV","dOFV","S","C","B","Sig","Notes");
-  @models_hlist_widths = split (";", $setting{header_widths});
+  @models_hlist_headers = ("", " #", "Ref#","Description", "Method","Dataset","OFV","dOFV","S","C","B","Sig","Notes");
+  my @models_hlist_widths = split (";", $setting{header_widths});
   unshift (@models_hlist_widths, 0);
   my $sel_type = "";
   our $models_hlist = $mw -> Scrolled('HList',

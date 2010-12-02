@@ -12,23 +12,41 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(create_plot_window read_table);
 
-our $bgcol      = "#ece9d8";
-our $button     = "#dddac9";
-our $abutton    = "#cecbba";
-our $status_col = "#fffdec";
-our $pirana_orange  = "#ffEE99";
-our $lighterblue    = "#d3d3e3";
-our $lightblue      = "#b3c3ea";
-our $darkblue       = "#a5b5dc";
+our $lighterblue    = "#b3c3ea";
+our $lightblue      = "#4060D0";
+our $darkblue2      = "#7190c9";
+our $darkblue = "#4271c9";
 our $lightred       = "#FFC9a4";
 our $darkred        = "#efb894";
 our $darkerred      = "#BE5040";
-our $lightyellow    = "#EFEFc7";
+our $lightyellow    = "#ececd4";
+our $yellow    = "#e3e3e6";
 our $darkyellow     = "#DFDF95";
 our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
-our $yellow         = "#f8f8e6";
 our $white          = "#ffffff";
+our $bgcol          = "#efebe7";
+our $button         = "#dad7d3";
+our $abutton        = "#c6c3c0";
+our $listbox_col    = "#f0f0f0";
+
+# our $bgcol      = "#ece9d8";
+# our $button     = "#dddac9";
+# our $abutton    = "#cecbba";
+# our $status_col = "#fffdec";
+# our $pirana_orange  = "#ffEE99";
+# our $lighterblue    = "#d3d3e3";
+# our $lightblue      = "#b3c3ea";
+# our $darkblue       = "#a5b5dc";
+# our $lightred       = "#FFC9a4";
+# our $darkred        = "#efb894";
+# our $darkerred      = "#BE5040";
+# our $lightyellow    = "#EFEFc7";
+# our $darkyellow     = "#DFDF95";
+# our $lightgreen     = "#b8e3b8";
+# our $darkgreen      = "#a5d3a5";
+# our $yellow         = "#f8f8e6";
+# our $white          = "#ffffff";
 our $font_normal = 'Verdana 9';
 
 our $bbw = 0;
@@ -72,9 +90,9 @@ sub create_plot_window {
     $add_frame -> Label (-text=>"   ", -background=>$bgcol)-> grid(-column=>1, -row=>8, -sticky=>'nw');
 
     $x_var_list = $var_frame -> Listbox (-width=>10, -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-					 -selectbackground=>'#AAAAAA',-highlightthickness =>0, -background=>'#ffffee', -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
+					 -selectbackground=>'#AAAAAA',-highlightthickness =>0, -background=>$listbox_col, -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
     $y_var_list = $var_frame -> Listbox (-width=>10,  -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
-					 -selectbackground=>'#AAAAAA',-selectmode=>'extended', -highlightthickness => 0, -background=>'#ffffee',-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
+					 -selectbackground=>'#AAAAAA',-selectmode=>'extended', -highlightthickness => 0, -background=>$listbox_col,-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
     $help_box = $plot_window -> Balloon();
     $help_box -> attach($y_var_list, -msg => "Multiple columns for Y can be selected by holding control-key.");
     $var_frame -> Label (-text=>" ") -> grid(-column=>1,-row=>3, -columnspan=>2, -sticky=>'nwe');
@@ -97,11 +115,11 @@ sub create_plot_window {
 
     # Filter
     my $filter_frame = $var_frame -> Frame (-background=>$bgcol) -> grid(-column=>1,-row=>4, -columnspan=>2);
-    $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[0],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue) -> grid(-column=>1,-row=>1, -sticky=>'nwe');
-    $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[0], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue) -> grid(-column=>2,-row=>1, -sticky=>'nwe');
+    $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[0],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>1,-row=>1, -sticky=>'nwe');
+    $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[0], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>2,-row=>1, -sticky=>'nwe');
     @filter_entry[0] = $filter_frame -> Entry (-background=>"#FFFFFF",-width=>10, -relief=>'groove',-font=>$font_normal, -border=>1) -> grid(-column=>3,-row=>1, -columnspan=>2,-sticky=>'nwes');
-    $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[1], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
-    $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[1],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
+    $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[1], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>1,-row=>2, -sticky=>'nwe');
+    $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[1],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>2,-row=>2, -sticky=>'nwe');
     @filter_entry[1] = $filter_frame -> Entry (-background=>"#FFFFFF", -width=>10, -relief=>'groove', -font=>$font_normal,-border=>1) -> grid(-column=>3,-row=>2, -columnspan=>2,-sticky=>'nwes');
 
     $filter_frame -> Button ( -text=>"Filter",-font=>$font_normal,-border=>0, -background=>$button,-activebackground=>$abutton,-command=>sub{
