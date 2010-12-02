@@ -4383,11 +4383,16 @@ sub exec_run_psn {
 sub update_psn_run_command {
 #update one specific parameter in the psn_command line
     my ($command_line, $parameter, $value, $add, $ssh_ref, $clusters_ref) = @_;
-    @com = split (" ",$command_line);
+    my @com = split (" ",$command_line);
     my $parameter_found=0;
     my $eq="=";
     if ($value eq "") {$eq = ""};
-    foreach (@com) {if ($_ =~ m/$parameter/g) {$_ = $parameter.$eq.$value; $parameter_found=1}};
+    foreach (@com) {
+	if ($_ =~ m/$parameter/g) {
+	    $_ = $parameter.$eq.$value; 
+	    $parameter_found=1;
+	};
+    };
     my $psn_command_line;
     if ($parameter_found==0&&$add==1) {
 	my $model = pop (@com);
@@ -4404,16 +4409,19 @@ sub build_psn_run_command {
     my ($psn_command, $psn_parameters, $model, $ssh_ref, $clusters_ref, $psn_background) = @_;
     my %ssh = %$ssh_ref;
     my @models = @$model;
-    foreach (@models) {$_ .= '.'.$setting{ext_ctl}};
+    my $model = @models[0];
+    foreach (@models) {
+	$_ .= '.'.$setting{ext_ctl}
+    };
     my $psn_command_line = $psn_command." ".$psn_parameters." ".join(" ", @models);
     my $ssh_add = "";
     my $ssh_add2 = "";
     my $outputfile= $model.".".$setting{ext_res};
 
 # this was necessary for previous versions of PsN which did not automatically copy back the outputfile
-#    if ($psn_command eq "execute") {
-#	$psn_command_line = update_psn_run_command ($psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
-#    };
+    if ($psn_command eq "execute") {
+	$psn_command_line = update_psn_run_command ($psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
+    };
     if ($psn_command eq "sumo") {
 	$psn_command_line .= " ".$outputfile;
     } else {
@@ -6865,7 +6873,8 @@ sub update_psn_lst_param {
 sub update_psn_params_function {
 ### Purpose : Update '-outputfile=xxx.lst' with current model number in the psn parameter entry
 ### Compat  : W+L+?
-    my $param = shift;
+    my ($param) = @_[1];
+    print $param;
     if ($psn_parameters =~ m/$param\=/i) {
 	$pos1 = length $`;
 	if (substr ($psn_parameters, $pos1, length()-$pos1) =~ m/\s-/) {
