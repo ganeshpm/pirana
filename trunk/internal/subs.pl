@@ -1308,7 +1308,10 @@ sub open_script_in_Rgui {
     }
     close R_OUT;
     if ($^O =~ m/MSWin/i) {
-	start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
+	my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
+	if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
+	if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
+	start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
     } else {
 	edit_model ($scriptfile);
     }
@@ -5060,14 +5063,17 @@ sub bind_tab_menu {
        [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{pirana_r},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);
+	   my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
+	   if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
+	   if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
 	   if (-e $script_file) {
 	       if ($show_data eq "R") {
 		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/rgui.exe") {
+		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
 			   open (RPROF, ">.Rprofile");
 			   print RPROF "utils::file.edit('".$script_file."')";
 			   close (RPROF);
-			   start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
+			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
 		       } else {
 			   message ("RGUI was not found.");
 		       }
@@ -5085,8 +5091,8 @@ sub bind_tab_menu {
 		   print RPROF $script;
 		   close (RPROF);
 		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/rgui.exe") {
-			   start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
+		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
+			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
 		       } else {
 			   message ("RGUI was not found.");
 		       }
@@ -5110,8 +5116,8 @@ sub bind_tab_menu {
 		   print RPROF $script;
 		   close (RPROF);
 		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/rgui.exe") {
-			   start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
+		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
+			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
 		       } else {
 			   message ("RGUI was not found.");
 		       }
@@ -5144,8 +5150,8 @@ sub bind_tab_menu {
 	       print RPROF $script;
 	       close (RPROF);
 	       if ($^O =~ m/MSWin/i) {
-		   if (-e $software{r_dir}."/bin/rgui.exe") {
-		       start_command(win_path($software{r_dir}.'/bin/rgui.exe'));
+		   if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
+		       start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
 		   } else {
 		       message ("RGUI was not found.");
 		   }
@@ -5381,10 +5387,14 @@ sub show_links {
     $i++;
 #  }
   if ($^O =~ m/MSWin/i) {
-      if (-e $software{r_dir}."/bin/rgui.exe") {
+      my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
+      if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
+      if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
+      if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
 	  our $r_button = $frame_links -> Button(-image=>$gif{r}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
 	      chdir ($cwd);
-	      start_command($software{r_dir}.'/bin/rgui.exe', '--no-init-file');
+	      unlink ($cwd."/.Rprofile");
+	      start_command($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe', '--no-init-file');
 						 })->grid(-row=>1,-column=>$i,-sticky=>'news');
 	  $help->attach($r_button, -msg => "Open the R-GUI");
 	  $i++;
@@ -5393,6 +5403,7 @@ sub show_links {
       if (-e "/usr/bin/R") {
 	  our $r_button = $frame_links -> Button(-image=>$gif{r}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
 	      chdir ($cwd);
+	      unlink ($cwd."/.Rprofile");
 	      run_command('/usr/bin/R');
           }) -> grid(-row=>2,-column=>$i,-sticky=>'news');
 	  $help->attach($r_button, -msg => "Open R in terminal");
