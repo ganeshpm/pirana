@@ -5395,7 +5395,7 @@ sub show_links {
 	      chdir ($cwd);
 	      unlink ($cwd."/.Rprofile");
 	      start_command($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe', '--no-init-file');
-						 })->grid(-row=>1,-column=>$i,-sticky=>'news');
+						 })->grid(-row=>2,-column=>$i,-sticky=>'news');
 	  $help->attach($r_button, -msg => "Open the R-GUI");
 	  $i++;
       }
