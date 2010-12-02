@@ -152,37 +152,33 @@ our $pirana_orange  = "#ffEE99";
 our $lightestblue   = "#d3d3e3";
 our $lighterblue    = "#b3c3ea";
 our $lightblue      = "#4060D0";
-#our $darkblue2      = "#4060D0";
 our $darkblue2      = "#7190c9";
-#our $darkblue       = "#2040C0";
 our $darkblue = "#4271c9";
 our $lightred       = "#FFC9a4";
 our $darkred        = "#efb894";
 our $darkerred      = "#BE5040";
-#our $lightyellow    = "#EFEFc7";
 our $lightyellow    = "#ececd4";
-#our $yellow         = "#f8f8e6";
 our $yellow    = "#e3e3e6";
 our $darkyellow     = "#DFDF95";
 our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
 our $white          = "#ffffff";
-#our $bgcol          = "#ece9d8";
 our $bgcol          = "#efebe7";
-#our $button         = "#dddac9";
 our $button         = "#dad7d3";
-#our $abutton        = "#cecbba";
 our $abutton        = "#c6c3c0";
 our $status_col     = "#fffdec";
 our $bbw            = 0; # button border width;
 our $dir_bgcol      = "#cbd4e5";
 our $entry_color    = $white;
+our $tab_hlist_color = "#f0f0f0";
 if ($^O =~ m/MSWin/i) {
     our $selectcol = $white;
 } else {
     our $selectcol = $darkerred;
 };
+our $hlist_pady     = 2;
 our $filter         = "";
+
 
 #*** Some other variables *****************************************************
 our $full_screen = 0;
