@@ -5083,12 +5083,12 @@ sub bind_tab_menu {
 	     if ($^O =~ m/MSWin/i) {
 		 $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
 	     }
-	     if (($tab_file =~ m/.$setting{ext_tab}/i)&&($software{spreadsheet} =~ m/excel/i)) {  # Excel is not able to read the table files correctly
+	     if (($^O =~ m/MSWin/i)&&($tab_file =~ m/.$setting{ext_tab}/i)&&($software{spreadsheet} =~ m/(excel|gnumeric)/i)) {  # Excel / gnumeric on Windows is not able to read the table files correctly
 		 tab2csv ($tab_file, $tab_file."_pirana.".$setting{ext_csv});
-		 start_command($software{spreadsheet},'"'.$tab_file.'_pirana.'.$setting{ext_csv}.'"');
+		 start_command($software{spreadsheet}, '"'.$tab_file.'_pirana.'.$setting{ext_csv}.'"');
 	     } else {
-		 start_command($software{spreadsheet},'"'.$tab_file.'"');
-	     }
+		 start_command($software{spreadsheet}, "", '"'.unix_path($tab_file).'"');
+ 	     }
          } else {message("Spreadsheet application not found. Please check settings.")};
        }],
        [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{pirana_r},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
