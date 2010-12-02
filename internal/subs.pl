@@ -5087,7 +5087,7 @@ sub bind_tab_menu {
 		 tab2csv ($tab_file, $tab_file."_pirana.".$setting{ext_csv});
 		 start_command($software{spreadsheet}, '"'.$tab_file.'_pirana.'.$setting{ext_csv}.'"');
 	     } else {
-		 start_command($software{spreadsheet}, "", '"'.unix_path($tab_file).'"');
+		 start_command($software{spreadsheet}, '"'.unix_path($tab_file).'"');
  	     }
          } else {message("Spreadsheet application not found. Please check settings.")};
        }],
