@@ -6700,16 +6700,17 @@ sub note_color {
       if ($models_suc{$runno} eq "S") {$style_success = $style_green} else {$style_success = $style_red};
       if ($res_cov{$runno} eq "C") {$style_cov = $style_green} else {$style_cov = $style_red};
       $models_hlist -> itemConfigure($no, 0, -style => $style_color);
-      $models_hlist -> itemConfigure($no, 1, -style => $style_color_small);
-      $models_hlist -> itemConfigure($no, 2, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 1, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 2,-style => $style_color_small);
       $models_hlist -> itemConfigure($no, 3, -style => $style_color);
-      $models_hlist -> itemConfigure($no, 4, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 4,-style => $style_color);
       $models_hlist -> itemConfigure($no, 5, -style => $style_color);
       $models_hlist -> itemConfigure($no, 6, -style => $style_color);
       $models_hlist -> itemConfigure($no, 7, -style => $style_color);
       $models_hlist -> itemConfigure($no, 8, -style => $style_color);
       $models_hlist -> itemConfigure($no, 9, -style => $style_color);
-      $models_hlist -> itemConfigure($no, 10, -style => $style_color);
+      $models_hlist -> itemConfigure($no, 10,-style => $style_color);
+      $models_hlist -> itemConfigure($no, 11, -style => $style_color);
       db_add_color (@ctl_show[$no], $color)
     }
   }
