@@ -2604,7 +2604,7 @@ sub manage_nm_window {
 	  delete $nm_dirs{$nm_chosen};
 	  delete $nm_vers{$nm_chosen};
 	  delete $nm_types{$nm_chosen};
-	  print keys(%nm_dirs);
+#	  print keys(%nm_dirs);
 	  foreach (keys(%nm_dirs)) {
 	      if (($_ =~ m/PsN:/)||($_ eq "")||($_ =~ m/Retrieving/i)) {
 		  delete $nm_dirs{$_};
@@ -2655,8 +2655,8 @@ sub manage_nm_window {
 	    $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_chosen});
     })->grid(-row=>1,-column=>2, -sticky => 'wens');
 
+
   # get NM installations and fill in Optionmenu
-  my @nm6_installations = ();
   my ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
   my %nm_dirs = %$nm_dirs_ref; my %nm_vers = %$nm_vers_ref; my %nm_types;
 
@@ -2680,14 +2680,21 @@ sub manage_nm_window {
     $nm_dirs{"Remote: ".$_} = $nm_dirs_remote{$_};
     $nm_vers{"Remote: ".$_} = $nm_vers_remote{$_};
   }
+
   my @nm6_installations;
-  foreach(keys(%nm_vers)) {   # filter out only NM6 installations
-    #if (($nm_vers{$_} =~ m/6/)||($nm_vers{$_} =~ m/7/)&&($nm_type{_})) {
+  foreach(keys(%nm_vers)) {   # filter out only NM6 installations (SIZES)
+    if ($nm_vers{$_} =~ m/(6|7)/) {
       push (@nm6_installations, $_)
-    #};
+    };
   };
+
   my @nm6_installations = sort (@nm6_installations);
-  $nm_optionmenu -> configure(-options => [@nm6_installations]);
+
+  unless (int(@nm6_installations)==0) {
+      $nm_optionmenu -> configure(-options => [@nm6_installations]);
+  } else {
+      $nm_optionmenu -> configure(-options => ["No NM installations found"]);
+  }
 
 }
 
@@ -3124,6 +3131,11 @@ sub initialize {
 	    unless (-e $nm_dirs{$key}."/test/".$nmq_name."_compile.pl") {$pr_dir_err++; print LOG "Compile perl-script for NMQual NONMEM installation\nlocated at ".$nm_dirs{$key}." could not be created."}
 	}
     }
+    if (exists($nm_dirs{""})) {  # remove empty entries
+	delete ($nm_dirs{""});
+#	save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
+    }
+
     ($nm_dirs_cluster_ref,$nm_vers_cluster_ref,$nm_types_cluster_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
     our %nm_dirs_cluster = %$nm_dirs_cluster_ref;
     our %nm_vers_cluster = %$nm_vers_cluster_ref;
@@ -4236,15 +4248,27 @@ sub update_nmfe_run_script_area {
     }
     if ($ssh {connect_ssh} == 1 ) {
 	my ($nm_dirs_cluster_ref, $nm_vers_cluster_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
-	my @nm_installations = keys(%$nm_dirs_cluster_ref);
-        if (@nm_installations == 0) {@nm_installations = ("")};
+	my @nm_installations; 
+	my %nm_dirs_cluster = %$nm_dirs_cluster_ref;
+	foreach(keys(%nm_dirs_cluster)) {   # filter only non-blank NM installations;
+	    if ($nm_dirs_cluster{$_} ne "") {
+		push (@nm_installations, $_)
+	    };
+	};	
+        if (int(@nm_installations) == 0) {@nm_installations = ("")};
 	if ($nm_versions_menu =~ m/OPTION/i) {
 	    $nm_versions_menu -> configure (-options=> [@nm_installations]);
 	}
     } else {
 	my ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
-	my @nm_installations = keys(%$nm_dirs_ref);
-        if (@nm_installations == 0) {@nm_installations = ("")};
+	my @nm_installations; 
+	my %nm_dirs = %$nm_dirs_ref;
+	foreach(keys(%nm_dirs)) {   # filter only existing NM installations
+	    if (-e $nm_dirs{$_}) {
+		push (@nm_installations, $_)
+	    };
+	};
+        if (int(@nm_installations) == 0) {@nm_installations = ("")};
  	if ($nm_versions_menu =~ m/OPTION/i) {
  	    $nm_versions_menu -> configure (-options=> [@nm_installations]);
 	}
@@ -5680,13 +5704,15 @@ sub nmfe_run_window {
     
     delete $nm_dirs{""};
     my $nm_dirs_ref; my $nm_vers_ref ;
-    my @nm_installations;
+    my @nm_installations; my @nm_installations_checked;
     if ($ssh{connect_ssh} == 0) {
 	@nm_installations = keys(%nm_dirs);
     } else {
 	@nm_installations = keys(%nm_dirs_cluster);
     }
-    if ($nm_versions_menu) { $nm_versions_menu -> configure (-options => [@nm_installations] )} ;
+    if ($nm_versions_menu) { 
+	$nm_versions_menu -> configure (-options => [@nm_installations] );
+    } ;
 
      my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  #   ssh_notebook_tab ($nmfe_ssh_frame, 1, \@params);
