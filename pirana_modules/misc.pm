@@ -51,7 +51,7 @@ sub find_R {
     foreach my $dir (@prog_dir) {
 	my @dirs = read_dirs ($dir);
 	foreach my $R_dir (@dirs) {
-	    if (($R_dir =~ m/R-/)&&(-e $dir."/".$R_dir."/bin/R.exe")) {
+	    if (($R_dir =~ m/R-/)&&(-d $dir."/".$R_dir."/bin")) {
 		$all_R {$R_dir} = $dir."/".$R_dir;
 	    }
         }
