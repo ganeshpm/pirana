@@ -3951,11 +3951,11 @@ sub populate_models_hlist {
         if (@file_type_copy[$i] < 2) {
           $runno = "<DIR>";
 	  $style = $dirstyle;
-          $models_hlist -> itemCreate($i, 0, -text => $runno, -style=>$style);
+          $models_hlist -> itemCreate($i, 0, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $runno, -style=>$style);
           $models_hlist -> itemCreate($i, 2, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 3, -text => @ctl_descr_copy[$i], -style=>$style );
-          for ($j=3;$j<=10;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
+          for ($j=4;$j<=11;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
            $runno=@ctl_show[$i];
 	   my $mod_background = "#FFFFFF";
@@ -3963,11 +3963,11 @@ sub populate_models_hlist {
              $mod_background = $models_colors{$runno};
            }
 	   if (even($i)) {$mod_background = dark_row_color($mod_background)};
-           our $style_ofv   = $models_hlist -> ItemStyle( 'text', -anchor => 'ne', -justify=>'l', -padx => 5, -background=>$mod_background, -font => $font_small, -foreground=>"#000000");
-           our $style       = $models_hlist -> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$mod_background, -font => $font_normal);;
-           our $style_small = $models_hlist -> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -background=>$mod_background, -font => $font_small);;
-           our $style_green = $models_hlist -> ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_small);
-           our $style_red   = $models_hlist -> ItemStyle( 'text', -padx => 5,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_small);
+           our $style_ofv   = $models_hlist -> ItemStyle( 'text', -anchor => 'ne', -justify=>'l', -padx => 5, -pady=>$hlist_pady, -background=>$mod_background, -font => $font_small, -foreground=>"#000000");
+           our $style       = $models_hlist -> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -pady=>$hlist_pady,-background=>$mod_background, -font => $font_normal);;
+           our $style_small = $models_hlist -> ItemStyle( 'text', -anchor => 'nw', -padx => 5, -pady=>$hlist_pady, -background=>$mod_background, -font => $font_small);;
+           our $style_green = $models_hlist -> ItemStyle( 'text', -padx => 5, -pady=>$hlist_pady,-anchor => 'ne', -background=>$mod_background, -foreground=>'#008800',-font => $font_small);
+           our $style_red   = $models_hlist -> ItemStyle( 'text', -padx => 5, -pady=>$hlist_pady,-anchor => 'ne', -background=>$mod_background, -foreground=>'#990000', -font => $font_small);
            if (($models_ofv{$runno} ne "")&&($models_ofv{$models_refmod{$runno}} ne "")) {
 	       $ofv_diff = calc_ofv_diff ($models_ofv{$models_refmod{$runno}}, $models_method{$models_refmod{$runno}}, $models_ofv{$runno}, $models_method{$runno}) ;
              #if ($ofv_diff >= $setting{ofv_sign}) { $style_ofv = $style_green; }
@@ -3976,7 +3976,7 @@ sub populate_models_hlist {
              #  $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_small);
              #}
              #$ofv_diff = rnd(-$ofv_diff,3); # round before printing
-	   } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>$mod_background,-font => $font_small);}
+	   } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -pady=>$hlist_pady, -foreground=>'#000000', -background=>$mod_background,-font => $font_small);}
 	   my $runno_text = "";
 	   for ($sp=0; $sp<$model_indent{$runno}; $sp++) {$runno_text .= "   "};
 	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
@@ -4194,7 +4194,7 @@ sub populate_tab_hlist {
   foreach (@tabcsv_files) {
     if($hlist) {
       $hlist -> add($i);
-      my $style = $hlist-> ItemStyle('text', -anchor => 'nw',-padx => 5, -background=> $tab_hlist_color, -font => $font_normal);
+      my $style = $hlist-> ItemStyle('text', -anchor => 'nw',-padx => 3, -pady=>$hlist_pady, -background=>$tab_hlist_color, -font => $font_normal);
       $hlist -> itemCreate($i, 0, -text => $_, -style=>$style);
       $i++;
     }
@@ -4777,17 +4777,17 @@ sub frame_tab_show {
   
   #table file listbox
   #our $tab_hlist_color = "#f5FAFF";
-  our $tab_hlist_color = "#f0f0f0";
   our $tab_hlist = $mw ->Scrolled('HList',
         -head       => 0,
         -selectmode => "extended",
         -highlightthickness => 0,
+	-selectborderwidth => 0,
         -columns    => 1, # int(@models_hlist_headers),
         -scrollbars => 'se',
         -width      => 20,
         -height     => $nrows,
         -border     => 1,
-        -pady       => 0,
+        -pady       => $hlist_pady,
         -padx       => 0,
         -background => $tab_hlist_color,
         -selectbackground => $pirana_orange,
@@ -6191,13 +6191,14 @@ sub frame_models_show {
         -relief     => 'groove',
         -highlightthickness => 0,
         -selectmode => "extended",
+	-selectborderwidth => 0,
         -columns    => int(@models_hlist_headers),
         -scrollbars => 'se',
         -height     => $nrows,
         -width      => 105,
         -pady       => 0,
         -padx       => 0,
-        -background => 'white',
+#        -background => '#',
         -selectbackground => $pirana_orange,
         -font       => $font_normal,
         -command    => sub { models_hlist_action () },
@@ -6224,6 +6225,16 @@ sub frame_models_show {
           }
         }
       ) -> grid(-column => 1, -row => 3, -rowspan=>1, -columnspan=>2, -sticky=>'nswe', -ipady=>0);
+  unless ($os =~ m/MSWin/i) {
+     $models_hlist -> bind ('<Button-1>' => sub {
+        if ($hires_time) { # workaround, on Linux double-click doesn't work due to headers in listbox.
+          if ((Time::HiRes::time - $hires_time)<0.25) {
+            models_hlist_action();
+          }
+        }
+        our $hires_time = Time::HiRes::time;
+      })  ;
+  }
 
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>300);
@@ -6287,22 +6298,22 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>70);
 
   bind_models_menu($sel_type);
 
-  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$dir_bgcol, -font => $font_normal);
-  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'white', -font => $font_normal);
-  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'red', -font => $font_normal);
-  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font_normal);
-  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => 0, -padx => 2, -font => $font_normal );
-  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => 0, -padx => 2, -font => $font_normal );
-  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#008800', -background=>'white',-font => $font_fixed);
-  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#990000', -background=>'white',-font => $font_fixed);
-  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#888800', -background=>'white',-font => $font_fixed);
-  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#c0d0ff', -font => $font_normal);
-  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -background=>'#c0d0ff', -font => $font_normal);
-  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#d5e5ff', -font => $font_normal);
-  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -background=>'#ffffe5', -font => $font_normal);
+  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady=> $hlist_pady, -background=>$dir_bgcol, -font => $font_normal);
+  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'white', -font => $font_normal);
+  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'red', -font => $font_normal);
+  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal);
+  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
+  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
+  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#008800', -background=>'white',-font => $font_fixed);
+  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#990000', -background=>'white',-font => $font_fixed);
+  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#888800', -background=>'white',-font => $font_fixed);
+  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#d5e5ff', -font => $font_normal);
+  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady, -background=>'#ffffe5', -font => $font_normal);
 
   # headers of model list
   our @main_headers;
