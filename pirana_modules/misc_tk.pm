@@ -68,14 +68,16 @@ sub center_window {
 ### Compat  : W+L+
 ### Notes   : Doesn't work properly on Linux correct yet...
     my $win = shift;
-    if ($^O =~ m/MSWin32/) {
-	$win -> withdraw;   # Hide the window while we move it about
-	$win -> update;     # Make sure width and height are current
-	my $xpos = int(($win->screenwidth  - $win->width ) / 2);
-	my $ypos = int(($win->screenheight - $win->height) / 2);
-	$win -> geometry("+$xpos+$ypos");
-	$win -> deiconify;  # Show the window again
-    }
+    $win -> withdraw;   # Hide the window while we move it about
+    $win -> update;     # Make sure width and height are current
+    my $width = $win->width;
+    my $height = $win->height;
+    if ($width == 1) {$width=200} # assume width of 200 on Linux
+    if ($height == 1) {$height=200} # assume width of 200 on Linux
+    my $xpos = int(($win->screenwidth  - $width ) / 2);
+    my $ypos = int(($win->screenheight - $height) / 2);
+    $win -> geometry("+$xpos+$ypos");
+    $win -> deiconify;  # Show the window again
 }
 
 1;
