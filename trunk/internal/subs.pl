@@ -3929,16 +3929,18 @@ sub populate_models_hlist {
       $add_condensed = "\n\n";
   }
   undef @ctl_show;
+  undef %model_indent;
   if ($order eq "tree") {
     my ($ctl_show_ref, $tree_text) = tree_models();
     @ctl_show = @$ctl_show_ref;
-    $models_hlist->columnWidth(0, (@header_widths[0]+@header_widths[1]));
-    $models_hlist->columnWidth(1, 0);
+    $models_hlist->columnWidth(0, 0);
+    $models_hlist->columnWidth(1, (@header_widths[1]+@header_widths[2]));
+    $models_hlist->columnWidth(2, 0);
   } else {
     @ctl_show = @ctl_copy;
-    undef %model_indent;
-    $models_hlist->columnWidth(0, @header_widths[0]);
+    $models_hlist->columnWidth(0, 0); # Dummy column, needed to remove whitespace between columns (bug in Tk?)
     $models_hlist->columnWidth(1, @header_widths[1]);
+    $models_hlist->columnWidth(2, @header_widths[2]);
   }
   if ($models_hlist) {
     $models_hlist -> delete("all");
@@ -3950,8 +3952,9 @@ sub populate_models_hlist {
           $runno = "<DIR>";
 	  $style = $dirstyle;
           $models_hlist -> itemCreate($i, 0, -text => $runno, -style=>$style);
-          $models_hlist -> itemCreate($i, 1, -text => "", -style=>$style);
-          $models_hlist -> itemCreate($i, 2, -text => @ctl_descr_copy[$i], -style=>$style );
+          $models_hlist -> itemCreate($i, 1, -text => $runno, -style=>$style);
+          $models_hlist -> itemCreate($i, 2, -text => "", -style=>$style);
+          $models_hlist -> itemCreate($i, 3, -text => @ctl_descr_copy[$i], -style=>$style );
           for ($j=3;$j<=10;$j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
            $runno=@ctl_show[$i];
@@ -4016,19 +4019,20 @@ sub populate_models_hlist {
 	   if (($models_ofv{$runno} eq "")||($models_ofv{$models_refmod{$runno}} eq "")) {
 	       $models_dofv{$runno} = "";
 	   }
-          $models_hlist -> itemCreate($i, 0, -text => $runno_text.$add_condensed, -style=>$style);
-          $models_hlist -> itemCreate($i, 1, -text => $models_refmod{$runno}, -style=>$style_small);
-          $models_hlist -> itemCreate($i, 2, -text => $models_descr{$runno}, -style=>$style );
-          $models_hlist -> itemCreate($i, 3, -text => $method_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 4, -text => $ofv_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 5, -text => $dofv_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 6, -text => $succ_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 7, -text => $cov_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 8, -text => $bnd_temp, -style=>$style);
-          $models_hlist -> itemCreate($i, 9, -text => $sig_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 0, -text => "", -style=>$style);
+          $models_hlist -> itemCreate($i, 1, -text => $runno_text.$add_condensed, -style=>$style);
+          $models_hlist -> itemCreate($i, 2, -text => $models_refmod{$runno}, -style=>$style_small);
+          $models_hlist -> itemCreate($i, 3, -text => $models_descr{$runno}, -style=>$style );
+          $models_hlist -> itemCreate($i, 4, -text => $method_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 5, -text => $ofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 6, -text => $dofv_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 7, -text => $succ_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 8, -text => $cov_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 9, -text => $bnd_temp, -style=>$style);
+          $models_hlist -> itemCreate($i, 10, -text => $sig_temp, -style=>$style);
           my $note = $models_notes{$runno};
 	  if ($condensed == 1) {$note =~ s/\n/\ /g;}
-          $models_hlist -> itemCreate($i, 10, -text => $note, -style=>$style);
+          $models_hlist -> itemCreate($i, 11, -text => $note, -style=>$style);
         };
       }
     }
@@ -5538,11 +5542,14 @@ sub save_header_widths {
     @header_widths[$x] = $models_hlist->columnWidth($x);
     $x++;
   }
+  shift(@header_widths);
   $new_header_widths = join (";",@header_widths);
   if ($setting{header_widths} ne $new_header_widths) {
     $setting{header_widths} = join (";",@header_widths);
     save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
   }
+  unshift(@header_widths, 0);
+
 }
 
 sub nmfe_run_window {
@@ -6174,9 +6181,10 @@ sub frame_models_show {
 ### Notes   : needs some os-specifics to make the HList look okay.
   if (@_[0]==1) {
 #  our $model_hlist_frame = $mw-> Frame(-background=>"$bgcol")->grid(-row=>3,-column=>1,-columnspan=>2,-sticky=>'nswe',-ipadx=>5,-ipady=>0);
-  ### Status bar:
-  @models_hlist_headers = (" #", "Ref#","Description", "Method", "OFV","dOFV","S","C","B","Sig","Notes");
+  ### Status bar: 
+  @models_hlist_headers = ("", " #", "Ref#","Description", "Method", "OFV","dOFV","S","C","B","Sig","Notes");
   @models_hlist_widths = split (";", $setting{header_widths});
+  unshift (@models_hlist_widths, 0);
   my $sel_type = "";
   our $models_hlist = $mw -> Scrolled('HList',
         -head       => 1,
