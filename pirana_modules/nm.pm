@@ -56,9 +56,10 @@ sub create_output_summary_csv {
         # Read data from files
 	my $mod_ref = extract_from_model ($model.".".$setting{ext_ctl}, $model, "all");
 	my %mod = %$mod_ref;
-	my ($methods_ref, $est_ref, $term_ref, $ofvs_ref, $cov_ref, $times_ref, $bnd_ref) = get_estimates_from_lst ($file);
+	my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofvs_ref, $cov_ref, $times_ref, $bnd_ref) = get_estimates_from_lst ($file);
 	my @methods  = @$methods_ref;
 	my %est      = %$est_ref;
+	my %se_est   = %$se_est_ref;
 	my %term_res = %$term_ref;
 	my %ofvs     = %$ofvs_ref;
 	my %cov_mat  = %$cov_ref;
@@ -353,7 +354,7 @@ sub get_estimates_from_lst {
   my @text; my $i=0;
   my $est_area = 0; my $se_area = 0; my $term_area = 0;
   my @term_text; my @est_text; my %ofvs;
-  my %estimates;
+  my %estimates; my %se_estimates;
   my %term_res; # results from #TERM section
   my @methods;
   my %cov_mat;
@@ -362,21 +363,22 @@ sub get_estimates_from_lst {
   my @times;
   my %bnd; $i=0;
   my $nm6 = 1; # Assume NM6
-  my @est;
+  my $count_est_methods = 1;
   foreach my $line (@lst) {
       if ($line =~ m/NONLINEAR MIXED EFFECTS MODEL PROGRAM \(NONMEM\) VERSION 7/) {
 	  $nm6 = 0;
       }
       # Determine estimation method
       if ($line =~ m/#METH\:/) {
-	  $est_method = clean_estim_method($line);
+	  $est_method = "#".$count_est_methods." ".clean_estim_method($line);
 	  $cov_mat{$est_method} = "N";
 	  $bnd{$est_method} = "N";
+	  $count_est_methods++;
       }
-      if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/NO/)) { $est_method = "First Order" }
-      if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/YES/)) { $est_method = "First Order Conditional Estimation" }
-      if (($nm6 == 1)&&($line =~ m/LAPLACIAN OBJ. FUNC./)&&($line=~m/YES/)) { $est_method = "Laplacian Conditional Estimation" }
-      if (($nm6 == 1)&&($line =~ m/EPS-ETA INTERACTION/)&&($line=~m/YES/)) { $est_method .= " With Interaction" }
+      if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/NO/)) { $est_method = "#".$count_est_methods." First Order"; $count_est_methods++; }
+      if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/YES/)) { $est_method = "#".$count_est_methods." First Order Conditional Estimation"; $count_est_methods++; }
+      if (($nm6 == 1)&&($line =~ m/LAPLACIAN OBJ. FUNC./)&&($line=~m/YES/)) { $est_method = "#".$count_est_methods." Laplacian Conditional Estimation"; $count_est_methods++; }
+      if (($nm6 == 1)&&($line =~ m/EPS-ETA INTERACTION/)&&($line=~m/YES/)) { $est_method .= "#".$count_est_methods." With Interaction"; $count_est_methods++;}
 
       if (($line =~ m/0MINIMIZATION SUCCESSFUL/)||($line =~ m/0MINIMIZATION TERMINATED/)) { #NM6
 	  $term_area = 1;
@@ -426,17 +428,15 @@ sub get_estimates_from_lst {
 	  #     push (@methods, $est_method);
 	  # }
 	  if ($est_area==1) {
-	      @est = get_estimates_from_text (\@est_text);
-	      $estimates {$est_method} = \@est;
+	      my @est = get_estimates_from_text (\@est_text);
+	      $estimates {$est_method} = \@est ;
 	      @est_text = ();
 	      push (@methods, $est_method);
 	  }
 	  if ($se_area == 1) {
 	      my @se = get_estimates_from_text (\@est_text);
-	      push (@est, @se);
-	      $estimates{$est_method} = \@est;
+	      $se_estimates{$est_method} = \@se ;
 	      @est_text = ();
-#	      push (@methods, $est_method);
 	  }
 	  if ($term_area == 1) {
 	      my @term = get_term_results_from_text (\@term_text);
@@ -451,7 +451,7 @@ sub get_estimates_from_lst {
       $i++;
       $est_times{$est_method} = \@times;
   }
-  return (\@methods, \%estimates, \%term_res, \%ofvs, \%cov_mat, \%est_times, \%bnd);
+  return (\@methods, \%estimates, \%se_estimates, \%term_res, \%ofvs, \%cov_mat, \%est_times, \%bnd);
 }
 
 sub get_term_results_from_text {
@@ -1118,12 +1118,13 @@ sub output_results_HTML {
 
 # Estimation specific info and Parameter estimates
   if (($include_html{param_est_all} == 1) || ($include_html{param_est_last}==1) ) {
-      my ($methods_ref, $est_ref, $term_ref, $ofvs_ref) = get_estimates_from_lst ($file);
+      my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofvs_ref) = get_estimates_from_lst ($file);
       my @methods = @$methods_ref;
       if ($include_html{param_est_last} == 1) {
 	  @methods = @methods[(@methods-1)];
-      }
+      }      
       my %est = %$est_ref;
+      my %se_est  = %$se_est_ref;
       my %term_res = %$term_ref;
       my %ofvs = %$ofvs_ref;
       my $meth_descr;
@@ -1133,11 +1134,11 @@ sub output_results_HTML {
 	  } else {
 	      $meth_descr = $meth;
 	  }
-#	  print @{@{$est{$meth}}[1]};
+#	  print $meth.$est{$meth}."\n";
 	  print HTML "<TABLE width=600 border=0 cellpadding=2 cellspacing=0 CLASS='theta'>\n";
 	  print HTML "<TR bgcolor='#000055'><TD colspan=9><B><FONT color='#FFFFFF'>".$meth_descr."</FONT></B></TD></TR>";
 	  generate_HTML_run_specific_info (\%res, \%mod, $term_res{$meth}, $ofvs{$meth});
-	  generate_HTML_parameter_estimates (\%res, \%mod, $est{$meth}, $term_res{$meth});
+	  generate_HTML_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
       }
   print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements<BR>";
 #      print HTML "<font size=1 face=verdana,arial>* Random effects are shown as OM^2 and SI^2</FONT><BR>";
@@ -1171,7 +1172,7 @@ sub generate_HTML_run_specific_info {
 }
 
 sub generate_HTML_parameter_estimates {
-  my ($res_ref, $mod_ref, $est_ref, $term_ref) = @_;
+  my ($res_ref, $mod_ref, $est_ref, $se_est_ref, $term_ref) = @_;
   my %res = %$res_ref;
   my %mod = %$mod_ref;
 
@@ -1189,11 +1190,15 @@ sub generate_HTML_parameter_estimates {
   my $theta_bnd_up_ref = $res{theta_bnd_up};  my @theta_bnd_up = @$theta_bnd_up_ref;
 
   my @theta_se; my @omega_se; my @sigma_se;
-  if (@est>3) {
-      my $theta_se_ref = @est[3];  @theta_se = @$theta_se_ref;
-      my $omega_se_ref = @est[4];  @omega_se = @$omega_se_ref;
-      my $sigma_se_ref = @est[5];  @sigma_se = @$sigma_se_ref;
-  }
+  my @se_est;
+  if ($se_est_ref =~ m/ARRAY/) {
+      @se_est = @$se_est_ref;
+      if (@est>1) {
+	  my $theta_se_ref = @se_est[0];  @theta_se = @$theta_se_ref;
+	  my $omega_se_ref = @se_est[1];  @omega_se = @$omega_se_ref;
+	  my $sigma_se_ref = @se_est[2];  @sigma_se = @$sigma_se_ref;
+      }
+  } 
 
   my $theta_names_ref = $mod{th_descr}; my @theta_names = @$theta_names_ref;
   my $theta_fix_ref = $mod{th_fix}; my @theta_fix = @$theta_fix_ref;
@@ -1226,7 +1231,7 @@ sub generate_HTML_parameter_estimates {
     print HTML "<TD bgcolor='#EAEAEA'>".@theta_fix[$i]."</TD>";
     my $rse = "";
     unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,1)) };
-    if (@theta_se[$i] ne "") {print HTML "<TD align=RIGHT>".rnd(@theta_se[$i],1)."</TD><TD align=RIGHT bgcolor='#EAEAEA'>".$rse."%</TD>"}
+    if (@theta_se[$i] ne "") {print HTML "<TD align=RIGHT>".rnd(@theta_se[$i],4)."</TD><TD align=RIGHT bgcolor='#EAEAEA'>".$rse."%</TD>"}
       else {print HTML "<TD>&nbsp;</TD><TD bgcolor='#EAEAEA'>&nbsp;</TD>"};
     my $low = $theta_bnd_low[$i];
     my $up = $theta_bnd_up[$i];
@@ -1457,7 +1462,8 @@ sub extract_from_model {
   }
   if ($what eq "all") {
     # loop through model file to extract parameter names
-    my $theta_area=0; my $omega_area=0; my $sigma_area=0;
+      my $theta_area=0; my $omega_area=0; my $sigma_area=0; my $prior=0;
+    my $theta_area_prv=0; my $omega_area_prv=0; my $sigma_area_prv=0; # needed to determine whether in Prior region or not
     my $table_area=0; my $estim_area=0; my $msf_file="";
     my $cnt = 0;
     my @th_descr; my @om_descr; my @si_descr;
@@ -1476,17 +1482,20 @@ sub extract_from_model {
 	  $comment =~ s/;//g;
 	  push (@comments, $comment);
       } else {
-	  if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1 }
-	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1 }
-	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1 }
+	  if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1; $theta_area_prv=1; }
+	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; $omega_area_prv=1; }
+	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; }
 	  if (substr ($_,0,6) eq "\$TABLE") {$table_area = 1 }
-	  if (substr ($_,0,4) eq "\$EST") {$estim_area = 1 }
+	  if (substr ($_,0,4) eq "\$EST")   {$estim_area = 1 }
 	  if (substr ($_,0,5) eq "\$DATA") {
 	      my @data_arr = split (" ", $_);
 	      shift(@data_arr);
 	      my $dataset = "";
 	      while (($dataset eq "")&&(@data_arr>0)) {$dataset = shift(@data_arr)};
 	      $mod{dataset} = $dataset;
+	  }
+	  if ( $theta_area_prv + $omega_area_prv + $theta_area == 3) {
+	      $prior = 1;
 	  }
 	  if ($theta_area+$omega_area+$sigma_area>0) {
 	      my ($init, @rest) = split (";",$_);
@@ -1505,11 +1514,11 @@ sub extract_from_model {
 	      if (($init =~ m/\d/)&!($init =~ m/OMEGA/)) { # match numeric character
 		  $init =~ s/\s//g;
 		  chomp($descr);
-		  if ($theta_area ==1) {push (@th_descr, $descr); }
+		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
 		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@om_descr, $descr); }
 		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); }
 		  if ($init =~ m/FIX/) { # match numeric character
-		      if ($theta_area ==1) {push (@th_fix, "FIX")} ;
+		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
 		      if ($omega_area ==1) {push (@om_fix, "FIX")} ;
 		      if ($sigma_area ==1) {push (@si_fix, "FIX")} ;
 		  } else {
@@ -1643,12 +1652,13 @@ sub output_results_LaTeX {
 
 # Estimation specific info and Parameter estimates
   if (($include_html{param_est_all} == 1) || ($include_html{param_est_last}==1) ) {
-      my ($methods_ref, $est_ref, $term_ref, $ofvs_ref) = get_estimates_from_lst ($file);
+      my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofvs_ref) = get_estimates_from_lst ($file);
       my @methods = @$methods_ref;
       if ($include_html{param_est_last} == 1) {
 	  @methods = @methods[(@methods-1)];
       }
       my %est = %$est_ref;
+      my %se_est  = %$se_est_ref;
       my %term_res = %$term_ref;
       my %ofvs = %$ofvs_ref;
       my $meth_descr;
@@ -1661,7 +1671,7 @@ sub output_results_LaTeX {
 	  }
 #	  $latex .= generate_LaTeX_run_specific_info (\%res, \%mod, $term_res{$meth}, $ofvs{$meth});
 	  $latex .= "\\subsection*{Parameter estimates from ".$meth."}\n";
-	  $latex .= generate_LaTeX_parameter_estimates (\%res, \%mod, $est{$meth}, $term_res{$meth});
+	  $latex .= generate_LaTeX_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
 	  if ($i < @methods) {
 	      $latex .= "\\clearpage \n"; $i++
 	  }
@@ -1689,7 +1699,7 @@ sub generate_LaTeX_run_specific_info {
 }
 
 sub generate_LaTeX_parameter_estimates {
-  my ($res_ref, $mod_ref, $est_ref, $term_ref) = @_;
+  my ($res_ref, $mod_ref, $est_ref, $se_est_ref, $term_ref) = @_;
   my %res = %$res_ref;
   my %mod = %$mod_ref;
   my @est = @$est_ref;
@@ -1706,11 +1716,15 @@ sub generate_LaTeX_parameter_estimates {
   my $theta_bnd_up_ref = $res{theta_bnd_up};  my @theta_bnd_up = @$theta_bnd_up_ref;
 
   my @theta_se; my @omega_se; my @sigma_se;
-  if (@est>3) {
-      my $theta_se_ref = @est[3];  @theta_se = @$theta_se_ref;
-      my $omega_se_ref = @est[4];  @omega_se = @$omega_se_ref;
-      my $sigma_se_ref = @est[5];  @sigma_se = @$sigma_se_ref;
-  }
+  my @se_est;
+  if ($se_est_ref =~ m/ARRAY/) {
+      @se_est = @$se_est_ref;
+      if (@est>1) {
+	  my $theta_se_ref = @se_est[0];  @theta_se = @$theta_se_ref;
+	  my $omega_se_ref = @se_est[1];  @omega_se = @$omega_se_ref;
+	  my $sigma_se_ref = @se_est[2];  @sigma_se = @$sigma_se_ref;
+      }
+  } 
 
   my $theta_names_ref = $mod{th_descr}; my @theta_names = @$theta_names_ref;
   my $theta_fix_ref = $mod{th_fix}; my @theta_fix = @$theta_fix_ref;
@@ -1743,7 +1757,7 @@ sub generate_LaTeX_parameter_estimates {
 	  $latex .= ($i+1)." & ".@theta_names[$i]." & ".rnd(@theta[$i],5)." & ".@theta_fix[$i];
 	  my $rse = "";
 	  unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,1)) };
-	  if (@theta_se[$i] ne "") {$latex .= " & ".rnd(@theta_se[$i],1)." & ".$rse." & "}
+	  if (@theta_se[$i] ne "") {$latex .= " & ".rnd(@theta_se[$i],3)." & ".$rse." & "}
 	  else {$latex .= " & "};
 	  my $low = $theta_bnd_low[$i];
 	  my $up = $theta_bnd_up[$i];
