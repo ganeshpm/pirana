@@ -6447,7 +6447,7 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>70);
 #      my $save_file = $mw -> getSaveFile (-defaultextension=>".csv", -filetypes=>$types, -title=>"Save R script as", -initialdir => $cwd);
       create_output_summary_csv ("pirana_run_summary.csv", \%setting, \%models_notes, \%models_descr, $mw);
       if (-e $software{spreadsheet}) {
-	  start_command($software{spreadsheet},'"'.win_path('pirana_run_summary.csv').'"');
+	  start_command($software{spreadsheet},'"pirana_run_summary.csv"');
       } else {message("Spreadsheet application not found. Please check settings.")};
       status ();
   }) ->grid(-row=>1,-column=>7,-columnspan=>1,-sticky=>'wens');

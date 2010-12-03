@@ -720,7 +720,7 @@ sub duplicate_model {
       my $change_area = 0; my $prior_area=0; my $th_area_flag=0;
       my $om_block_area = 0; my $om_block_cnt = 0; my $om_block_total;
       my $si_block_area = 0; my $si_block_cnt = 0; my $si_block_total;
-      my $om_n = 0; my $th_n = 0; my $si_n = 0;
+      my $om_n = 0; my $th_n = 1; my $si_n = 0;
       my $i=0; while (@ctl_lines[$i]) {
 	  if (substr(@ctl_lines[$i],0,1) eq "\$" ) {$change_area = 0};
 	  if (substr(@ctl_lines[$i],0,5) eq "\$PROB") {
@@ -809,10 +809,10 @@ sub parse_omega_line { # can also be used for sigma block
     if ( $om_string_strip_block =~ m/\d/) { # contains an omega value on the same line as $OMEGA (BLOCK)
 	$replace_om = 1;
 	if ($om_area == 1) {
-	    $om_string =~ m/(OMEGA BLOCK\(.\))/i ;
+	    $om_string =~ m/(\$OMEGA BLOCK\(.\))/i ;
 	    $add_om_string = $1." ";
 	} else {
-	    $om_string =~ m/(SIGMA BLOCK\(.\))/i ;
+	    $om_string =~ m/(\$SIGMA BLOCK\(.\))/i ;
 	    $add_om_string = $1." ";
 	}
     };
