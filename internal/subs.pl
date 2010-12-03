@@ -3029,7 +3029,6 @@ sub initialize {
     if (int(@models_hlist_widths) != 12) {
 	my ($def_setting_ref, $def_setting_descr_ref) = read_ini($base_dir."/ini_defaults/settings.ini");
 	my %def_setting = %$def_setting_ref;
-	print "test";
 	$setting{header_widths} = $def_setting{header_widths};
 	save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
     }
@@ -5442,11 +5441,11 @@ sub show_links {
 	  $i++;
       }
   } else {
-      if (-e "/usr/bin/R") {
+      if (-e $software{r_exec}) {
 	  our $r_button = $frame_links -> Button(-image=>$gif{r}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
 	      chdir ($cwd);
 	      unlink ($cwd."/.Rprofile");
-	      run_command('/usr/bin/R');
+	      run_command($software{r_exec});
           }) -> grid(-row=>2,-column=>$i,-sticky=>'news');
 	  $help->attach($r_button, -msg => "Open R in terminal");
 	  $i++;
