@@ -98,25 +98,25 @@ sub create_menu_bar {
   });
   my $mbar_results_html = $mbar_results -> cascade (-image=>$gif{question_doc},-font=>$font, -compound=>'left', -label => "Include in run reports", -background=>$bgcol, -tearoff => 0);
   $mbar_results_html -> checkbutton (-label => "Basic run info",-font=>$font, -variable=>\$run_reports{basic_run_info}, -command=> sub{
-      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+      save_ini2 ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results_html -> checkbutton (-label => "Notes and comments",-font=>$font, -variable=>\$run_reports{notes_and_comments}, -command => sub{
-      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+      save_ini2 ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results_html -> checkbutton (-label => "Model file",-font=>$font, -variable=>\$run_reports{model_file}, -command=>sub{
-      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+      save_ini2 ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results_html -> checkbutton (-label => "Parameter estimates of all estimation methods", -font=>$font,-variable=>\$run_reports{param_est_all}, -command => sub {
       if ($run_reports{param_est_all} == 1 ) {
 	  $run_reports{param_est_last} = 0;
       }
-      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+      save_ini2 ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results_html -> checkbutton (-label => "Parameter estimates of last estimation methods",-font=>$font, -variable=>\$run_reports{param_est_last}, -command => sub {
       if ($run_reports{param_est_last} == 1 ) {
 	  $run_reports{param_est_all} = 0;
       }
-      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr);
+      save_ini2 ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results -> command(-label => "View NM output file", -font=>$font,-background=>$bgcol,-underline=>0,-image=>$gif{notepad}, -compound=>'left', -command=> sub {
       @run = @ctl_show[$models_hlist -> selectionGet];
