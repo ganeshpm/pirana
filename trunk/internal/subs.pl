@@ -4325,7 +4325,7 @@ sub build_nmfe_run_command {
 	    if ($ssh{parameters} ne "") {
 		$ssh .= $ssh{parameters};
 	    }
-            $ssh .= ' "';
+            $ssh .= " '";
 	    $dir = $dir_entry -> get();
 	    $dir =~ s/$ssh{local_folder}//gi;
             my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
@@ -4350,7 +4350,7 @@ sub build_nmfe_run_command {
             }
             $command .= './'.$run_script; #only on linux
         }
-	if ($ssh{connect_ssh}==1) { $command .= '"'};
+	if ($ssh{connect_ssh}==1) { $command .= "'"};
 	unless (($os =~ m/MSWin/ )||($run_in_background==0)) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
@@ -4469,8 +4469,8 @@ sub build_psn_run_command {
 	}
 	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
-	$ssh_add .= "; cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
-	$ssh_add2 = '';
+	$ssh_add .= "'cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
+	$ssh_add2 = "'";
 	$cwd = $dir_entry -> get();
 	my $l = length($cwd);
 	unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
@@ -5804,7 +5804,7 @@ sub nmfe_run_window {
 	    } else {
 		if ($os =~ m/MSWin/i) {
 		    $nmfe_run_command = "start /b ".$nmfe_run_command;
-		}
+		} 
 	    }
 	    if ($clusters{run_on_pcluster} == 1) {
 		my $batfile = $nmfe_run_command;
@@ -6074,7 +6074,7 @@ sub psn_run_window {
 		    if ($setting{quit_shell}==0) { # don't close terminal window after completion
 			$psn_command_line .= ';read -n1';
 		    }
-		    $psn_command_line = $setting{terminal}." -e '".$psn_command_line."' &";
+		    $psn_command_line = $setting{terminal}.' -e "'.$psn_command_line.'" &';
 		}
 	    }
 	}
