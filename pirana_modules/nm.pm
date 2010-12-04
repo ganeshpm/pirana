@@ -1669,8 +1669,9 @@ sub output_results_LaTeX {
 	  } else {
 	      $meth_descr = $meth;
 	  }
-#	  $latex .= generate_LaTeX_run_specific_info (\%res, \%mod, $term_res{$meth}, $ofvs{$meth});
-	  $latex .= "\\subsection*{Parameter estimates from ".$meth."}\n";
+	  my $meth_esc = $meth;
+	  $meth_esc =~ s/\#/\\\#/gi;  # insert escape estimation number
+	  $latex .= "\\subsection*{Parameter estimates from ".$meth_esc."}\n";
 	  $latex .= generate_LaTeX_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
 	  if ($i < @methods) {
 	      $latex .= "\\clearpage \n"; $i++
@@ -1893,7 +1894,7 @@ sub generate_LaTeX_parameter_estimates {
   $latex .= "{\\footnotesize\n";
   $latex .= "\\begin{tabular}{l l ";
   foreach (@sigma) {$latex .= " c c " };
-  $latex .= " c c }\n";
+  $latex .= " c c c}\n";
 
   $latex .= "\\textbf{\$\\Sigma^2\$} & \\textbf{Description} & \n";
 
