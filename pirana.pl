@@ -195,26 +195,29 @@ pirana_debug ($debug_mode, "8. Building Pirana main window.");
 our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 $mw -> setPalette ($bgcol);
 #our $font = $mw -> fontCreate('main_normal', -family=>'Helvetica', -size=>int(-11));
-our $font = 'Helvetica 7';
-our $font_normal = 'Helvetica 7';
-our $font_small = 'Helvetica 6';
+
+our $font_family = "Helvetica";
+if ($^O =~ m/MSWin/) {$font_family = "Verdana"}; # looks a bit clearer on MSWin
+our $font = $font_family.' 7';
+our $font_normal =  $font_family.' 7';
+our $font_small =  $font_family.' 6';
 our $font_fixed = "Courier 8";
-our $font_bold = 'Helvetica 8 bold';
+our $font_bold =  $font_family.' 8 bold';
 if ($setting{font_size}==2) {
-    our $font = 'Helvetica 8';
-    our $font_normal = 'Helvetica 8';
-    our $font_small = 'Helvetica 7';
+    our $font =  $font_family.' 8';
+    our $font_normal =  $font_family.' 8';
+    our $font_small =  $font_family.' 7';
     our $font_fixed = "Courier 9";
     our $font_fixed2 = "Courier 10";
-    our $font_bold = 'Helvetica 8 bold';
+    our $font_bold =  $font_family.' 8 bold';
 }
 if ($setting{font_size}==3) {
-    our $font = 'Helvetica 10';
-    our $font_normal = 'Helvetica 10';
-    our $font_small = 'Helvetica 8';
-    our $font_fixed = "Courier 12";
-    our $font_fixed2 = "Courier 12";
-    our $font_bold = 'Helvetica 11 bold';
+    our $font =  $font_family.' 10';
+    our $font_normal =  $font_family.' 10';
+    our $font_small =  $font_family.' 8';
+    our $font_fixed =  $font_family."Courier 11";
+    our $font_fixed2 =  $font_family."Courier 11";
+    our $font_bold =  $font_family.' 11 bold';
 }
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
