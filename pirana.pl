@@ -19,9 +19,13 @@
 #    along with Piraña.  If not, see <http://www.gnu.org/licenses/>.
 #
 our $debug_mode = 0;
+our $console = 0; # keep console window open on Windows
 foreach (@ARGV) {
   if ($_ =~ m/debug/) {
-    $debug_mode = 1;
+      $debug_mode = 1;
+  }
+  if ($_ =~ m/console/) {
+      $console = 1;
   }
 }
 
@@ -69,6 +73,11 @@ if ($os =~ m/MSWin/i) {
   require Win32::Process;
   Win32::SetChildShowWindow(0); # don't open new console windows
   require Win32::DriveInfo;     # needed for NM install
+  unless ($console == 1) {
+      require Win32::GUI;
+      my $hw = Win32::GUI::GetPerlWindow();
+      Win32::GUI::Hide($hw);
+  }
 }
 
 our $user = getlogin();
