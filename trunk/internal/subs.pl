@@ -1321,7 +1321,6 @@ sub run_command_in_console {
 ### Purpose : Run a command and capture the console output
 ### Compat  : W+L?
     my $command = shift;
-    print $command;
     my $console;
     if ($show_console == 1) {
 	$console = show_console_output("");
@@ -4305,7 +4304,7 @@ sub build_nmfe_run_command {
 	    if ($ssh{parameters} ne "") {
 		$ssh .= $ssh{parameters};
 	    }
-            $ssh .= " '";
+            $ssh .= " ";
 	    $dir = $dir_entry -> get();
 	    $dir =~ s/$ssh{local_folder}//gi;
             my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
@@ -4330,7 +4329,7 @@ sub build_nmfe_run_command {
             }
             $command .= './'.$run_script; #only on linux
         }
-	if ($ssh{connect_ssh}==1) { $command .= "'"};
+	if ($ssh{connect_ssh}==1) { $command .= ""};
 	unless (($os =~ m/MSWin/ )||($run_in_background==0)) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
@@ -4449,8 +4448,8 @@ sub build_psn_run_command {
 	}
 	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
-	$ssh_add .= "'cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
-	$ssh_add2 = "'";
+	$ssh_add .= "cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
+	$ssh_add2 = "";
 	$cwd = $dir_entry -> get();
 	my $l = length($cwd);
 	unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
@@ -6192,7 +6191,7 @@ sub psn_info_update_text {
         $psn_localiz = "Remote installation of ";
     }
     if ($psn_text eq "") {
-	$psn_text = $psn_localiz." PsN was not found. Please check your settings!";
+	$psn_text = $psn_localiz."PsN was not found. Please check your settings!";
 	$psn_run_button -> configure(-state=>'disabled');
     }
     $psn_run_text -> delete ("0.0",end);

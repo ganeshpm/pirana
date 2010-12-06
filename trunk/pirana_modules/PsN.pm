@@ -22,19 +22,16 @@ sub get_psn_info {
       if ($ssh{parameters} ne "") {
           $ssh_cmd1 .= $ssh{parameters};
       }
-      $ssh_cmd1 .= ' "';
-      $ssh_cmd2 = '; exit;"';
+      $ssh_cmd1 .= '';
+      $ssh_cmd2 = '; exit';
   } else {
       $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
   }
-  my $cmd = os_specific_path($ssh_cmd1.$psn_full.' -'.$switch.$ssh_cmd2).' |';
-  #print $cmd;
+  my $cmd = os_specific_path($ssh_cmd1.$psn_full.' -'.$switch.$ssh_cmd2.' |');
   eval(open (OUT, $cmd));
   my $psn_text = "";
-  my $flag = 0;
   while (my $line = <OUT>) {
     $psn_text .= $line;
-    $flag = $flag + 0.5;
   }
   close (OUT);
   return ($psn_text);
@@ -79,4 +76,5 @@ sub get_psn_nm_versions {
   close (OUT);
   return (\%psn_nm_versions, \%psn_nm_versions_vers);
 }
+
 1;
