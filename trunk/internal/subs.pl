@@ -3034,26 +3034,6 @@ sub initialize {
     }
     our @models_hlist_widths = split (";", $setting{header_widths});
 
-    our $font_normal = 'Verdana 7';
-    our $font_small = 'Verdana 6';
-    our $font_fixed = "Courier 8";
-    our $font_bold = 'Verdana 8 bold';
-
-    if ($setting{font_size}==2) {
-	our $font_normal = 'Verdana 8';
-	our $font_small = 'Verdana 7';
-	our $font_fixed = "Courier 9";
-	our $font_fixed2 = "LucidaSansUnicode 10";
-	our $font_bold = 'Verdana 8 bold';
-    }
-    if ($setting{font_size}==3) {
-	our $font_normal = 'Verdana 10';
-	our $font_small = 'Verdana 8';
-	our $font_fixed = "Courier 12";
-	our $font_fixed2 = "Courier 12";
-	our $font_bold = 'Verdana 11 bold';
-    }
-
     print LOG "Deleting temporary files...\n";
     if(chdir ($base_dir."/temp")){
 	my @temp_files = <*>;
@@ -6296,12 +6276,12 @@ sub frame_models_show {
 
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>300);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>200);
+$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>300);
 $mw -> gridColumnconfigure(3, -weight => 1, -minsize=>150);
-$mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
-$mw -> gridRowconfigure(2, -weight => 1, -minsize=>20);
+$mw -> gridRowconfigure(1, -weight => 1, -minsize=>50);
+$mw -> gridRowconfigure(2, -weight => 1, -minsize=>30);
 $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
-$mw -> gridRowconfigure(4, -weight => 1, -minsize=>70);
+$mw -> gridRowconfigure(4, -weight => 1, -minsize=>75);
 
     if ($os =~ m/darwin/i) {
       $models_hlist -> bind ('<Button-1>' => sub {

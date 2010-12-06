@@ -194,7 +194,28 @@ pirana_debug ($debug_mode, "8. Building Pirana main window.");
 
 our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 $mw -> setPalette ($bgcol);
-our $font = $mw -> fontCreate('main_normal', -family=>'verdana', -size=>int(-11));
+#our $font = $mw -> fontCreate('main_normal', -family=>'Helvetica', -size=>int(-11));
+our $font = 'Helvetica 7';
+our $font_normal = 'Helvetica 7';
+our $font_small = 'Helvetica 6';
+our $font_fixed = "Courier 8";
+our $font_bold = 'Helvetica 8 bold';
+if ($setting{font_size}==2) {
+    our $font = 'Helvetica 8';
+    our $font_normal = 'Helvetica 8';
+    our $font_small = 'Helvetica 7';
+    our $font_fixed = "Courier 9";
+    our $font_fixed2 = "Courier 10";
+    our $font_bold = 'Helvetica 8 bold';
+}
+if ($setting{font_size}==3) {
+    our $font = 'Helvetica 10';
+    our $font_normal = 'Helvetica 10';
+    our $font_small = 'Helvetica 8';
+    our $font_fixed = "Courier 12";
+    our $font_fixed2 = "Courier 12";
+    our $font_bold = 'Helvetica 11 bold';
+}
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
 $mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
