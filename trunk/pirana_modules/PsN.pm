@@ -15,14 +15,14 @@ sub get_psn_info {
   my %ssh = %$ssh_ref;
   # Switch is either "h" or "help"
   #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
-  my $ssh_cmd1; my $ssh_cmd2;
+  my $ssh_cmd1 = ''; my $ssh_cmd2;
   my $quote = ''; my $psn_full = $psn_command;
   if ($ssh{connect_ssh} == 1) {
       $ssh_cmd1 = $ssh{login}." ";
       if ($ssh{parameters} ne "") {
           $ssh_cmd1 .= $ssh{parameters};
+	  $ssh_cmd1 .= " ";
       }
-      $ssh_cmd1 .= '';
       $ssh_cmd2 = '; exit';
   } else {
       $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
