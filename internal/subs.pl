@@ -4395,7 +4395,8 @@ sub exec_run_psn {
 
 sub update_psn_run_command {
 #update one specific parameter in the psn_command line
-    my ($command_line, $parameter, $value, $add, $ssh_ref, $clusters_ref) = @_;
+    my ($command_line_ref, $parameter, $value, $add, $ssh_ref, $clusters_ref) = @_;
+    my $command_line = $$command_line_ref; # if not passed as reference, e.g. "Program Files" may be considered as an array
     my @com = split (" ",$command_line);
     my $parameter_found=0;
     my $eq="=";
@@ -4432,12 +4433,12 @@ sub build_psn_run_command {
     my $outputfile= $model.".".$setting{ext_res};
 
     if ($psn_command eq "execute") {
-	$psn_command_line = update_psn_run_command ($psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
+	$psn_command_line = update_psn_run_command (\$psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
     };
     if ($psn_command eq "sumo") {
 	$psn_command_line .= " ".$outputfile;
     } else {
-	$psn_command_line = update_psn_run_command ($psn_command_line, "-nm_version", "default", 0, \%ssh, \%clusters);
+	$psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", "default", 0, \%ssh, \%clusters);
 	$psn_command_line .= " ".$modelfile;
     }
 
@@ -5929,7 +5930,7 @@ sub psn_run_window {
     $psn_run_frame -> Checkbutton (-text=>" ", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
         # update
         $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-        $psn_command_line = update_psn_run_command ($psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+        $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0", $psn_command_line);
@@ -5957,7 +5958,7 @@ sub psn_run_window {
             };
             unless ($psn_option eq "sumo") {
                 $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-                $psn_command_line = update_psn_run_command ($psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+                $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
             }
             $psn_command_line_entry -> delete("1.0","end");
             $psn_command_line_entry =~ s/\n//g;
@@ -5987,7 +5988,7 @@ sub psn_run_window {
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
         $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-        $psn_command_line = update_psn_run_command ($psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+        $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0", $psn_command_line);
