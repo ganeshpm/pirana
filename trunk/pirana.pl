@@ -206,26 +206,34 @@ $mw -> setPalette ($bgcol);
 #our $font = $mw -> fontCreate('main_normal', -family=>'Helvetica', -size=>int(-11));
 
 our $font_family = "Helvetica";
-if ($^O =~ m/MSWin/) {$font_family = "Verdana"}; # looks a bit clearer on MSWin
+our $font_fixed_family = "Courier";
+if ($^O =~ m/MSWin/i) {
+    $font_family = "Verdana"
+}; # looks a bit clearer on MSWin
+if ($^O =~ m/Darwin/i) {
+    $font_family = "Arial";
+    $font_fixed_family = "System";
+}; 
+
 our $font = $font_family.' 7';
 our $font_normal =  $font_family.' 7';
 our $font_small =  $font_family.' 6';
-our $font_fixed = "Courier 8";
+our $font_fixed = $font_fixed_family." 8";
 our $font_bold =  $font_family.' 8 bold';
 if ($setting{font_size}==2) {
     our $font =  $font_family.' 8';
     our $font_normal =  $font_family.' 8';
     our $font_small =  $font_family.' 7';
-    our $font_fixed = "Courier 9";
-    our $font_fixed2 = "Courier 10";
+    our $font_fixed = $font_fixed_family." 9";
+    our $font_fixed2 = $font_fixed_family." 10";
     our $font_bold =  $font_family.' 8 bold';
 }
 if ($setting{font_size}==3) {
     our $font =  $font_family.' 10';
     our $font_normal =  $font_family.' 10';
     our $font_small =  $font_family.' 8';
-    our $font_fixed =  $font_family."Courier 11";
-    our $font_fixed2 =  $font_family."Courier 11";
+    our $font_fixed =  $font_fixed_family." 11";
+    our $font_fixed2 =  $font_fixed_family." 11";
     our $font_bold =  $font_family.' 11 bold';
 }
 
