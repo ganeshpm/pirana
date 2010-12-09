@@ -5809,9 +5809,11 @@ sub nmfe_run_window {
     $nmfe_run_command = $run_command;
     update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
 
-    $nmfe_run_window -> resizable( 0, 0 );
-    $nmfe_run_window -> raise();
-    $nmfe_run_window -> update();
+    unless($^O =~ m/darwin/i) {
+	$nmfe_run_window -> resizable( 0, 0 );
+	$nmfe_run_window -> raise();
+	$nmfe_run_window -> update();
+    }
 }
 
 sub pcluster_select_node_window {
@@ -6068,8 +6070,8 @@ sub psn_run_window {
         $psn_run_window -> destroy();
                                    });
 
-    unless ($^O =~ m/MSWin/) {
-       # on Windows, 'resizable' makes window go to background
+    unless ($^O =~ m/(MSWin|darwin)/i) {
+       # on Windows, 'resizable' makes window go to background; 
 	$psn_run_window -> resizable (0,0);
     }
 
