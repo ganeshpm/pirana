@@ -1378,7 +1378,9 @@ sub run_command_in_console {
 		if (-e $script_output) {
 		    start_command ($viewer, $script_output.$add_fork);
 		}
-		$console -> insert('end', "Pirana: Trying to load file ".$script_output."\n", "pirana");
+		if (defined($console)) {
+		    $console -> insert('end', "Pirana: Trying to load file ".$script_output."\n", "pirana");
+		}
 	    };
 	}
     }
