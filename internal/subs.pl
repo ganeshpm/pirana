@@ -1467,7 +1467,7 @@ sub edit_model {
       	start_command($software{editor}, '"'.$modelfile.'"');
 	return();
     }
-    if (($software{editor} eq "")||(!(-e $software{editor}))) {
+    unless (-e $software{editor}) {
 	open (IN, "<".$modelfile);
 	my @lines = <IN>;
 	close IN;
@@ -6287,16 +6287,16 @@ $mw -> gridRowconfigure(2, -weight => 1, -minsize=>30);
 $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
 $mw -> gridRowconfigure(4, -weight => 1, -minsize=>75);
 
-    if ($os =~ m/darwin/i) {
+#    if ($os =~ m/darwin/i) {
       $models_hlist -> bind ('<Button-1>' => sub {
-        if ($hires_time) { # workaround, on Linux double-click doesn't work due to headers in listbox.
+        if ($hires_time) {
           if ((Time::HiRes::time - $hires_time)<0.25) {
             models_hlist_action();
           }
         }
         our $hires_time = Time::HiRes::time;
       })  ;
-    }
+#    }
 
     $models_hlist -> bind ('<Control-r>' => sub {
 	nmfe_command();
