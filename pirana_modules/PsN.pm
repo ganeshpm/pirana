@@ -17,17 +17,22 @@ sub get_psn_info {
   #print (unix_path($psn_dir."/bin/".$psn_command)." -h |");
   my $ssh_cmd1 = ''; my $ssh_cmd2;
   my $quote = ''; my $psn_full = $psn_command;
+
+  my $ssh_pre; my $ssh_post;
   if ($ssh{connect_ssh} == 1) {
-      $ssh_cmd1 = $ssh{login}." ";
+      $ssh_pre .= $ssh{login}.' ';	
       if ($ssh{parameters} ne "") {
-          $ssh_cmd1 .= $ssh{parameters};
-	  $ssh_cmd1 .= " ";
+	  $ssh_pre .= $ssh{parameters}.' ';
       }
-      $ssh_cmd2 = '; exit';
+      $ssh_pre .= '"';
+      if ($ssh{execute_before} ne "") {
+	  $ssh_pre .= $ssh{execute_before}.'; ';
+      }
+      $ssh_post = '; exit"';
   } else {
       $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
   }
-  my $cmd = os_specific_path($ssh_cmd1.$psn_full.' -'.$switch.$ssh_cmd2.' |');
+  my $cmd = os_specific_path($ssh_pre.$psn_full.' -'.$switch.$ssh_post.' |');
   eval(open (OUT, $cmd));
   my $psn_text = "";
   while (my $line = <OUT>) {

@@ -86,25 +86,27 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "PsN location on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "PsN location on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
 
     $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>2, -column=>2, -sticky=>"w");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>12,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>3, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
  
     $ssh_connection_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$ssh_connection_window -> destroy();
-    }) -> grid(-row=>8, -column=>1, -sticky=>"e");
+    }) -> grid(-row=>9, -column=>1, -sticky=>"e");
     $ssh_connection_frame -> Button (-text=>"Save",-width=>8,  -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	our %ssh = %ssh_new;
         save_ini2 ($home_dir."/ini/ssh.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
 	$ssh_connection_window -> destroy();
-    }) -> grid(-row=>8, -column=>2, -sticky=>"w");
+    }) -> grid(-row=>9, -column=>2, -sticky=>"w");
     $ssh_connection_window -> focus ();
     $ssh_connection_window -> waitWindow; # wait until destroyed
 
@@ -182,12 +184,21 @@ sub sge_get_job_cwd {
 sub refresh_sge_monitor_ssh {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my %ssh = %$ssh_ref;
-    my $ssh_add1 = "";
-    my $ssh_add2 = "";
 
-    # if using SSH, retrieve all necessary data in one call
-    $ssh_add1 = $ssh{login}." ".$ssh{parameters}.' "';
-    my $get_info_cmd = $ssh_add1.
+    $ssh{connect_ssh} = $ssh{default};
+    my $ssh_pre; my $ssh_post;
+    if ($ssh{connect_ssh} == 1) {
+	$ssh_pre .= $ssh{login}.' ';	
+	if ($ssh{parameters} ne "") {
+	    $ssh_pre .= $ssh{parameters}.' ';
+	}
+	$ssh_pre .= '"';
+	if ($ssh{execute_before} ne "") {
+	    $ssh_pre .= $ssh{execute_before}.'; ';
+	}
+        $ssh_post = '"';
+    }
+    my $get_info_cmd = $ssh_pre.
         "echo :P:running_jobs:; qstat -u '*' -s r;".
         "echo :P:scheduled_jobs:; qstat -u '*' -s p;".
         "echo :P:finished_jobs:; qstat -u '*' -s z;".
@@ -438,7 +449,14 @@ sub sge_monitor_window {
     $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; my $ssh_post;
     if ($ssh{connect_ssh} == 1) {
-        $ssh_pre .= $ssh{login}.' '.$ssh{parameters}.' "';
+	$ssh_pre .= $ssh{login}.' ';	
+	if ($ssh{parameters} ne "") {
+	    $ssh_pre .= $ssh{parameters}.' ';
+	}
+	$ssh_pre .= '"';
+	if ($ssh{execute_before} ne "") {
+	    $ssh_pre .= $ssh{execute_before}.'; ';
+	}
         $ssh_post = '"';
     }
    # ssh_notebook_tab ($sge_ssh, 3, "");
@@ -447,6 +465,7 @@ sub sge_monitor_window {
     my @nodes_headers = qw/hostname architecture ncpu load memtot memuse swapto swapuse/;
     my $nodes_hlist;
     my $node_info_ref = qstat_get_nodes_info ($ssh_pre."qhost |".$ssh_post);
+    print $ssh_pre."qhost |".$ssh_post;
     $nodes_hlist = $sge_nodes ->Scrolled('HList',
         -head       => 1,
         -selectmode => "single",
@@ -504,9 +523,9 @@ sub sge_monitor_window {
 
 
 # main buttons
-    my $ssh_connect_button = $sge_monitor_window_frame -> Checkbutton (-text => "SSH-mode", -variable=> \$ssh{connect_ssh}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub {
+    my $ssh_connect_button = $sge_monitor_window_frame -> Checkbutton (-text => "SSH-mode", -variable=> \$ssh{connect_ssh}, -font=>$font_normal, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub {
         refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
-    }) -> grid(-row=>8,-column=>1,-sticky=>"nw");
+    }) -> grid(-row=>8,-column=>1,-sticky=>"nws");
     $sge_monitor_window_frame -> Button (-text => "Refresh", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
     })-> grid(-column=>2, -row=>8,-sticky=>"nwe");
@@ -2758,7 +2777,9 @@ sub setup_ini_dir {
     my @dir = dir ($base_dir."/ini_defaults", ".ini");
 
     # check if all settings are in place
-    my @check_inis = ("settings.ini", "software_win.ini", "software_linux.ini", "software_osx.ini", "psn.ini");
+    my @check_inis = ("settings.ini", "software_win.ini", "software_linux.ini", "software_osx.ini", "psn.ini", 
+		      "ssh.ini", "sge.ini", "nm_inst_cluster.ini", "nm_inst_local.ini", "run_reports.ini",
+		     );
     @txt_comm = ("commands_before.txt", "commands_after.txt");
     foreach my $ini (@dir) {
 	unless (-e $home_dir."/ini/".$ini) {
@@ -3013,7 +3034,6 @@ sub initialize {
     print LOG "Piraña ".$version."\n";
     print LOG "Startup time: ".localtime()."\n\n";
     print LOG "Checking pirana installation...\n";
-
 
     unless (-d $base_dir."/internal") {$error++; print LOG "Error: Pirana could not find dir containing internal subroutines. Program halted.\n"};
     unless (-d $base_dir."/images") {$error++; print LOG "Error: Pirana could not find images. Program halted.\n"; };
