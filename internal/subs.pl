@@ -24,7 +24,7 @@
 # As much as possible, subs are located in separate module
 
 sub sge_setup_window {
-    my $sge_setup_window = $mw -> Toplevel (-title => "SSH connection setup", -background=> $bgcol);
+    my $sge_setup_window = $mw -> Toplevel (-title => "SGE setup", -background=> $bgcol);
     my $sge_setup_frame = $sge_setup_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
 
     my ($sge_ref, $sge_descr_ref) = read_ini($home_dir."/ini/sge.ini");
@@ -85,8 +85,8 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Label (-text=> "Use SSH-mode by default ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "PsN location on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
@@ -97,7 +97,7 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
  
     $ssh_connection_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$ssh_connection_window -> destroy();
@@ -1849,7 +1849,7 @@ sub add_nm_inst {
           $nm_dir = "C:/nmvi";
       }
   } );
-  $nm_inst_frame -> Optionmenu (-options=>["5","6","7"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
+  $nm_inst_frame -> Optionmenu (-options=>["5","6","7", "7.2"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
     -background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white,-activeforeground=>$white)
          ->grid(-column=>2,-row=>4,-sticky=>"w");
   $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
@@ -1858,25 +1858,26 @@ sub add_nm_inst {
     if ($nm_dirs{$nm_name}) {
       message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
     } else {
-      $valid_nm = 0;
-      if ($nm_locality eq "Local") {
-	  my $add_base_drive = "";
-	  if (($^O =~ m/MSWin/g)&!(substr($nm_dir, 0, 2) =~ m/.:/))  {
-	      $add_base_drive = $base_drive."/"; # if no drive is specified, add the base_drive (from which pirana is started)
-	  }
-	  $nm_ini_file = "nm_inst_local.ini";
-	  # look if it is maybe an NMQual NM isntallation
-	  $nmq_name = get_nmq_name($nm_dir);
-	  if (-e unix_path($add_base_drive.$nm_dir."/test/".$nmq_name.".pl")) {
-	      $nm_type = "nmqual";
-	      $valid_nm = 1;
-	  }
+	$nm_ver =~ s/7\.2/72/; # the command is nmfe72
+	$valid_nm = 0;
+	if ($nm_locality eq "Local") {
+	    my $add_base_drive = "";
+	    if (($^O =~ m/MSWin/g)&!(substr($nm_dir, 0, 2) =~ m/.:/))  {
+		$add_base_drive = $base_drive."/"; # if no drive is specified, add the base_drive (from which pirana is started)
+	    }
+	    $nm_ini_file = "nm_inst_local.ini";
+	    # look if it is maybe an NMQual NM isntallation
+	    $nmq_name = get_nmq_name($nm_dir);
+	    if (-e unix_path($add_base_drive.$nm_dir."/test/".$nmq_name.".pl")) {
+		$nm_type = "nmqual";
+		$valid_nm = 1;
+	    }
 	  # regular installation
-	  if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
-	      $nm_type = "regular";
-	      $valid_nm = 1;
-	  }
-      } else { # SSH, just assume it is the correct location and regular installation
+	    if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
+		$nm_type = "regular";
+		$valid_nm = 1;
+	    }
+	} else { # SSH, just assume it is the correct location and regular installation
 	  $nm_ini_file = "nm_inst_cluster.ini";
 	  $valid_nm = 1;
 	  $nm_type = "regular";
@@ -2178,7 +2179,7 @@ sub edit_ini_window {
   } else {
       $edit_ini_frame -> Label (-text=>" ", -font=>$font, -background=>$bgcol)->grid(-column=>1, -row=>int((@keys+@sections)/2)+3,-columnspan=>4,-sticky=>"e");
   }
-  $edit_ini_frame -> Button (-text=>'Save', -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
+  $edit_ini_frame -> Button (-text=>'Save', -width=>12, -font=>$font_normal, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     $i=0;
     foreach(@keys) {  # update %settings
 	if (@ini_value[$i] eq "" ) { @ini_value[$i] = " "};
@@ -2201,7 +2202,7 @@ sub edit_ini_window {
     $edit_ini_w->destroy;
     refresh_pirana($cwd,$filter,1);
   })->grid(-row=>int((@keys+@sections)/2)+4,-column=>5,-sticky=>"w");
-  $edit_ini_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+  $edit_ini_frame -> Button (-text=>"Cancel", -width=>12, -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     $edit_ini_w->destroy;
   })-> grid(-row=>int((@keys+@sections)/2)+4,-column=>4,-sticky=>"e");
 }
@@ -2778,7 +2779,7 @@ sub setup_ini_dir {
 
     # check if all settings are in place
     my @check_inis = ("settings.ini", "software_win.ini", "software_linux.ini", "software_osx.ini", "psn.ini", 
-		      "ssh.ini", "sge.ini", "nm_inst_cluster.ini", "nm_inst_local.ini", "run_reports.ini",
+		      "ssh.ini", "sge.ini", "run_reports.ini",
 		     );
     @txt_comm = ("commands_before.txt", "commands_after.txt");
     foreach my $ini (@dir) {
@@ -5725,6 +5726,9 @@ sub nmfe_run_window {
     if ($nm_versions_menu) { 
 	$nm_versions_menu -> configure (-options => [@nm_installations] );
     } ;
+    print @nm_installations;
+    print "test";
+
 
      my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  #   ssh_notebook_tab ($nmfe_ssh_frame, 1, \@params);
@@ -5733,7 +5737,12 @@ sub nmfe_run_window {
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
     $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
-        my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
+	if ($ssh{connect_ssh} == 0) {
+	    @nm_installations = keys(%nm_dirs);
+	} else {
+	    @nm_installations = keys(%nm_dirs_cluster);
+	}
+	my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
         $nmfe_run_command = $run_command;
         update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); 
    }) -> grid(-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
