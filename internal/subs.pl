@@ -5726,10 +5726,7 @@ sub nmfe_run_window {
     if ($nm_versions_menu) { 
 	$nm_versions_menu -> configure (-options => [@nm_installations] );
     } ;
-    print @nm_installations;
-    print "test";
-
-
+    
      my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  #   ssh_notebook_tab ($nmfe_ssh_frame, 1, \@params);
  
