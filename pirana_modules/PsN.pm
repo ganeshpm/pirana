@@ -24,11 +24,11 @@ sub get_psn_info {
       if ($ssh{parameters} ne "") {
 	  $ssh_pre .= $ssh{parameters}.' ';
       }
-      $ssh_pre .= '"';
+      $ssh_pre .= "'";
       if ($ssh{execute_before} ne "") {
 	  $ssh_pre .= $ssh{execute_before}.'; ';
       }
-      $ssh_post = '; exit"';
+      $ssh_post = "; exit'";
   } else {
       $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
   }
