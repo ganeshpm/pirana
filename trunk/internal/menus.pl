@@ -230,9 +230,9 @@ sub create_menu_bar {
 
   $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -font=>$font,-compound=>'left', -background=>$bgcol,-underline=>0, -command=>sub {cov_calc_window()});
   $mbar_tools -> command(-label => "Generate summary (csv) of all output", -font=>$font, -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1, -command=> sub {
-        create_output_summary_csv ("pirana_output_list.csv", \%setting, \%models_notes, \%models_descr, $mw);
+        create_output_summary_csv ("pirana_run_summary.csv", \%setting, \%models_notes, \%models_descr, $mw);
         if (-e $software{spreadsheet}) {
-          start_command($software{spreadsheet},'"'.win_path('pirana_output_list.csv').'"');
+          start_command($software{spreadsheet},'"'.win_path('pirana_run_summary.csv').'"');
         } else {message("Spreadsheet application not found. Please check settings.")};
         status ();
     });

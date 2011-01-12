@@ -64,7 +64,7 @@ sub sge_setup_window {
     }) -> grid(-row=>8, -column=>1, -sticky=>"e");
     $sge_setup_frame -> Button (-text=>"Save",-width=>8,  -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	our %sge = %sge_new;
-        save_ini2 ($home_dir."/ini/sge.ini", \%sge, \%sge_descr, $base_dir."/ini_defaults/sge.ini");
+        save_ini ($home_dir."/ini/sge.ini", \%sge, \%sge_descr, $base_dir."/ini_defaults/sge.ini");
 	$sge_setup_window -> destroy();
     }) -> grid(-row=>8, -column=>2, -sticky=>"w");
  
@@ -104,7 +104,7 @@ sub ssh_setup_window {
     }) -> grid(-row=>9, -column=>1, -sticky=>"e");
     $ssh_connection_frame -> Button (-text=>"Save",-width=>8,  -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	our %ssh = %ssh_new;
-        save_ini2 ($home_dir."/ini/ssh.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
+        save_ini ($home_dir."/ini/ssh.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
 	$ssh_connection_window -> destroy();
     }) -> grid(-row=>9, -column=>2, -sticky=>"w");
     $ssh_connection_window -> focus ();
@@ -1888,7 +1888,7 @@ sub add_nm_inst {
 	    $nm_dirs{$nm_name} = $nm_dir;
 	    $nm_vers{$nm_name} = $nm_ver;
 	    $nm_types{$nm_name} = $nm_type;
-	    save_ini2 ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/".$nm_ini_file, 1);
+	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/".$nm_ini_file, 1);
 	    chdir($cwd);
 	    unless ($nm_type eq "regular") {
 		nmqual_compile_script ($nm_dir, $nmq_name);
@@ -1897,7 +1897,7 @@ sub add_nm_inst {
 	    $nm_dirs_cluster{$nm_name} = $nm_dir;
 	    $nm_vers_cluster{$nm_name} = $nm_ver;
 	    $nm_types_cluster{$nm_name} = $nm_type;
-	    save_ini2 ($home_dir."/ini/".$nm_ini_file, \%nm_dirs_cluster, \%nm_vers_cluster, $base_dir."/ini_defaults/".$nm_ini_file, 1);
+	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs_cluster, \%nm_vers_cluster, $base_dir."/ini_defaults/".$nm_ini_file, 1);
 	}
 	undef $nm_versions_menu;
 	$nm_inst_w -> destroy;
@@ -1944,7 +1944,7 @@ sub remove_nm_inst {
   $nm_remove_frame -> Button (-text=>"Remove", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     delete $nm_dirs{$nm_name};
     delete $nm_vers{$nm_name};
-    save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
+    save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
     ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
     %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
     chdir($cwd);
@@ -1955,64 +1955,8 @@ sub remove_nm_inst {
     $nm_remove_w->destroy;
   })-> grid(-row=>5,-column=>1,-sticky=>"e");
 }
+
 sub save_ini {
-### Purpose : Save Pirana settings contained in a hash to ini-file.
-### Compat  : W+L?
-  ($ini_file, $ref_ini, $ref_ini_descr, $ref_add_1, $cat_ref, $ini_def) = @_;
-  my %ini = %$ref_ini;
-  my %ini_descr = %$ref_ini_descr;
-  my %ini_add_1;
-  if ($ref_add_1 ne "") { %ini_add_1 = %$ref_add_1 };
-  my %cat;
-  if ($cat_ref ne "") { %cat = %$cat_ref };
-
-  my @lines = @$lines_ref;  # get ini-file structure from default ini file;
-  open (INI, "<".unix_path($ini_def));
-  @lines=<INI>;
-  close INI;
-  open (INI, ">".unix_path($ini_file));
-  my $categ;
-  foreach (@lines) {
-      if (substr($_,0,1) eq "[") { # additional new keys
-	  foreach my $key_cat (keys (%cat)) {
-	      if ($cat{$key_cat} eq $categ) {
-		  print INI $key_cat.",".$ini{$key_cat}.",".$ini_descr{$key_cat};
-#		  unless ($ini_add_1{$key_cat} eq "") {print INI ",".$ini_add_1{$key_cat};};
-		  print INI ",".$ini_add_1{$key_cat};
-		  print INI "\n";
-		  delete($ini{$key_cat}); delete ($ini_descr{$key_cat}); delete ($cat{$key_cat});
-	      }
-	  }
-          $categ = $_;
-	  $categ =~ s/\[//;
-	  $categ =~ s/\]//;
-      }
-    if ((substr($_,0,1) eq "#")||(substr($_,0,1) eq "[")) {print INI $_;} else {
-        ($key,$value) = split (/,/,$_);
-         unless (($ini{$key} eq "")||($key eq "")) {
-            $ini_descr{$key} =~ s/\n/\\n/g ;
-            #$ini{$key} =~ s/\n/\\\n/g ;
-            print INI $key.",".$ini{$key}.",".$ini_descr{$key};
-#            unless ($ini_add_1{$key} eq "") {print INI ",".$ini_add_1{$key};};
-            print INI ",".$ini_add_1{$key};
-            print INI "\n";
-         }
-#	delete($ini{$key}); delete ($ini_descr{$key}); delete ($cat{$key});
-      }
-    }
-#   # just to make sure... if there are remaining keys, put them at the bottom
-#   foreach(keys(%ini)) {  # new entries
-#     unless ($_ eq "") {
-#       print INI $_.",".$ini{$_}.",".$ini_descr{$_};
-# #      unless ($ini_add_1{$_} eq "") {print INI ",".$ini_add_1{$_};};
-#       print INI ",".$ini_add_1{$_};
-#       print INI "\n";
-#     }
-#   }
-  close INI;
-}
-
-sub save_ini2 {
 ### Purpose : Save Pirana settings contained in a hash to ini-file.
 ### Compat  : W+L?
   ($ini_file, $ref_ini, $ref_ini_descr, $ini_def, $add_to_ini) = @_;
@@ -2186,7 +2130,7 @@ sub edit_ini_window {
 	$ini{$_} = @ini_value[$i];
 	$i++;
     }
-    save_ini2 ($home_dir."/ini/".$ini_file, \%ini, \%ini_descr, $base_dir."/ini_defaults/".$ini_file);
+    save_ini ($home_dir."/ini/".$ini_file, \%ini, \%ini_descr, $base_dir."/ini_defaults/".$ini_file);
     chdir($base_dir);
     my $software_ini = "software_linux.ini";
     if ($os =~ m/darwin/i) {$software_ini = "software_osx.ini";}
@@ -2420,7 +2364,7 @@ sub install_nonmem_nmq_window {
            if ($add_to_pirana == 1) {
 	       $nm_dirs{$nm_name} = $target;
 	       $nm_vers{$nm_name} = $version;
-	       save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
+	       save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
 	       chdir($cwd);
 	       $method_nmq_button -> configure(-state=>'normal');
 	       refresh_pirana($cwd);
@@ -2500,7 +2444,7 @@ sub install_nonmem_window {
            if( $add_to_pirana == 1) {
               $nm_dirs{$nm_install_name} = $nm_install_to;
               $nm_vers{$nm_install_name} = 6;
-              save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
+              save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
               chdir($cwd);
               refresh_pirana($cwd);
            }
@@ -2634,9 +2578,9 @@ sub manage_nm_window {
 	      }
 	  }
 	  if ($nm_chosen =~ m/Remote:/g) {
-	      save_ini2 ($home_dir."/ini/nm_inst_cluster.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_cluster.ini");
+	      save_ini ($home_dir."/ini/nm_inst_cluster.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_cluster.ini");
 	  } else {
-	      save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers,  $base_dir."/ini_defaults/nm_inst_local.ini");
+	      save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers,  $base_dir."/ini_defaults/nm_inst_local.ini");
 	  }
 	  my ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
 	  my ($nm_dirs_cluster_ref,$nm_vers_clusters_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
@@ -2779,7 +2723,7 @@ sub setup_ini_dir {
 
     # check if all settings are in place
     my @check_inis = ("settings.ini", "software_win.ini", "software_linux.ini", "software_osx.ini", "psn.ini", 
-		      "ssh.ini", "sge.ini", "run_reports.ini",
+		      "ssh.ini", "sge.ini", "run_reports.ini", "internal.ini"
 		     );
     @txt_comm = ("commands_before.txt", "commands_after.txt");
     foreach my $ini (@dir) {
@@ -2817,7 +2761,7 @@ sub check_ini_file {
 	    $user_cat {$key} = $def_cat{$key};
 	}
     }
-    save_ini2 ($user_ini_file, \%user_ini, \%user_ini_descr, $def_ini_file);
+    save_ini ($user_ini_file, \%user_ini, \%user_ini_descr, $def_ini_file);
 }
 
 sub renew_pirana {
@@ -3004,7 +2948,7 @@ sub first_time_dialog {
     our ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
     our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
     $setting{username} = $user;
-    save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+    save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
     $first_time_dialog_window -> destroy();
   })->grid(-row=>4, -column=>2, -sticky=>"wns");
   center_window($first_time_dialog_window);
@@ -3041,20 +2985,21 @@ sub initialize {
     if ($error>0) {print LOG "Errors were found. Check installation of pirana.\n"; close LOG; intro_msg(1)} else {print LOG "Done\n"};
 
     print LOG "Reading Pirana settings...\n";
-    our ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
-    %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
+    my ($setting_ref,$setting_descr_ref) = read_ini($home_dir."/ini/settings.ini");
+    our %setting = %$setting_ref; %setting_descr = %$setting_descr_ref;
+    my ($setting_internal_ref,$setting_internal_descr_ref) = read_ini($home_dir."/ini/internal.ini");
+    our %setting_internal = %$setting_internal_ref; %setting_internal_descr = %$setting_internal_descr_ref;
     #if ($setting{username}) {print LOG "Done\n";} else {print LOG "Error. Settings file might be corrupted. Check ini/settings.ini\n"; close LOG; intro_msg( )};
-    our $models_view = $setting{models_view};
-
+   
     # check header widths, if not correct number then read from default settings
-    our @models_hlist_widths = split (";", $setting{header_widths});
+    our @models_hlist_widths = split (";", $setting_internal{header_widths});
     if (int(@models_hlist_widths) != 12) {
-	my ($def_setting_ref, $def_setting_descr_ref) = read_ini($base_dir."/ini_defaults/settings.ini");
-	my %def_setting = %$def_setting_ref;
-	$setting{header_widths} = $def_setting{header_widths};
-	save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+	my ($def_setting_internal_ref, $def_setting_internal_descr_ref) = read_ini($base_dir."/ini_defaults/internal.ini");
+	my %def_setting_internal = %$def_setting_internal_ref;
+	$setting_internal{header_widths} = $def_setting_internal{header_widths};
+	save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
     }
-    our @models_hlist_widths = split (";", $setting{header_widths});
+    our @models_hlist_widths = split (";", $setting_internal{header_widths});
 
     print LOG "Deleting temporary files...\n";
     if(chdir ($base_dir."/temp")){
@@ -3079,7 +3024,7 @@ sub initialize {
 	}
 	if (-e $R_dir) {
 	    $software{r_dir} = win_path ($R_dir);
-	    save_ini2 ($home_dir."/ini/software_win.ini", \%software, \%software_descr, $base_dir."/ini_defaults/software_win.ini");
+	    save_ini ($home_dir."/ini/software_win.ini", \%software, \%software_descr, $base_dir."/ini_defaults/software_win.ini");
 	}
 	print LOG "R found. Software settings updated...\n"
     }
@@ -3143,7 +3088,7 @@ sub initialize {
     }
     if (exists($nm_dirs{""})) {  # remove empty entries
 	delete ($nm_dirs{""});
-#	save_ini2 ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
+#	save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
     }
 
     ($nm_dirs_cluster_ref,$nm_vers_cluster_ref,$nm_types_cluster_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
@@ -3890,7 +3835,7 @@ sub read_curr_dir {
 	    $i++;
 	}
     }
-    populate_models_hlist ($models_view, $condensed_model_list);
+    populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
     status ();
 }
 
@@ -5599,9 +5544,9 @@ sub save_header_widths {
   }
   shift(@header_widths);
   $new_header_widths = join (";",@header_widths);
-  if ($setting{header_widths} ne $new_header_widths) {
-    $setting{header_widths} = join (";",@header_widths);
-    save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+  if ($setting_internal{header_widths} ne $new_header_widths) {
+    $setting_internal{header_widths} = join (";",@header_widths);
+    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
   }
   unshift(@header_widths, 0);
 
@@ -5778,8 +5723,16 @@ sub nmfe_run_window {
     $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>14,-column=>1,-sticky=>"w");
     $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>16,-column=>1,-sticky=>"w");
 
+    $close_prv = $setting_internal{quit_dialog};
+    $nmfe_run_frame -> Checkbutton (-text=>"Close this window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
+	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
+	}
+    }) -> grid(-row=>17,-column=>2,-columnspan=>2,-sticky=>"nw");
+
      my $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -border=>$bbw, -command=> sub {
- 	unless (@nm_installations == 0) { #NM installed?
+	 my $nmfe_run_command_out = $nmfe_run_command;
+	 unless (@nm_installations == 0) { #NM installed?
 	    my $script_text = $command_area -> get("0.0", "end");
 #	    my ($script_file, $script_text_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), \@files, $run_in_new_dir, \@new_dirs, \%$clusters, \%ssh); 
             my $ext = "sh";
@@ -5796,41 +5749,43 @@ sub nmfe_run_window {
 		    my $new_dir = shift (@dirs_copy);
 		    unless ($new_dir eq "") {
 			move_nm_files ($file.".".$setting{ext_ctl}, $new_dir) ;
-			db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command, $setting{name_researcher});
+			db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command_out, $setting{name_researcher});
 		    }
 		}
 	    }
 	    if (($run_in_background == 0)) {
 		if ($os =~ m/MSWin/i) {
-		    $nmfe_run_command = "start ".$nmfe_run_command ;
+		    $nmfe_run_command_out = "start ".$nmfe_run_command ;
 		} else {
 		    if ($setting{quit_shell}==0) { # don't close terminal window after completion
-			$nmfe_run_command .= ';read -n1';
+			$nmfe_run_command_out .= ';read -n1';
 		    }
-		    $nmfe_run_command = $setting{terminal}.' -e "'.$nmfe_run_command.'" &';
+		    $nmfe_run_command_out = $setting{terminal}.' -e "'.$nmfe_run_command_out.'" &';
 		}
 	    } else {
 		if ($os =~ m/MSWin/i) {
-		    $nmfe_run_command = "start /b ".$nmfe_run_command;
+		    $nmfe_run_command_out = "start /b ".$nmfe_run_command_out;
 		} 
 	    }
 	    if ($clusters{run_on_pcluster} == 1) {
-		my $batfile = $nmfe_run_command;
+		my $batfile = $nmfe_run_command_out;
 		$batfile =~ s/start //i;
-		exec_run_nmfe ($nmfe_run_command, "Starting compilation"); # do compilation
+		exec_run_nmfe ($nmfe_run_command_out, "Starting compilation"); # do compilation
 		exec_run_pcluster ("nonmem.exe", "NM@Pcluster", \@new_dirs, \@files, "Submitting runs to PCluster");
 	    } else {
 #		print $nmfe_run_command;
-		exec_run_nmfe ($nmfe_run_command, "Starting run");
+		exec_run_nmfe ($nmfe_run_command_out, "Starting run");
 	    }
-	    save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+	    save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
 	} else {message ("First add NM installations to Pirana")}
-	$nmfe_run_window -> destroy();
-    })-> grid(-row=>17, -column=>2,-columnspan=>2,-sticky=>"wns");
+	if ($setting_internal{quit_dialog} == 1) {
+	    $nmfe_run_window -> destroy();
+	}
+    })-> grid(-row=>18, -column=>2,-columnspan=>2,-sticky=>"wns");
     if (keys(%nm_dirs)+keys(%nm_dirs_cluster) == 0) {
 	$nmfe_run_button -> configure (-state => "disabled");
     }
-#    $help -> attach($nmfe_run_button, "Start run");
+    $help -> attach($nmfe_run_button, -msg => "Start run");
 
     # update
     my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
@@ -6058,7 +6013,7 @@ sub psn_run_window {
         my $psn_nm_version = "";
         @runs = $models_hlist -> selectionGet ();
  #       $psn_commands{$psn_option} = $psn_params;
- #       save_ini2 ($home_dir."/ini/psn.ini", \%psn_commands, \%psn_commands_descr, $base_dir."/ini_defaults/psn.ini");
+ #       save_ini ($home_dir."/ini/psn.ini", \%psn_commands, \%psn_commands_descr, $base_dir."/ini_defaults/psn.ini");
 
         psn_history_save_to_log ($psn_command_line);
 
@@ -6251,7 +6206,7 @@ sub frame_models_show {
 #  our $model_hlist_frame = $mw-> Frame(-background=>"$bgcol")->grid(-row=>3,-column=>1,-columnspan=>2,-sticky=>'nswe',-ipadx=>5,-ipady=>0);
   ### Status bar: 
   @models_hlist_headers = ("", " #", "Ref#","Description", "Method","Dataset","OFV","dOFV","S","C","B","Sig","Notes");
-  my @models_hlist_widths = split (";", $setting{header_widths});
+  my @models_hlist_widths = split (";", $setting_internal{header_widths});
   unshift (@models_hlist_widths, 0);
   my $sel_type = "";
   our $models_hlist = $mw -> Scrolled('HList',
@@ -6417,22 +6372,22 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>75);
        -width=>26, -height=>22,
        -command=>sub{
            $condensed_model_list = 1 - $condensed_model_list;
-	   populate_models_hlist ($models_view, $condensed_model_list);
+	   populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
       })->grid(-row=>1,-column=>2,-sticky=>'wens');
   $help->attach($condensed_view_button, -msg => "Show condensed or expanded view of models");
 
-  if ($models_view eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
+  if ($setting_internal{models_view} eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
   our $sort_button = $mod_buttons->Button(-image=>$listimage, -width=>26, -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
-    if ($models_view eq "tree") {
-       $models_view = "list";
+    if ($setting_internal{models_view} eq "tree") {
+       $setting_internal{models_view} = "list";
        $listimage = $gif{listview};
     } else {
-       $models_view = "tree";
+       $setting_internal{models_view} = "tree";
        save_header_widths ();
        $listimage = $gif{treeview};
     }
     $sort_button -> configure (-image=>$listimage);
-    populate_models_hlist($models_view, $condensed_model_list);
+    populate_models_hlist($setting_internal{models_view}, $condensed_model_list);
   })->grid(-row=>1,-column=>3,-sticky=>'wens');
   $help->attach($sort_button, -msg => "Show models as list or as tree structure, based on their reference model");
 
@@ -6809,7 +6764,7 @@ sub wfn_run_window {
 	# save compiler settings if changed
 	if ($wfn_compiler_arg ne $software{wfn_param}) {
 	    $setting{wfn_param} = $wfn_compiler_arg;
-	    save_ini2 ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+	    save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
 	}
 	my $wfn_start_file = "pirana_".$wfn_command."_".$model.".bat";
 	open (WFN, ">".$wfn_start_file);
