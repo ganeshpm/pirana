@@ -5867,11 +5867,11 @@ sub psn_run_window {
     my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
 
     my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -row=> 0, -sticky=>"nw");
-    my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e',
+    my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
                                                    -font=>$font, -background=>"#f6f6e6", -state=>'normal'
-        )->grid(-column=>1, -row=>0, -columnspan=>2, -sticky=>'nwe', -ipadx=>0);
+        )->grid(-column=>1, -row=>0, -columnspan=>2, -sticky=>'nwe');
     $psn_help_buttons_frame -> Button(-text=>"Options", -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
         $psn_run_text -> insert("1.0", "Requesting command information from PsN...\n");
         $psn_run_text -> update();
@@ -5899,13 +5899,13 @@ sub psn_run_window {
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>4,
         -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
-        )->grid(-column=>2, -row=>10, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
+        )->grid(-column=>2, -row=>11, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
  #   $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
     $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -border=>$bbw)
-        -> grid(-row=>10, -column=>3, -rowspan=>2,-sticky=>"wns");
+        -> grid(-row=>11, -column=>3, -rowspan=>2,-sticky=>"wns");
     $help -> attach($psn_run_button, "Start run");
 
     my $nm_text = "NM installation";
@@ -5925,12 +5925,19 @@ sub psn_run_window {
      $psn_run_frame -> Label (-text=>" ", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
 
-    $psn_run_frame -> Label (-text=>"PsN command line:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
+    $psn_run_frame -> Checkbutton (-text=>"Close this window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
+	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
+	}
+    }) -> grid(-row=>10,-column=>2,-columnspan=>2,-sticky=>"nw");
+
+    $psn_run_frame -> Label (-text=>"PsN command line:",-font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>11,-column=>1,-sticky=>"w");
     # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 
     $psn_run_frame -> Button (-text=>"History", -background=>$button, -activebackground=>$abutton, -border=>$bbw, -font=>$font_normal , -command=> sub {
         psn_command_history_window ($psn_command_line_entry);
-                              }) -> grid(-row=>11,-column=>1,-sticky=>"w");
+                              }) -> grid(-row=>12,-column=>1,-sticky=>"w");
 
     my $nm_versions_menu = $psn_run_frame -> Optionmenu(
         -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
@@ -6050,7 +6057,9 @@ sub psn_run_window {
         #if ($stdout) {$stdout -> yview (scroll=>1, units);}
         chdir ($cwd);
         $help -> detach($psn_run_button);
-        $psn_run_window -> destroy();
+	if ($setting_internal{quit_dialog} == 1) {
+	    $psn_run_window -> destroy();
+	}
                                    });
 
     unless ($^O =~ m/(MSWin|darwin)/i) {
