@@ -1,0 +1,311 @@
+
+  sumo
+
+  Perl script for summarizing output data. 
+  
+  Usage:
+
+  sumo [ -h | -? ] [ -help ]
+       [ -nm_version='string' ] 
+       [ -debug='integer' ] 
+       [ -debug_package='string' ] 
+       [ -debug_subroutine='string' ]
+       [ -csv ]
+       [ -precision='integer' ]
+       [ -c_level='integer' ]
+       [ -confidence_interval | -ci ]
+       [ -sd_rse ]
+       [ -max_problem_num = 'integer' ]
+       [ -max_subproblem_num = 'integer' ]
+       [ -no_check_run ]            
+       [ -correlation_limit = 'number' ]       
+       [ -condition_number_limit = 'number' ]  
+       [ -near_bound_sign_digits = 'integer' ]
+       [ -near_zero_boundary_limit = 'number' ]
+       [ -sign_digits_off_diagonals = 'number' ]
+       [ -large_theta_cv_limit = 'number' ]
+       [ -large_omega_cv_limit = 'number' ]
+       [ -large_sigma_cv_limit = 'number' ]
+       outputfile(s)
+
+
+  Description:
+
+    Sumo is short for SUmmarize Output. And it does exactly that. It
+    gathers some useful information from NONMEM output files and prints
+    a summary to screen.
+
+  Examples:
+    
+    Get summary from an output file:
+
+    $ sumo output.lst
+
+    The above command may produce output similar to this:
+
+    -----------------------------------------------------------------------
+
+    CONTROL5.lst
+
+    Successful minimization                                           [    OK   ]   
+    No rounding errors                                                [    OK   ]   
+    No zero gradients                                                 [    OK   ]   
+    No final zero gradients                                           [    OK   ]   
+    Hessian not reset                                                 [    OK   ]   
+    Parameter(s) near boundary                                        [ WARNING ]   
+    OM2                   0.000112            0
+    Covariance step                                                   [    OK   ]   
+    Large standard errors found                                       [ WARNING ]   
+    OM1                    1.08589
+    OM2                    1.01786
+    OM3_2                 0.848024
+    OM3                   0.548035
+    Large condition number                                            [ WARNING ]   
+    Correlations                                                      [    OK   ]   
+
+    0MINIMIZATION SUCCESSFUL
+    NO. OF FUNCTION EVALUATIONS USED:  172
+    NO. OF SIG. DIGITS IN FINAL EST.:  3.4
+
+    ETABAR IS THE ARITHMETIC MEAN OF THE ETA-ESTIMATES,
+    AND THE P-VALUE IS GIVEN FOR THE NULL HYPOTHESIS THAT THE TRUE MEAN IS 0.
+
+    ETABAR:  -0.41E-01  0.59E-03  0.30E-01
+    SE:       0.35E+00  0.25E-02  0.18E+00
+
+    P VAL.:   0.91E+00  0.82E+00  0.87E+00
+
+    Objective function value: 116.966
+
+    Condition number: 1.215e+004
+
+          THETA                      OMEGA                SIGMA            
+    TH1    1.87   (0.2503)    OM1    1.277  (1.086)  SI1  0.478  (0.2762)  
+    TH2  0.0862  (0.05139)    OM2  0.01058  (1.018)                        
+    TH3  0.0398  (0.08266)  OM3_2   0.9187  (0.848)                        
+                              OM3   0.6768  (0.548)                        
+    -----------------------------------------------------------------------
+
+    The first section of the output from sumo contains run
+    diagnostics. They are largely self-explanatory but some of them
+    depends on cut-off values. For example, the diagnostics for a
+    large condition number compares the obtained condition number to a
+    cut-off value (default is 1000). The default values for the
+    cut-off values are defined in psn.conf. If a different value for a
+    particular cut-off value is desired, it is possible to specify it
+    as an option to sumo (see below).
+
+    Next are the NONMEM minimization messages and $COV messages,
+    including etabars etc. Following this is the objective function
+    value. If $COV has been requested with the PRINT=E option (so that
+    NONMEM reports eigenvalues) the condition number is also reported
+    (the ratio between the largest and smallest eigenvalue)
+
+    The column THETA contains the theta estimates as reported in the
+    NONMEM output file and the numbers in parentheses after the theta
+    estimates, are the relative standard errors (SE/Est). The square
+    roots of the estimates of the diagonal elements of the OMEGA and
+    SIGMA matrices in the NONMEM output file are reported in the OMEGA
+    and SIGMA columns (except when -ci is used, see below) with the
+    labels OM1, OM2 etc and SI1 SI2 etc. The off-diagonal estimates
+    are reported as the corresponding correlations,
+    i.e. sqrt(cov(om1,om2)/(var(om1)*var(om2))) with a label like
+    OM3_2 (correlation between omega 3 and 2). The numbers in
+    parentheses after the OMEGA and SIGMA columns are the relative SEs
+    of the *variance* and *covariance* estimates, as taken from the
+    NONMEM output file (but see option -ci and -sd_rse below).
+
+    Relative standard errors are not displayed unless NONMEM reports
+    the standard errors in the output file, i.e. when the covariance
+    step has been requested and has terminated successfully.
+
+  Options:
+
+    The following options are valid:
+
+    -h | -?
+
+    Print a list of options.
+
+    
+    -help
+
+    Print this, longer, help message.
+
+
+        -debug='integer'
+
+    Default value is: 0
+
+    This is mainly for developers who wish to debug PsN. By default
+    'integer' is zero but you can try setting it to '1' and you might
+    get some helpful warnings. If you run in to problems that require
+    support, you might be told to crank this number up and send the
+    output to us.
+
+
+    -debug_package='string'
+
+    Default value is: empty string
+
+    If use together with '-debug' it is possible to choose which part
+    of PsN you want to see debug messages from. Again this is mostly
+    for developers.
+
+
+    -debug_subroutine='string'
+    
+    Default value is: empty string
+
+    With this option it is possible to specify, with even finer
+    granularity, which part of PsN you want to see debug messages
+    from. This is definitely only for developers.
+
+
+    -csv
+
+    Produce output in which the columns of the parameters estimates
+    and standard errors are comma separated. This option can be used
+    if you wish to import the sumo output into a spreadsheet programs,
+    such as MS Excel. (Something like this is probably what you would
+    want to do in that case: sumo -csv run1.lst > sumooutput.csv)
+
+
+    -precision='integer'
+
+    The default value is 4.
+
+    Specified the number of significant digits for the parts of the
+    sumo output that are computed by PsN, i.e. relative standard
+    errors, confidence intervals and the condition number. Output that
+    is just taken from the NONMEM list file, e.g. thetas and OFV, are
+    unaffected.
+
+
+    -c_level='integer'
+
+    Default value is 95.
+
+    This option specifies the coverage of the confidence interval
+    computed by the -ci option (see below). Allowed values are 90, 95,
+    99 and 99.5
+
+
+    -confidence_interval
+    -ci
+
+    This option computes and reports the traditional confidence
+    intervals for the parameter estimates instead of the relative
+    standard errors: CI = estimate +/- c_level*SE.
+
+    0MINIMIZATION SUCCESSFUL
+    NO. OF FUNCTION EVALUATIONS USED:  172
+    NO. OF SIG. DIGITS IN FINAL EST.:  3.4
+
+    ETABAR IS THE ARITHMETIC MEAN OF THE ETA-ESTIMATES,
+    AND THE P-VALUE IS GIVEN FOR THE NULL HYPOTHESIS THAT THE TRUE MEAN IS 0.
+
+    ETABAR:  -0.41E-01  0.59E-03  0.30E-01
+    SE:       0.35E+00  0.25E-02  0.18E+00
+
+    P VAL.:   0.91E+00  0.82E+00  0.87E+00
+
+    Objective function value: 116.966
+
+    Condition number: 1.215e+004
+
+           THETA                                 OMEGA                                 SIGMA                     
+    TH1    1.87     (0.9527 - 2.787)    OM1      1.63          (-1.839 - 5.099)  SI1  0.478  (0.2193 - 0.7367)  
+    TH2  0.0862  (0.07752 - 0.09488)    OM2  0.000112  (-0.0001114 - 0.0003354)                                 
+    TH3  0.0398  (0.03335 - 0.04625)  OM3_2   0.00658     (-0.004357 - 0.01752)                                 
+                                        OM3     0.458         (-0.03396 - 0.95)                                 
+
+    With this option the parameter estimates reported in the OMEGA and
+    SIGMA columns are the numbers given in the NONMEM output file,
+    i.e. no transformation to CVs or correlations is performed.
+
+    
+    -sd_rse
+
+    The default is to report the relative standard errors for the
+    random effects parameters (omega and sigma) on the variance scale
+    (SE/variance estimate). Specifying this option will report these
+    on the (approximate) standard deviation scale: (SE/variance
+    estimate)/2.
+
+
+    -max_problem_number='integer'
+    -max_subproblem_num='integer'
+
+    Default values are 1.
+
+    PsN divides NONMEM output into problems and sub-problem. 
+
+    In the most common case when there are only one $PROBLEM in the
+    NMtran control stream there is only one problem in the NONMEM
+    output. Should more than one $PROBLEM statement be used there will
+    be the same number of problems in the output.
+
+    Each problem contains at least one sub-problem. Should $SIMULATION
+    be used there will be as many sub-problems as the value of NSUBS.
+
+    The default is for sumo to report the results for the first
+    sub-problem for the first problem only.
+
+    
+    -no_check_run=''
+
+    This option, when set to a value different from the empty string,
+    will suppress the initial run diagnostic output of sumo.
+
+    -correlation_limit='number'
+
+    The cut-off for issuing a warning for high correlations between
+    the parameter estimates. This test will only be made if the $COV
+    step has been requested in the NMtran control stream. The default
+    is 0.9 and is set in psn.conf.
+
+
+    -condition_number_limit='number'
+
+    The cut-off for issuing a warning for a high condition number. The
+    test will only be made if the $COV step has been requested in the
+    NMtran control stream and NONMEM has been asked to report
+    eigenvalues ($COV PRINT=E). The default is 1000 and is set in psn.conf.
+
+
+    -near_bound_sign_digits='integer'
+
+    When a parameter estimates is equal to a boundary with these many
+    significant digits, a warning will be issued. The default is for
+    NONMEM VI to report if parameter estimates are close to a boundary
+    value but this can be turned off. The boundary test in sumo is
+    independent of the way NONMEM is configured and will report these
+    types of issues in output from NONMEM VI. The default is 2 and is
+    set in psn.conf.
+
+
+    -near_zero_boundary_limit='number'
+
+    If the bound is 0, the boundary test will issue a warning if the
+    estimate this close to zero.  The default value is 0.001 and is
+    set in psn.conf.
+
+    -sign_digits_off_diagonals='integer' 
+
+    The boundary test for off-diagonal omega elements are performed by
+    first converting the covariances to the corresponding correlations
+    and then check if they are close to +/-1 with this many
+    significant digits.  The default value is 0.001 and is set in
+    psn.conf.
+
+
+    -large_theta_cv_limit='number'
+    -large_omega_cv_limit='number'
+    -large_sigma_cv_limit='number'
+
+    When the CV (SE/estimate) for a parameter estimates is greater
+    than this a warning will be issued. The default values are 0.3,
+    0.5 and 0.3 for thetas, omegas and sigmas respectively, and are
+    set in psn.conf.
+

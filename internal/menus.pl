@@ -188,6 +188,9 @@ sub create_menu_bar {
        message ($m);
     });
   }
+   $mbar_tools_NM -> command(-label => "Import / update NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+	  retrieve_nm_help_window ();
+      });
  
   pirana_debug ($debug_mode, "Declare PSN options.");
   my $mbar_psn;
@@ -198,12 +201,16 @@ sub create_menu_bar {
 	  edit_model (unix_path($software{psn_dir}."/psn.conf"));
       });
     }
-      $mbar_psn -> command(-label => "Edit PsN default command parameters",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+    $mbar_psn -> command(-label => "Edit PsN default command parameters",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
 	  edit_ini_window("psn.ini", \%psn_commands, \%psn_commands_descr, "PsN commands default parameters", 0);
-      })
-  };
-  pirana_debug ($debug_mode, "Declare WFN options.");
+      });
+    $mbar_psn -> command(-label => "Update PsN help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+	  retrieve_psn_info_window ();
+      });
 
+  };
+
+  pirana_debug ($debug_mode, "Declare WFN options.");
   my $mbar_wfn;
   if ((-e unix_path($software{wfn_dir})."/bin/wfn.bat")&&($os =~ m/MSWin/i)) {
     $mbar_wfn = $mbar_tools -> cascade (-label => "WFN", -font=>$font,-background=>$bgcol, -underline=>0, -tearoff => 0);

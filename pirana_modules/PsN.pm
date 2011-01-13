@@ -30,7 +30,11 @@ sub get_psn_info {
       }
       $ssh_post = "; exit'";
   } else {
-      $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
+      my $loc_str = $psn_dir;
+      $loc_str =~ s/\s//g; # strip spaces
+      if ($loc_str ne "") {
+	  $psn_full = os_specific_path($psn_dir.'/'.$psn_command);
+      }
   }
   my $cmd = os_specific_path($ssh_pre.$psn_full.' -'.$switch.$ssh_post.' |');
   eval(open (OUT, $cmd));

@@ -1,0 +1,30 @@
+
+  sumo
+
+  Perl script for summarizing output data. 
+  
+  Usage:
+
+  sumo [ -h | -? ] [ -help ]
+       [ -nm_version='string' ] 
+       [ -debug='integer' ] 
+       [ -debug_package='string' ] 
+       [ -debug_subroutine='string' ]
+       [ -csv ]
+       [ -precision='integer' ]
+       [ -c_level='integer' ]
+       [ -confidence_interval | -ci ]
+       [ -sd_rse ]
+       [ -max_problem_num = 'integer' ]
+       [ -max_subproblem_num = 'integer' ]
+       [ -no_check_run ]            
+       [ -correlation_limit = 'number' ]       
+       [ -condition_number_limit = 'number' ]  
+       [ -near_bound_sign_digits = 'integer' ]
+       [ -near_zero_boundary_limit = 'number' ]
+       [ -sign_digits_off_diagonals = 'number' ]
+       [ -large_theta_cv_limit = 'number' ]
+       [ -large_omega_cv_limit = 'number' ]
+       [ -large_sigma_cv_limit = 'number' ]
+       outputfile(s)
+

@@ -23,6 +23,172 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
+
+
+sub retrieve_nm_help_window {
+    my $nm_help_window = $mw -> Toplevel (-title => "Import / update NONMEM help files", -background=> $bgcol);
+    my $nm_help_frame = $nm_help_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
+    
+    my $info = "UNDER CONSTRUCTION\n";
+
+    $nm_help_frame -> Label (-text=>$info, -font=> $font_normal, -justify=>"left", -background=>$bgcol
+    ) -> grid(-row=>0,-column=>1,-columnspan=>4,-sticky=>"nw");
+    $nm_help_frame -> Label (-text=>"Import help files from local NONMEM installation", -font=> $font_bold, -background=>$bgcol
+    ) -> grid(-row=>1,-column=>1,-columnspan=>4,-sticky=>"nsw");
+    $nm_help_frame -> Label (-text=>"Local location:", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>2,-column=>1,-columnspan=>1,-sticky=>"nsw");
+    $nm_help_frame -> Label (-text=>" ", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>4,-column=>1,-columnspan=>1,-sticky=>"nsw");
+    $nm_help_frame -> Label (-text=>"Import help files from remote cluster over SSH", -font=> $font_bold, -background=>$bgcol
+    ) -> grid(-row=>5,-column=>1,-columnspan=>4,-sticky=>"nsw");
+    $nm_help_frame -> Label (-text=>"Remote location:", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>6,-column=>1,-columnspan=>1,-sticky=>"nsw");
+   
+    my $nm_local_location = "";
+    if ($^O =~ /MSWin/i) {
+	$nm_local_location = 'C:\NONMEM\nm7';
+    }
+    my $nm_remote_location = "/opt/NONMEM/nm7";
+    $nm_help_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$nm_local_location, -width=>50, -font=>$font_normal, -background=>"#FFFFFF"
+    ) -> grid(-row=>2,-column=>2,-columnspan=>3,-sticky=>"nwe");
+    $nm_help_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$nm_remote_location, -width=>50, -font=>$font_normal, -background=>"#FFFFFF"
+    ) -> grid(-row=>6,-column=>2,-columnspan=>3,-sticky=>"nwe");
+    $nm_help_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0, -command=> sub{
+	$nm_local_location = $nm_help_window-> chooseDirectory();
+	$nm_help_window -> focus();
+    })->grid(-row=>2, -column=>5, -rowspan=>1, -sticky => 'nse');
+    $nm_help_frame -> Button(-text=>"Import help",  -font=>$font_normal, -command=> sub{
+	retrievenm_help ("local", $nm_local_location);
+	$nm_help_window -> destroy();
+    })->grid(-row=>3, -column=>2, -rowspan=>1, -sticky => 'nswe');
+    $nm_help_frame -> Button(-text=>"Import help", -font=>$font_normal,-command=> sub{
+	retrievenm_help ("remote", $nm_remote_location);
+	$nm_help_window -> destroy();
+    })->grid(-row=>7, -column=>2, -rowspan=>1, -sticky => 'nswe');
+    $nm_help_frame -> Button(-text=>"SSH settings",  -font=>$font_normal,-command=> sub{
+	ssh_setup_window();
+    })->grid(-row=>9, -column=>1, -rowspan=>1, -sticky => 'nsw');
+    $nm_help_frame -> Label (-text=>"                 ", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>8,-column=>4,-columnspan=>1,-sticky=>"ne");
+    $nm_help_frame -> Button(-text=>"Cancel",  -font=>$font_normal,-command=> sub{
+	$nm_help_window -> destroy ();
+    })->grid(-row=>9, -column=>2, -rowspan=>1, -sticky => 'nswe');
+}
+
+sub retrieve_psn_info_window {
+    my $rtv_psn_info_window = $mw -> Toplevel (-title => "Update PsN info/help files", -background=> $bgcol);
+    my $rtv_psn_info_frame = $rtv_psn_info_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
+  
+    my $info = "Pirana comes supplied with the PsN help information, which is shown in the PsN-toolkit dialog in Pirana. As the\n".
+	"help files may become out of date with updates to PsN, updated help files can be imported from PsN.\n".
+	"Please choose below if you want to import help files from a local or a remote PsN installation\n".
+	"\nNote: It is necessary that PsN is installed properly, and the PsN binaries are included in the PATH.\n";
+
+    $rtv_psn_info_frame -> Label (-text=>$info, -font=> $font_normal, -justify=>"left", -background=>$bgcol
+    ) -> grid(-row=>0,-column=>1,-columnspan=>4,-sticky=>"nw");
+    $rtv_psn_info_frame -> Label (-text=>"Import help information from:", -font=> $font_normal, -justify=>"left", -background=>$bgcol
+    ) -> grid(-row=>2,-column=>1,-columnspan=>1,-sticky=>"nsw");
+   
+    my $psn_local_location = "";
+    my $psn_remote_location = "/opt/perl/lib/site_perl/5.8.8/PsN_3_2_7";
+    if ($^O =~ /MSWin/i) {
+	$psn_local_location = 'C:\perl\site\lib\PsN_3_2_7';
+    }
+    $rtv_psn_info_frame -> Button(-text=>"Local PsN",  -font=>$font_normal, -command=> sub{
+	$rtv_psn_info_window -> destroy();
+	retrieve_psn_info ("local");
+    })->grid(-row=>2, -column=>2,  -sticky => 'we');
+    $rtv_psn_info_frame -> Button(-text=>"Remote PsN", -font=>$font_normal,-command=> sub{
+	$rtv_psn_info_window -> destroy();
+	retrieve_psn_info ("remote");
+    })->grid(-row=>2, -column=>3,  -sticky => 'we');
+    $rtv_psn_info_frame -> Button(-text=>"SSH settings",  -font=>$font_normal,-command=> sub{
+	ssh_setup_window();
+    })->grid(-row=>9, -column=>2, -rowspan=>1, -sticky => 'nswe');
+    $rtv_psn_info_frame -> Label (-text=>"                 ", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>8,-column=>4,-columnspan=>1,-sticky=>"ne");
+    $rtv_psn_info_frame -> Button(-text=>"Cancel",  -font=>$font_normal,-command=> sub{
+	$rtv_psn_info_window -> destroy ();
+    })->grid(-row=>9, -column=>3, -rowspan=>1, -sticky => 'nswe');
+    $rtv_psn_info_window -> resizable (0,0);
+}
+
+sub retrieve_psn_info {
+    my $where = shift;
+    my @psn_commands = qw /execute vpc npc bootstrap cdd llp sse scm sumo/;
+    unless (-d $base_dir."/doc/psn") {
+	mkdir ($base_dir."/doc/psn");
+    }
+
+    my $rtv_psn_window = $mw -> Toplevel (-title => "Importing PsN info/help files", -background=> $bgcol);
+    my $rtv_psn_frame = $rtv_psn_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
+    my $text = "";
+    my $text_scrollbar = $rtv_psn_frame -> Scrollbar()->grid(-column=>2,-row=>1,-sticky=>'nws');
+    my $rtv_psn_text = $rtv_psn_frame -> Text (
+      -width=>50, -height=>18, -yscrollcommand => ['set' => $text_scrollbar],
+      -background=>"#ffffff", -exportselection => 0, -wrap=>'word',
+      -relief=>'groove', -border=>2,
+      -selectbackground=>'#606060',-font=>$font_normal, -highlightthickness =>0
+    )-> grid(-column=>1, -row=>1, -columnspan=>1,-sticky=>'nwes');
+    $rtv_psn_text -> insert ("end", "Note: for local installations this should not take more than 20 seconds. On remote systems with slow connections this may take a few minutes.\n\n" );
+    my $close_button = $rtv_psn_frame -> Button(-text=>"Close", -font=>$font_normal, -state=>'disabled', -command=> sub{
+	$rtv_psn_window -> destroy ();
+    })->grid(-row=>2, -column=>1, -rowspan=>1, -sticky => 'nse');
+    $rtv_psn_window -> resizable (0,0);
+
+    my %ssh_copy = %ssh; 
+    if ($where eq "remote" ) {
+	$ssh_copy{connect_ssh} = 1;
+    } else {
+	$ssh_copy{connect_ssh} = 0;
+    }
+
+    $rtv_psn_window -> update();
+    foreach my $command (@psn_commands) {	
+	$rtv_psn_text -> insert ("end", "Importing info for '".$command."' command... " );
+	$rtv_psn_window -> update();
+	my $psn_text = get_psn_info ($command, "", \%ssh_copy, "h");
+	my $psn_text_help = get_psn_info ($command, "", \%ssh_copy, "help");
+	my $cnt_success = 0; $cnt_failed;
+	if ((length($psn_text) >250)&&(length($psn_text_help)>250)) { # quick 'n dirty test if output is likely to be PsN info
+	    text_to_file (\$psn_text, $base_dir."/doc/psn/".$command."_h.txt");
+	    text_to_file (\$psn_text_help, $base_dir."/doc/psn/".$command."_help.txt");
+	    $rtv_psn_text -> insert ("end", "Done\n");
+	    $cnt_success++;
+	} else {
+	    $rtv_psn_text -> insert ("end", "Failed\n");
+	    $cnt_failed++;
+	}
+	$rtv_psn_window -> update();
+    }
+    if ($cnt_failed == 0 ) {
+	$rtv_psn_text -> insert ("end", "\nPsN help files successfully imported in Pirana.");
+    } else {
+	$rtv_psn_text -> insert ("end", "\nImporting PsN help files did not succeed. (Failed ".$cnt_failed."/".(length(@psn_commands)*2).")");
+    }
+    $close_button -> configure(-state=>'normal');
+}
+
+sub text_to_file {
+    my ($text_ref, $filename) = @_;
+    if (open (TXT, ">".$filename)) {
+	print TXT $$text_ref;
+    };
+    close (TXT);
+}
+
+sub file_to_text {
+    my $filename = shift;
+    my $text = "";
+    if (-e $filename) {
+	open (TXT, "<".$filename);
+	my @lines = <TXT>;
+	$text = join ("", @lines);
+	close (TXT);
+    }
+    return (\$text);
+}
+
 sub sge_setup_window {
     my $sge_setup_window = $mw -> Toplevel (-title => "SGE setup", -background=> $bgcol);
     my $sge_setup_frame = $sge_setup_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
@@ -261,7 +427,6 @@ sub refresh_sge_monitor {
         populate_jobs_hlist ($jobs_hlist_running, $job_info_running_ref);
         populate_jobs_hlist ($jobs_hlist_scheduled, $job_info_scheduled_ref);
         populate_jobs_hlist ($jobs_hlist_finished, $job_info_finished_ref);
-        
     }
 }
 
@@ -5853,6 +6018,7 @@ sub psn_run_window {
     my $psn_parameters = $psn_commands{$psn_option};
     my $run_in_new_dir = 0;
     my $psn_run_window = $mw -> Toplevel(-title=>'PsN Toolkit ('.$psn_option.")");
+    my $psn_help_not_found = "PsN help information not imported into Pirana. Please go to: \n    Tools --> PsN --> Update PsN help files. \n\n";
 
     center_window($psn_run_window);
     $psn_run_window -> OnDestroy ( sub{
@@ -5872,19 +6038,42 @@ sub psn_run_window {
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
                                                    -font=>$font, -background=>"#f6f6e6", -state=>'normal'
         )->grid(-column=>1, -row=>0, -columnspan=>2, -sticky=>'nwe');
+ 
+   # Get PsN help information 
+    my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_h.txt" );
+    if ($$psn_text_ref eq "") {
+	    $psn_run_text -> insert("1.0", $psn_help_not_found);
+    } else {
+	$psn_run_text -> insert("1.0", "PsN command information: \n");
+	$psn_run_text -> update();
+	#          my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
+	psn_info_update_text ($psn_run_text, $$psn_text_ref, $psn_run_button);
+    }
+ 
     $psn_help_buttons_frame -> Button(-text=>"Options", -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
-        $psn_run_text -> insert("1.0", "Requesting command information from PsN...\n");
-        $psn_run_text -> update();
-        my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
-        psn_info_update_text ($psn_run_text, $psn_text, $psn_run_button);
-                                      }) -> grid (-column=>1, -row=> 1, -sticky=>"nswe");
+        my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_h.txt");
+	if ($$psn_text_ref eq "") {
+	    $psn_run_text -> insert("1.0", $psn_help_not_found);
+	} else {
+	    $psn_run_text -> insert("1.0", "PsN command information: \n");
+	    $psn_run_text -> update();
+  #          my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
+	    psn_info_update_text ($psn_run_text, $$psn_text_ref, $psn_run_button);
+	}
+	}) -> grid (-column=>1, -row=> 1, -sticky=>"nswe");
+       
     $psn_help_buttons_frame -> Button(-text=>"Help", -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
-        $psn_run_text -> insert("1.0", "Requesting command information from PsN...\n");
-        $psn_run_text -> update();
-        my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "help");
-        psn_info_update_text ($psn_run_text, $psn_text, $psn_run_button);
-                                      }) -> grid (-column=>1, -row=> 2, -sticky=>"nswe");
-
+	my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_help.txt");
+	if ($$psn_text_ref eq "") {
+	    $psn_run_text -> insert("1.0", $psn_help_not_found);
+	} else {
+          $psn_run_text -> insert("1.0", "PsN help file: \n");
+	  $psn_run_text -> update();
+#        my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "help");
+	    psn_info_update_text ($psn_run_text, $$psn_text_ref, $psn_run_button);
+	}
+	}) -> grid (-column=>1, -row=> 2, -sticky=>"nswe");
+	
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Model file:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>2,-column=>1,-sticky=>"w");
 #  my $models = @$modelfile;
@@ -5956,9 +6145,8 @@ sub psn_run_window {
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
         })-> grid(-row=>8,-column=>2,-sticky => 'wns');
-
+    $nm_versions_menu -> configure (-options => ["Loading..."], -variable => \$nm_version_chosen,);   
     $psn_run_window -> update();
-    $psn_run_text -> insert("0.0", "Requesting NONMEM versions available in PsN...\n");
 
     my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software,\%$ssh);
     %psn_nm_versions = %$psn_nm_versions_ref;
@@ -5969,13 +6157,9 @@ sub psn_run_window {
     unshift (@psn_nm_installations, "default");
     $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
 
-    # Get PsN help / options
-    my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
-    psn_info_update_text ($psn_run_text, $psn_text, $psn_run_button);
-
     # get PsN.conf and display
     my ($text, $conf_file) = update_psn_conf_window ();
-    my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
+    my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
 
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
@@ -5993,9 +6177,7 @@ sub psn_run_window {
         my @psn_nm_installations = keys(%psn_nm_versions_copy);
         unshift (@psn_nm_installations, "default");
         $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
-        # update PsN command information
-        my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
-        psn_info_update_text ($psn_run_text, $psn_text, $psn_run_button);
+ 
         # update psn.conf window
         my ($text, $conf_file) = update_psn_conf_window ();
         $psn_conf_text_filename -> destroy();
