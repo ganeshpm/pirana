@@ -1,0 +1,75 @@
+
+  sse
+
+    Stochastic Simulation and Estimation of NONMEM models.
+
+
+
+
+
+
+    Options:
+
+      The options are given here in their long form. Any option may be
+      abbreviated to any nonconflicting prefix. The -threads option
+      may be abbreviated to -thr, but -debug may not be
+      abbreviated to -d because it conflicts with -debug_packages and
+      -debug_subroutines.
+
+      The following options are valid:
+
+      -add_models
+
+      This option tells PsN to add the alternative models listed with option 
+      -alternative_models to an old sse run. All models given via option
+      -alternative_models will be estimated from scratch, so the alternatives from
+      the old run should not be listed again. The -add_models option requires that 
+      the old sse run has been completed without errors. It is necessary to also set 
+      the general PsN option -directory to the sse directory of the old run, 
+      e.g. -directory=sse_dir50.
+      The user must ensure that the -samples option in the new sse run is 
+      equal to or smaller than in the old run. If some simulated datasets are 
+      missing it will result in an error. 
+      The simulation model must still be given as input on the command-line.
+      If the option -estimate_simulation is set (it is set by default) the 
+      original model will be estimated, regardless of whether is was estimated 
+      in the old run. Old estimation results will not be reloaded.
+      The numbering of the extra models will start at the number of the last old
+      alternative plus 1.
+
+
+      -alternative_models=alt1.mod,alt2.mod,...
+
+      List of one or more alternative models to use for estimation 
+      with simulated datasets. The filenames must be comma-separated,
+      no spaces.
+
+      -estimate_simulation
+
+      By default, the simulation model is also used for estimation with
+      the simulated datasets. The resulting OFV values are used as reference
+      when evaluating the estimation results of alternative models. By setting
+      -no-estimate_simulation the estimation of the simulation model is turned
+      off, and the first alternative model is used as reference instead. See
+      also -ref_ofv.
+
+      -parallel_simulations=1
+
+      parallel_simulations govern the number of simulations that will
+      be done in parallel. Normally simulations are quite fast and
+      need only be run one at a time. See the threads option for
+      control over the number of estimations to do in parallel.
+
+      -ref_ofv=500
+
+      Instead of using the OFV values from the estimation of a model as
+      reference when evaluating the other estimation results,
+      it is possible to set a fixed reference OFV value. If using ref_ofv,
+      it is not allowed to also estimate the simulation model. 
+
+      -samples=N
+
+      The number of simulated datasets to generate.
+
+    Also see 'psn_options -h' for a description of common PsN options.
+
