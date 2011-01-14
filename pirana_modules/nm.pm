@@ -109,37 +109,59 @@ sub create_output_summary_csv {
   }
 }
 
+# sub get_nm_help_text_old {
+#     my ($nm, $keyword) = @_;
+#     open (HELP, "<".$nm."/html/".$keyword.".htm");
+#     my @lines = <HELP>;
+#     close (HELP);
+#     my @lines2;
+#     foreach my $line (@lines) {
+# 	unless( $line =~ m/(\<HTML|\<BODY|\<PRE|\<\/BODY|\<I\>|\<\/I>|\<HR)/i  ) {
+# 	    push(@lines2, $line);
+# 	}
+#     }
+#     my $text = join ("",@lines2);
+#     return ($text);
+# }
+
 sub get_nm_help_text {
-    my ($nm, $keyword) = @_;
-    open (HELP, "<".$nm."/html/".$keyword.".htm");
-    my @lines = <HELP>;
-    close (HELP);
-    my @lines2;
-    foreach my $line (@lines) {
-	unless( $line =~ m/(\<HTML|\<BODY|\<PRE|\<\/BODY|\<I\>|\<\/I>|\<HR)/i  ) {
-	    push(@lines2, $line);
-	}
-    }
-    my $text = join ("",@lines2);
-    return ($text);
+    my ($db_name, $keyword) = @_; 
+    my $dbargs = {AutoCommit => 0, PrintError => 1};
+    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+    my $all = $db -> selectall_arrayref("SELECT nm_help FROM nm_help WHERE nm_key = '".$keyword."'");
+    my $row0 = @{$all}[0];
+    my $text = @{$row0}[0];
+    return (\$text);
 }
 
+# sub get_nm_help_keywords_old {
+#     my $nm_help_dir = @_[0];
+#     my $cwd = fastgetcwd();
+#     chdir ($nm_help_dir);
+#     my $cwd = fastgetcwd();
+#     my @help_files = <*.htm>;
+#     my $i = 0;
+#     my @help_files2 ;
+#     foreach my $file (@help_files) {
+# 	$file =~ s/\.htm//i;
+# 	unless (length($file) == 1) { # remove the alfabet letters
+# 	    push (@help_files2, $file);
+# 	}
+#     }
+#     chdir ($cwd);
+#     return (\@help_files2)
+# }
+
 sub get_nm_help_keywords {
-    my $nm_help_dir = @_[0];
-    my $cwd = fastgetcwd();
-    chdir ($nm_help_dir);
-    my $cwd = fastgetcwd();
-    my @help_files = <*.htm>;
-    my $i = 0;
-    my @help_files2 ;
-    foreach my $file (@help_files) {
-	$file =~ s/\.htm//i;
-	unless (length($file) == 1) { # remove the alfabet letters
-	    push (@help_files2, $file);
-	}
+    my $db_name = shift; 
+    if (-s $db_name > 500000) {
+	my $dbargs = {AutoCommit => 0, PrintError => 1};
+	my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+	my $all = $db -> selectall_arrayref("SELECT nm_key FROM nm_help");
+	return ($all);
+    } else {
+	return(0);
     }
-    chdir ($cwd);
-    return (\@help_files2)
 }
 
 sub convert_nm_table_file {

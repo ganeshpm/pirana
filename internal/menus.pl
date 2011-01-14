@@ -188,9 +188,12 @@ sub create_menu_bar {
        message ($m);
     });
   }
-   $mbar_tools_NM -> command(-label => "Import / update NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+  $mbar_tools_NM -> command(-label => "Search NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+	  text_window_nm_help ( \@nm_help_keywords, "NONMEM Help files");
+   });
+  $mbar_tools_NM -> command(-label => "Import / update NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
 	  retrieve_nm_help_window ();
-      });
+   });
  
   pirana_debug ($debug_mode, "Declare PSN options.");
   my $mbar_psn;
@@ -283,7 +286,7 @@ sub create_menu_bar {
       show_inter_window($cwd);
       if ($inter_window) {$inter_window -> focus();}
    });
- pirana_debug ($debug_mode, "Declare HELP options.");
+  pirana_debug ($debug_mode, "Declare HELP options.");
   my $mbar_help = $mbar -> cascade(-label =>"Help", -font=>$font, -background=>$bgcol,-underline=>0, -tearoff => 0);
   $mbar_help -> command(-label => "Piraña manual", -font=>$font, -background=>$bgcol,-underline=>0,-command=> sub {
       if (-e $software{pdf_viewer} ) {
@@ -293,14 +296,10 @@ sub create_menu_bar {
       }
   });
   $mbar_help -> command(-label => "Piraña website", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://pirana.sf.net")});
-  my @nm = values(%nm_dirs);
-  our @nm_keys = keys(%nm_dirs);
-  unless (@nm_keys == 0) {
-    $mbar_help -> command(-label => "NONMEM Help files", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {
-	start_command($software{browser}, "file://".unix_path($nm_dirs{@nm_keys[0]}."/html/index.htm")) }
-    );
-  }
-  $mbar_help -> command(-label => "NM UsersNet", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://www.cognigencorp.com/nonmem/sitesearch/index.html")});
+  
+  $mbar_help -> command(-label => "Search NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+	  text_window_nm_help ( \@nm_help_keywords, "NONMEM Help files");
+   });
 
    pirana_debug ($debug_mode, "Declare HELP -> PSN options.");
   my $mbar_help_psn = $mbar_help -> cascade(-label => "PsN", -font=>$font, -background=>$bgcol, -tearoff=>0);
@@ -322,4 +321,3 @@ sub create_menu_bar {
       message ($about_text);
   });
 }
-
