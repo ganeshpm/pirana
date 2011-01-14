@@ -24,12 +24,12 @@
 # As much as possible, subs are located in separate module
 
 
-
 sub retrieve_nm_help_window {
     my $nm_help_window = $mw -> Toplevel (-title => "Import / update NONMEM help files", -background=> $bgcol);
     my $nm_help_frame = $nm_help_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
     
-    my $info = "UNDER CONSTRUCTION\n";
+    my $info = "Pirana offers a search interface to the NM help files. For this, the NM help files must first be imported into Pirana.".
+	"\nPlease point out below where a NM version is located, either local or on a remote cluster.\n";
 
     $nm_help_frame -> Label (-text=>$info, -font=> $font_normal, -justify=>"left", -background=>$bgcol
     ) -> grid(-row=>0,-column=>1,-columnspan=>4,-sticky=>"nw");
@@ -44,7 +44,7 @@ sub retrieve_nm_help_window {
     $nm_help_frame -> Label (-text=>"Remote location:", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>6,-column=>1,-columnspan=>1,-sticky=>"nsw");
    
-    my $nm_local_location = "";
+    my $nm_local_location = "/opt/NONMEM/nm7";
     if ($^O =~ /MSWin/i) {
 	$nm_local_location = 'C:\NONMEM\nm7';
     }
@@ -57,13 +57,13 @@ sub retrieve_nm_help_window {
 	$nm_local_location = $nm_help_window-> chooseDirectory();
 	$nm_help_window -> focus();
     })->grid(-row=>2, -column=>5, -rowspan=>1, -sticky => 'nse');
-    $nm_help_frame -> Button(-text=>"Import help",  -font=>$font_normal, -command=> sub{
-	retrievenm_help ("local", $nm_local_location);
+    $nm_help_frame -> Button(-text=>"Import help files",  -font=>$font_normal, -command=> sub{
 	$nm_help_window -> destroy();
+	retrieve_nm_help ("local", $nm_local_location);
     })->grid(-row=>3, -column=>2, -rowspan=>1, -sticky => 'nswe');
-    $nm_help_frame -> Button(-text=>"Import help", -font=>$font_normal,-command=> sub{
-	retrievenm_help ("remote", $nm_remote_location);
+    $nm_help_frame -> Button(-text=>"Import help files", -font=>$font_normal,-command=> sub{
 	$nm_help_window -> destroy();
+	retrieve_nm_help ("remote", $nm_remote_location);
     })->grid(-row=>7, -column=>2, -rowspan=>1, -sticky => 'nswe');
     $nm_help_frame -> Button(-text=>"SSH settings",  -font=>$font_normal,-command=> sub{
 	ssh_setup_window();
@@ -73,6 +73,115 @@ sub retrieve_nm_help_window {
     $nm_help_frame -> Button(-text=>"Cancel",  -font=>$font_normal,-command=> sub{
 	$nm_help_window -> destroy ();
     })->grid(-row=>9, -column=>2, -rowspan=>1, -sticky => 'nswe');
+}
+
+sub retrieve_nm_help {
+    my ($where, $location) = @_;
+    unless (-d $base_dir."/doc/nm") {
+	mkdir ($base_dir."/doc/nm");
+    }
+    if (-e $base_dir."/doc/nm/nm_help.sqlite") {unlink ($base_dir."/doc/nm/nm_help.sqlite")};
+    my $rtv_nm_window = $mw -> Toplevel (-title => "Importing Nm info/help files", -background=> $bgcol);
+    my $rtv_nm_frame = $rtv_nm_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
+    my $text = "";
+    my $text_scrollbar = $rtv_nm_frame -> Scrollbar()->grid(-column=>2,-row=>1,-sticky=>'nws');
+    my $rtv_nm_text = $rtv_nm_frame -> Text (
+	-width=>50, -height=>18, -yscrollcommand => ['set' => $text_scrollbar],
+	-background=>"#ffffff", -exportselection => 0, -wrap=>'word',
+	-relief=>'groove', -border=>2,
+	-selectbackground=>'#606060',-font=>$font_normal, -highlightthickness =>0
+	)-> grid(-column=>1, -row=>1, -columnspan=>1,-sticky=>'nwes');
+    $rtv_nm_text -> insert ("end", "Starting import of NM help... \n");
+    my $close_button = $rtv_nm_frame -> Button(-text=>"Close", -font=>$font_normal, -state=>'disabled', -command=> sub{
+	$rtv_nm_window -> destroy ();
+    })->grid(-row=>2, -column=>1, -rowspan=>1, -sticky => 'nse');
+    $rtv_nm_window -> resizable (0,0);
+    $rtv_nm_window -> update();
+    
+    if ((($where eq "local")&&(-e $location."/html/index.htm"))||($where eq "remote")) { # quick check locally that help files are available
+	my $table = ("CREATE TABLE IF NOT EXISTS nm_help (nm_key VARCHAR(50), nm_help TEXT) ");
+	my $db = DBI->connect("dbi:SQLite:dbname=".unix_path($base_dir)."/doc/nm/nm_help.sqlite","","", {AutoCommit => 0, PrintError => 1});
+	$db -> do ($table);
+	$db -> commit();
+	if (-w "./") {db_execute_multiple(\@tables);}
+	my $cwd = fastgetcwd();
+	my @lines;
+	if ($where eq "local") {
+	    chdir ($location."/html");
+	    my $cat = "cat"; 
+	    if ($^O =~ m/MSWin/i) {
+		$cat = "type";
+	    }
+	    open (NM, $cat." *.htm |");
+	} else {
+	    my $ssh_pre; my $ssh_post;
+	    $ssh_pre = $ssh{login}.' ';	
+	    if ($ssh{parameters} ne "") {
+		$ssh_pre .= $ssh{parameters}.' ';
+	    }
+	    $ssh_pre .= "'";
+	    if ($ssh{execute_before} ne "") {
+		$ssh_pre .= $ssh{execute_before}.'; ';
+	    }
+	    $ssh_post = "'";
+	    open (NM, $ssh_pre."cat ".$location."/html/*.htm ".$ssh_post." |");
+#	    print $ssh_pre."cat ".$location."/html/*.htm ".$ssh_post." |";
+	}
+	my $header = "";
+	my $header_flag = 0;
+	my $cnt = 0;
+	my $nm_help = "";
+	my @lines = <NM>;
+	my $i = 0;
+	foreach my $line (@lines) {
+	    my $write_to_db = 0;
+	    if (((@lines[$i] =~ m/\-\-\-\-/)||(@lines[$i] =~ m/____/))&&(@lines[($i+1)] =~ m/\|/)){
+		$write_to_db = 1;
+		$header_flag = 1;
+		$header = @lines[($i + 2)];
+	    }
+	    if ($write_to_db == 1) {
+		$nm_help =~ s/\"/\'/g;
+		$header =~ s/\|//g;
+		$header =~ s/^\s+//; # leading spaces
+		$header =~ s/\s+$//; # trailing space
+		my $sql_command = 'INSERT INTO nm_help (nm_key, nm_help) VALUES ("'.$header.'", "'.$nm_help.'")';
+		$db -> do($sql_command);
+		$nm_help = "";
+		$header = "";
+    	    } 
+	    if ($header_flag == 0) {
+		unless( $line =~ m/(\<HTML|\<BODY|\<PRE|\<\/BODY|\<I\>|\<\/I>|\<HR)/i  ) {
+		    $nm_help .= $line;
+		}	
+	    }
+	    if (((@lines[$i] =~ m/\-\-\-\-/)||(@lines[$i] =~ m/____/))&&!(@lines[($i+1)] =~ m/\|/)){	# not the header anymore	
+		$header_flag = 0;
+	    }
+	    $i++;
+	}
+	chdir ($cwd);
+       	$db -> commit();
+	$db -> disconnect ();
+    }
+    if (-s $base_dir."/doc/nm/nm_help.sqlite" > 500000) { # quick 'n dirty check if db is filled with NM help now
+	# Read NM help files
+	my $nm_help_ref = get_nm_help_keywords ($base_dir."/doc/nm/nm_help.sqlite");
+	our @nm_help_keywords = ();
+	unless ($nm_help_ref == 0) {
+	    my @nm_help_keywords_arr = @$nm_help_ref;
+	    foreach (@nm_help_keywords_arr) {
+		my @temp = @$_;
+		push (@nm_help_keywords, @temp[0]);
+	    }
+	}
+	$rtv_nm_text -> insert ("end", "\nImport seems succesful!.\n");
+	$rtv_nm_text -> yview (moveto=>1);
+    } else {
+	$rtv_nm_text -> insert ("end", "Import seems to have failed!\n\nPlease check that you provided the correct NONMEM\nfolder, that your NM help HTML files are available (in /html),\nand that you have write permissions to the Pirana folder!\n");
+	$rtv_nm_text -> yview (moveto=>1);
+    }
+    $close_button -> configure(-state=>'normal');
 }
 
 sub retrieve_psn_info_window {
@@ -167,26 +276,6 @@ sub retrieve_psn_info {
 	$rtv_psn_text -> insert ("end", "\nImporting PsN help files did not succeed. (Failed ".$cnt_failed."/".(length(@psn_commands)*2).")");
     }
     $close_button -> configure(-state=>'normal');
-}
-
-sub text_to_file {
-    my ($text_ref, $filename) = @_;
-    if (open (TXT, ">".$filename)) {
-	print TXT $$text_ref;
-    };
-    close (TXT);
-}
-
-sub file_to_text {
-    my $filename = shift;
-    my $text = "";
-    if (-e $filename) {
-	open (TXT, "<".$filename);
-	my @lines = <TXT>;
-	$text = join ("", @lines);
-	close (TXT);
-    }
-    return (\$text);
 }
 
 sub sge_setup_window {
@@ -358,11 +447,11 @@ sub refresh_sge_monitor_ssh {
 	if ($ssh{parameters} ne "") {
 	    $ssh_pre .= $ssh{parameters}.' ';
 	}
-	$ssh_pre .= '"';
+	$ssh_pre .= "'";
 	if ($ssh{execute_before} ne "") {
 	    $ssh_pre .= $ssh{execute_before}.'; ';
 	}
-        $ssh_post = '"';
+        $ssh_post = "'";
     }
     my $get_info_cmd = $ssh_pre.
         "echo :P:running_jobs:; qstat -u '*' -s r;".
@@ -2068,13 +2157,6 @@ sub add_nm_inst {
 	$nm_inst_w -> destroy;
 	$sizes_w -> destroy;
 
-	# (re)load NM help files
-	my $nm_help_ref = get_nm_help_keywords ($nm_dir."/html");
-	our @nm_help_keywords = @$nm_help_ref;
-	if ($nm_help_entry) {
-	    $nm_help_entry -> configure(-state=>'normal');
-	}
-
     } else {
 	message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
     };
@@ -3266,10 +3348,16 @@ sub initialize {
     }
 
     # Read NM help files
-    my @dirs = values (%nm_dirs);
-    my $nm_help_ref = get_nm_help_keywords (@dirs[0]."/html");
-    our @nm_help_keywords = @$nm_help_ref;
-
+    my $nm_help_ref = get_nm_help_keywords ($base_dir."/doc/nm/nm_help.sqlite");
+    our @nm_help_keywords = ();
+    unless ($nm_help_ref == 0) {
+	my @nm_help_keywords_arr = @$nm_help_ref;
+	foreach (@nm_help_keywords_arr) {
+	    my @temp = @$_;
+	    push (@nm_help_keywords, @temp[0]);
+	}
+    }
+    
     # create scripts directory if not exists
     unless (-d $home_dir."/scripts") {
 	mkdir ($home_dir."/scripts")
@@ -4602,6 +4690,7 @@ sub text_window_nm_help {
     my ($keywords_ref, $title, $font) = @_;
     my @keywords = @$keywords_ref;
     if ($font eq "" ) {$font = $font_fixed};
+    my $doc_loc = $base_dir."/doc/nm/nm_help.sqlite";
     our ($text_window_keywords, $text_window_nm_help);
     unless ($text_window_keywords) {
 	our $text_window_keywords = $mw -> Toplevel(-title=>$title);
@@ -4611,47 +4700,76 @@ sub text_window_nm_help {
 	$text_window_keywords -> resizable( 0, 0 );
     }
 
+    my $text_no_help = "The NONMEM help files can be searched with this interface.\n\nThe help files first need to be imported into Pirana. Please go to:\n    Tools --> NONMEM --> Import / update NM help files" ;
+
     my $text_window_keywords_frame = $text_window_keywords -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
-    $text_window_keywords_frame -> Label (-text=> "Keyword:", -font=>$font_normal) -> grid(-row=>0, -column=>2, -sticky=>"nw");
+    $text_window_keywords_frame -> Label (-text=> "Keyword:", -font=>$font_normal) -> grid(-row=>0, -column=>1, -sticky=>"nw");
     $nm_help_filename = $text_window_keywords_frame -> Label (-text=> "", -font=>$font_bold) -> grid(-row=>0, -column=>3, -sticky=>"nw");
     our $keywords_list = $text_window_keywords_frame -> Listbox (
-	-width=>10, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2, -selectmode=>'single',
-	-selectbackground=>'#CCCCCC', -highlightthickness =>0, -background=>'#ffffff', -font=>$font_normal
-    ) -> grid(-column=>2,-row=>1, -sticky=>'nwe');
+	-width=>24, -height=>32, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2, -selectmode=>'single',
+	-selectbackground=>'#CCCCCC', -highlightthickness =>0, -background=>'#ffffff', -font=> $font_normal
+    ) -> grid(-column=>1,-row=>1, -columnspan=>2, -sticky=>'nwe');
     my $text_text = $text_window_keywords_frame -> Scrolled ('Text',
-        -scrollbars=>'e', -width=>80, -height=>26,
+        -scrollbars=>'e', -width=>80, -height=>32,
         -background=>"#FFFFFF",-exportselection => 0,
         -relief=>'groove', -border=>2,
         -font=>$font,
         -selectbackground=>'#606060', -highlightthickness =>0
     ) -> grid(-column=>3, -row=>1, -sticky=>'nwes');
-    my @nm = values (%nm_dirs);
-    $keywords_list -> bind('<Button>', sub{
-	my @x_sel = $keywords_list -> curselection;
-	my $keyword = ($keywords_list -> get (@x_sel[0]));
-	my $nm_help_text = get_nm_help_text (@nm[0], $keyword);
-	$text_text -> delete("0.0", "end");
-	$text_text -> insert("0.0", $nm_help_text);
-	$nm_help_filename -> configure (-text => $keyword);
-    });
-    $keywords_list -> bind('<Down>', sub{
-	my @x_sel = $keywords_list -> curselection;
-	my $keyword = ($keywords_list -> get (@x_sel[0]));
-	my $nm_help_text = get_nm_help_text (@nm[0], $keyword);
-	$text_text -> delete("0.0", "end");
-	$text_text -> insert("0.0", $nm_help_text);
-	$nm_help_filename -> configure (-text => $keyword);
-    });
-    $keywords_list->bind('<Up>', sub{
-	my @x_sel = $keywords_list -> curselection;
-	my $keyword = ($keywords_list -> get (@x_sel[0]));
-	my $nm_help_text = get_nm_help_text (@nm[0], $keyword);
-	$text_text -> delete("0.0", "end");
-	$text_text -> insert("0.0", $nm_help_text);
-	$nm_help_filename -> configure (-text => $keyword);
-    });
-
-    $keywords_list -> insert(0, @keyworsd);
+    $text_window_keywords_frame -> Button (-text=> "Close", -border=>$bbw, -background=>$button, -activebackground=>$abutton, -font=>$font_normal, -command=> sub{
+	$text_window_keywords -> destroy();
+    })-> grid (-column=>3, -row=>2, -sticky=>'nes');
+    
+    if (-s $doc_loc>500000) { # quick check if db seems valid
+	my @nm = values (%nm_dirs);
+	$keywords_list -> bind('<Button>', sub{
+	    my @x_sel = $keywords_list -> curselection;
+	    my $keyword = ($keywords_list -> get (@x_sel[0]));
+	    my $nm_help_text_ref = get_nm_help_text ($doc_loc, $keyword);
+	    my $nm_help_text = $$nm_help_text_ref;
+	    $text_text -> delete("0.0", "end");
+	    $text_text -> insert("0.0", $nm_help_text);
+	    $nm_help_filename -> configure (-text => $keyword);
+			       });
+	$keywords_list -> bind('<Down>', sub{
+	    my @x_sel = $keywords_list -> curselection;
+	    my $keyword = ($keywords_list -> get (@x_sel[0]));
+	    my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
+	    my $nm_help_text = $$nm_help_text_ref;
+	    $text_text -> delete("0.0", "end");
+	    $text_text -> insert("0.0", $nm_help_text);
+	    $nm_help_filename -> configure (-text => $keyword);
+			       });
+	$keywords_list->bind('<Up>', sub{
+	    my @x_sel = $keywords_list -> curselection;
+	    my $keyword = ($keywords_list -> get (@x_sel[0]));
+	    my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
+	    my $nm_help_text = $$nm_help_text_ref;
+	    $text_text -> delete("0.0", "end");
+	    $text_text -> insert("0.0", $nm_help_text);
+	    $nm_help_filename -> configure (-text => $keyword);
+			     });
+	$keywords_list -> insert(0, @keywords);
+	my $nm_help_search_keys = "";
+	my $nm_help_entry = $text_window_keywords_frame -> Entry(-width=>12,-textvariable=>\$nm_help_search_keys, -background=>$white,-border=>2, -relief=>'groove' )
+	    -> grid(-row=>0,-column=>2,-columnspan=>1, -sticky => 'we',-ipadx=>1);
+	$nm_help_entry -> bind('<Any-KeyPress>' => sub {
+	    if (length($nm_help_search_keys)>0) {
+		$filtered_keywords_ref = nm_help_filter_keywords ($nm_help_search_keys, \@keywords);
+		my @filtered_keywords = @$filtered_keywords_ref;
+		unless ($text_window_keywords) {
+		    text_window_nm_help ( \@filtered_keywords, "NONMEM help files");
+		    $keywords_list -> delete(0,"end");
+		    $keywords_list -> insert(0, @filtered_keywords);
+		} else {
+		    $keywords_list -> delete(0,"end");
+		    $keywords_list -> insert(0, @filtered_keywords);
+		}
+	    } 
+        });
+    } else {
+	$text_text -> insert ("end", $text_no_help);
+    }
 }
 
 sub pcluster_get_available_nodes {
@@ -5489,38 +5607,38 @@ sub show_links {
   our $pirana_logo = $frame_logo -> Label (-border=>0,-text=>"Pirana v".$version.$portable_text, -justify=>"right", -background=>$bgcol, -font=>$font_normal, -state=>"disabled"
     )->grid(-row=>2, -column=>1, -columnspan=>2,-rowspan=>1, -sticky => 'en');
 
-  # NM help box
-  $frame_logo -> Label(-text=>"NM help:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -sticky=>'ew');
-  our $nm_help_entry = $frame_logo -> Entry(-width=>12,-textvariable=>\$nm_help_search, -background=>$white,-border=>2, -relief=>'groove' )
-    -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky => 'we',-ipadx=>1);
-  my @nm = values (%nm_dirs);
-  unless (@nm > 0) {
-      $nm_help_entry -> configure(-state=>'disabled');
-  }
-  $nm_help_entry -> bind('<Any-KeyPress>' => sub {
-     if (length($nm_help_search)>0) {
-	 our $nm_box_on = 1;
-	 $filtered_keywords_ref = nm_help_filter_keywords ($nm_help_search, \@nm_help_keywords);
-	 my @filtered_keywords = @$filtered_keywords_ref;
-	 unless ($text_window_keywords) {
-	     text_window_nm_help ( \@filtered_keywords, "NONMEM help files");
-	     $keywords_list -> delete(0,"end");
-	     $keywords_list -> insert(0, @filtered_keywords);
-	 } else {
-	     $keywords_list -> delete(0,"end");
-	     $keywords_list -> insert(0, @filtered_keywords);
-         }
-     } else {
-	 if ($text_window_keywords) {
-	     $text_window_keywords -> destroy();
-	     undef($text_window_keywords); undef $text_window_keywords_frame;
-	 }
-     }
-     $nm_help_entry -> focus();
-     $mw -> raise();
-     $mw -> update();
-     ;
-  });
+#   # NM help box
+#   $frame_logo -> Label(-text=>"NM help:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -sticky=>'ew');
+#   our $nm_help_entry = $frame_logo -> Entry(-width=>12,-textvariable=>\$nm_help_search, -background=>$white,-border=>2, -relief=>'groove' )
+#     -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky => 'we',-ipadx=>1);
+#   my @nm = values (%nm_dirs);
+#   unless (@nm > 0) {
+#       $nm_help_entry -> configure(-state=>'disabled');
+#   }
+#   $nm_help_entry -> bind('<Any-KeyPress>' => sub {
+#      if (length($nm_help_search)>0) {
+# 	 our $nm_box_on = 1;
+# 	 $filtered_keywords_ref = nm_help_filter_keywords ($nm_help_search, \@nm_help_keywords);
+# 	 my @filtered_keywords = @$filtered_keywords_ref;
+# 	 unless ($text_window_keywords) {
+# 	     text_window_nm_help ( \@filtered_keywords, "NONMEM help files");
+# 	     $keywords_list -> delete(0,"end");
+# 	     $keywords_list -> insert(0, @filtered_keywords);
+# 	 } else {
+# 	     $keywords_list -> delete(0,"end");
+# 	     $keywords_list -> insert(0, @filtered_keywords);
+#          }
+#      } else {
+# 	 if ($text_window_keywords) {
+# 	     $text_window_keywords -> destroy();
+# 	     undef($text_window_keywords); undef $text_window_keywords_frame;
+# 	 }
+#      }
+#      $nm_help_entry -> focus();
+#      $mw -> raise();
+#      $mw -> update();
+#      ;
+#   });
 
 
   $i=2;

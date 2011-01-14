@@ -8,7 +8,27 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub text_to_file {
+    my ($text_ref, $filename) = @_;
+    if (open (TXT, ">".$filename)) {
+	print TXT $$text_ref;
+    };
+    close (TXT);
+}
+
+sub file_to_text {
+    my $filename = shift;
+    my $text = "";
+    if (-e $filename) {
+	open (TXT, "<".$filename);
+	my @lines = <TXT>;
+	$text = join ("", @lines);
+	close (TXT);
+    }
+    return (\$text);
+}
 
 sub block_size {
 ### Purpose : Get the maximum length of a string in an array of strings
@@ -20,7 +40,6 @@ sub block_size {
       return $n + block_size($n-1);
     }
 }
-
 
 sub base_drive {
     my $path = shift;
