@@ -103,7 +103,6 @@ sub retrieve_nm_help {
 	my $db = DBI->connect("dbi:SQLite:dbname=".unix_path($base_dir)."/doc/nm/nm_help.sqlite","","", {AutoCommit => 0, PrintError => 1});
 	$db -> do ($table);
 	$db -> commit();
-	if (-w "./") {db_execute_multiple(\@tables);}
 	my $cwd = fastgetcwd();
 	my @lines;
 	if ($where eq "local") {
@@ -1839,7 +1838,7 @@ sub project_info_window {
   # Get project info from database
   my %proj_record;
   my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date");
-  my $db_results = db_get_project_info();
+  my $db_results = db_get_project_info("pirana.dir");
   my $row = @{$db_results}[0];
   my @values = @$row;
   my $i=0;
@@ -1880,7 +1879,7 @@ sub project_info_window {
       $proj_record{$_} = $proj_rec_entry{$_} -> get();
     }
     $proj_record{"notes"} = $proj_notes_text -> get("0.0", "end");
-    db_insert_project_info (\%proj_record);
+    db_insert_project_info (\%proj_record, "pirana.dir");
     $project_window -> destroy();
   })->grid(-column=>2, -row=>31,-rowspan=>1, -sticky=>"w");
   $project_window_frame -> Button (-text=>'Cancel', -font=>$font, -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
@@ -3640,7 +3639,7 @@ sub delete_models_window {
      # remove model info from database
      foreach my $mod (@runs) {
 	 $mod .= s/\.$setting{ext_ctl}//;
-	 db_remove_model_info ($mod);
+	 db_remove_model_info ($mod, "pirana.dir");
      }
      status ();
      $del_dialog -> destroy();
@@ -3911,7 +3910,7 @@ sub rename_ctl {
 		unlink ($old.".".$setting{ext_ctl});
 	    }
 	}
-	db_rename_model ($old, $ren_ctl_name);
+	db_rename_model ($old, $ren_ctl_name, "pirana.dir");
 	if ($rename_results_files==1) {
 	    if (-e $old.".".$setting{ext_res}) {
 		move ($old.".".$setting{ext_res}, $ren_ctl_name.".".$setting{ext_res});
@@ -3965,7 +3964,8 @@ sub read_curr_dir {
 ### Notes   : sub could be somewhat more refined
 
     # remove superfluous batch files
-    check_db_file_correct ();
+    status ("Checking db file...");
+    check_db_file_correct ("pirana.dir");
 
     my @bat_remove = dir($cwd,"pirana_start");
     foreach(@bat_remove) {unlink ($_)};
@@ -4011,9 +4011,11 @@ sub read_curr_dir {
 	# Db
 	status ("Loading model information from database...");
 	if (@ctl_files>0) {
-	    db_create_tables();
-	    update_model_info(db_read_all_model_data()); # get all the models and info from the db if any present
-	    status ("Updating database..."); # and update the hashes containing the info
+	    status ("Creating tables in database if they do not exist...");
+	    db_create_tables("pirana.dir");
+	    status ("Gathering available model information from database...");
+	    update_model_info(db_read_all_model_data("pirana.dir"), "pirana.dir"); # get all the models and info from the db if any present
+	    status ("Gathering update information..."); # and update the hashes containing the info
 	    my @sql_commands;
 	    # check all the runs in the directory with the Db
 	    foreach my $mod (@ctl_files) {
@@ -4029,18 +4031,21 @@ sub read_curr_dir {
 			}
 		    } else { # add to db
 			unless ($mod =~ m/HASH/) {
-			    db_execute ("INSERT INTO model_db (model_id) VALUES ('".$mod."') ");
+			    db_execute ("INSERT INTO model_db (model_id) VALUES ('".$mod."') ", "pirana.dir");
 			    push(@sql_commands, update_model_descr ($mod));
 			    push(@sql_commands, update_run_results ($mod));
 			}
 		    }
 		}
 	    }
-	    db_execute_multiple(\@sql_commands);
-	    update_model_info(db_read_all_model_data());
+	    status ("Updating database...");
+	    db_execute_multiple(\@sql_commands, "pirana.dir");
+	    status ("Updating Pirana hashes...");
+	    update_model_info(db_read_all_model_data("pirana,dir"), "pirana.dir"); # update hashes
 	}
 
 	# Get directories in the current folder
+	status ("Reading folders...");
 	our @dirs;
 	our @dir_files = <*>;
 #    our @dir_files = dir ("."); # is faster than a regular <*>  ?
@@ -4088,6 +4093,7 @@ sub read_curr_dir {
 	    $i++;
 	}
     }
+    status ("Updating Pirana model view...");
     populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
     status ();
 }
@@ -4095,7 +4101,7 @@ sub read_curr_dir {
 sub update_model_info {
 ### Purpose : Read model info and update the hash
 ### Compat  : W+L?
-    my @model_refs = db_read_all_model_data ();
+    my @model_refs = db_read_all_model_data ("pirana.dir");
     our %models_dates_db    = %{@model_refs[0]};  # and update the global information hashes
     our %models_resdates_db = %{@model_refs[1]};
     our %models_refmod      = %{@model_refs[2]};
@@ -4350,7 +4356,7 @@ sub read_tab_files {
 	}
 	# get table/file info from databases and put in hash
 	chdir($cwd);
-	$db_table_info = db_read_table_info ();
+	$db_table_info = db_read_table_info ("pirana.dir");
 	our %table_descr={}; our %table_creator ={}; our %table_note ={};
 	my $i=0;
 	foreach my $row (@$db_table_info) {
@@ -4610,7 +4616,7 @@ sub exec_run_psn {
     status ("Starting run(s) locally using PsN");
     system ($psn_command_line);
     $psn_command_line =~ s/\'//g;
-    db_log_execution ($model, $model_description, "PsN", "local", $psn_command_line, $setting{name_researcher});
+    db_log_execution ($model, $model_description, "PsN", "local", $psn_command_line, $setting{name_researcher}, "pirana.dir");
     status ();
 }
 
@@ -5460,7 +5466,7 @@ sub bind_tab_menu {
 	       unless( unlink ( os_specific_path ($tab_file) )) {
 		   message("For some reason, ".$tab_id." could not be deleted.\nCheck file/folder permissions.");
 	       } else {
-		   db_remove_table_info ($tab_id);
+		   db_remove_table_info ($tab_id, "pirana.dir");
 		   refresh_pirana($cwd, $filter,1)
 	       }
 	   };
@@ -6032,7 +6038,7 @@ sub nmfe_run_window {
 		    my $new_dir = shift (@dirs_copy);
 		    unless ($new_dir eq "") {
 			move_nm_files ($file.".".$setting{ext_ctl}, $new_dir) ;
-			db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command_out, $setting{name_researcher});
+			db_log_execution ($file.".".$setting{ext_ctl}, $models_descr{$file}, "nmfe", $run_method, $nmfe_run_command_out, $setting{name_researcher}, "pirana.dir");
 		    }
 		}
 	    }
@@ -6920,7 +6926,7 @@ sub table_info_window {
     $file_notes = $table_info_notes -> get("0.0", "end");
     my $update = 0;
     if(grep $_ eq $file, keys(%table_descr)) {$update=1};
-    db_insert_table_info ($file, $file_descr, $creator, $file_notes, $update);
+    db_insert_table_info ($file, $file_descr, $creator, $file_notes, $update, "pirana.dir");
     $table_descr{$file} = $file_descr;
     $table_creator{$file} = $creator;
     $table_note{$file} = $file_notes;
@@ -6941,7 +6947,7 @@ sub model_properties_window {
 ### Purpose : Open a dialog window in which model properties are shown and can be edited
 ### Compat  : W+L+?
   my ($model_id, $idx) = @_;
-  my $model_info_db = db_read_model_info ($model_id);
+  my $model_info_db = db_read_model_info ($model_id, "pirana.dir");
   my $row = @{$model_info_db}[0];
   my ($model_id, $ref_mod, $descr, $note_small, $note) = @$row;
   $descr_new = $descr;
@@ -6973,12 +6979,13 @@ sub model_properties_window {
       chomp ($model_notes);
       $model_notes =~ s/\'//g; # strip '
       $model_notes =~ s/\"//g; # strip "
-      db_insert_model_info ($model_id, $descr, $model_notes);
+      print $model_id;
+      db_insert_model_info ($model_id, $descr, $model_notes, "pirana.dir");
       if ($descr_new ne $descr) {change_model_description($model_id, $descr_new)};
       $models_notes{$model_id} = $model_notes;
       my $note_strip = $model_notes;
       if ($condensed_model_list == 1) {$note_strip =~ s/\n/\ /g;}
-      $models_hlist -> itemConfigure($idx, 10, -text => $note_strip);
+      $models_hlist -> itemConfigure($idx, 12, -text => $note_strip);
       $models_hlist -> update();
       $model_prop_window -> destroy();
       return(1);
@@ -7043,7 +7050,8 @@ sub note_color {
       $models_hlist -> itemConfigure($no, 9, -style => $style_color);
       $models_hlist -> itemConfigure($no, 10,-style => $style_color);
       $models_hlist -> itemConfigure($no, 11, -style => $style_color);
-      db_add_color (@ctl_show[$no], $color)
+      $models_hlist -> itemConfigure($no, 12, -style => $style_color);
+      db_add_color (@ctl_show[$no], $color, "pirana.dir")
     }
   }
 }
@@ -7133,7 +7141,7 @@ sub exec_run_wfn {
     @clean = <pirana_wfn_*>;
     foreach(@clean) {unlink $_};
     status ();
-    db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username} );
+    db_log_execution ($file, @ctl_descr[$file], "WFN", "Local", win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file." ".$wfn_run_parameters), $setting{username}, "pirana.dir" );
 
     unless ($cluster_active == 1) {
 	return $rand_filename.".bat";
@@ -7304,7 +7312,7 @@ sub show_exec_runs_window {
 	populate_run_log_hlist ($exec_runs_hlist);
     })->grid(-row=>2,-column=>1,-sticky=>'news');
     $exec_runs_window_frame -> Button(-text=>'Delete log',-font=>$font, -width=>4, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
-	db_execute ("DELETE FROM executed_runs");
+	db_execute ("DELETE FROM executed_runs", "pirana.dir");
 	$exec_runs_hlist -> delete("all");
 	$exec_runs_hlist -> update();
     })->grid(-row=>2,-column=>2,-sticky=>'news');
@@ -7326,7 +7334,7 @@ sub show_exec_runs_window {
 
 sub populate_run_log_hlist {
     my ($exec_runs_hlist) = @_;
-    $db_results = db_read_exec_runs();
+    $db_results = db_read_exec_runs("pirana.dir");
     my $i=0;
     $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font);;
     foreach my $row (reverse @$db_results) {
