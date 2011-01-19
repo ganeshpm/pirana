@@ -21,10 +21,10 @@
 our $debug_mode = 0;
 our $console = 0; # keep console window open on Windows
 foreach (@ARGV) {
-  if ($_ =~ m/debug/) {
+  if ($_ =~ m/debug/i) {
       $debug_mode = 1;
   }
-  if ($_ =~ m/console/) {
+  if ($_ =~ m/console/i) {
       $console = 1;
   }
 }
