@@ -1816,7 +1816,7 @@ sub tree_models {
       $tree .= "--";
     }
     if ($models_ofv{@line[-2]} ne "") {
-      $dofv = rnd($models_ofv{@line[-2]}-$models_ofv{@line[-1]},3);
+      $dofv = rnd($models_ofv{@line[-2]} - $models_ofv{@line[-1]},3);
     } else {
       $dofv = "";
     }
@@ -3541,8 +3541,13 @@ sub populate_delete_models {
     if ($del_tables_check==1) {
       my $mod_ref = extract_from_model ($run.".".$setting{ext_ctl}, $run, "all");
       my $tables_ref = $$mod_ref{tab_files};
-      #print join(",", @tables);
-      push (@tab_files, @$tables_ref);
+      my @tables = ();
+      foreach my $tab ( @$tables_ref ) {     # check if tables exist:
+	  if (-e $tab) {
+	      push (@tables, $tab);
+	  }
+      };
+      push (@tab_files, @tables);
     }
   }
   my @files = ();
@@ -3570,7 +3575,7 @@ sub delete_models_window {
   my $sel_ref = shift;
   my @del_files = @ctl_show; # make copy, since @ctl_file can change during delete process!
   my @runs = @del_files[@$sel_ref];
-  my $del_dialog = $mw -> Toplevel( -title=>"Delete model, results and/or tables");
+  my $del_dialog = $mw -> Toplevel( -title=>"Delete models, results and/or tables");
   $del_dialog -> resizable( 0, 0 );  
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   center_window($del_dialog); # center after adding frame (redhat)
@@ -5852,6 +5857,10 @@ sub nmfe_run_window {
     $clusters{run_on_sge} = $sge{sge_default};
     $clusters{run_on_pcluster} = 0;
     $ssh{connect_ssh} = $ssh{default};
+    my $len = length($ssh{local_folder}); 
+    unless (substr($cwd, 0, $len) =~ m/$ssh{local_folder}/i ) { # if not on mounted cluster location, switch to local mode
+	$ssh{connect_ssh} = 0;
+    };
 
     # build dialog window
     my $run_in_new_dir = 0;
@@ -6144,6 +6153,11 @@ sub psn_run_window {
         undef $unmfe_run_window; undef $nmfe_run_frame;
                                    });
     $ssh{connect_ssh} = $ssh{default};
+    my $len = length($ssh{local_folder}); 
+    unless (substr($cwd, 0, $len) =~ m/$ssh{local_folder}/i ) { # if not on mounted cluster location, switch to local mode
+	$ssh{connect_ssh} = 0;
+    };
+
 
     # build notebook
     my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
