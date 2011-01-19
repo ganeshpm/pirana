@@ -400,14 +400,14 @@ sub translate_des_window {
 
 sub sge_kill_jobs_window {
     my $bool = 0;
-    my $message_box = $mw -> Toplevel (-title => "Kill all jobs from user?", -background=> $bgcol);
-    center_window($message_box);
+    my $message_box = $mw -> Toplevel (-title => "Kill all jobs from user?", -background=> $bgcol);    
     my $command = "qdel -u ".$setting{name_researcher};
     my $message_frame = $message_box -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
+	center_window($message_box); # center after adding frame (redhat)
     $message_frame -> Label (-text=> "Are you sure you want to kill all your running and pending jobs?\n ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 2);
     $message_frame -> Label (-text=> "Command:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1);
     $message_frame -> Entry (-textvariable=> \$command, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>2, -column=>2, -sticky=>"we");
-    $message_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1);
+    $message_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1);	
     $message_frame -> Button (-text=>"No", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$message_box -> destroy();
     }) -> grid(-row=>4, -column=>1, -sticky=>"e");
@@ -1674,10 +1674,9 @@ sub restart_msf {
   close MOD;
   my $new_ctl_name = new_model_name($model);
   $msf_dialog = $mw -> Toplevel(-title=>'Restart using MSF');
-  $msf_dialog -> resizable( 0, 0 );
-  center_window($msf_dialog);
+  $msf_dialog -> resizable( 0, 0 );  
   $msf_dialog_frame = $msf_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-
+  center_window($msf_dialog);  # center after adding frame (redhat)
   $msf_dialog_frame -> Label (-background=>$bgcol, -font=>$font, -text=>'New model number (without '.$setting{ext_ctl}.'):')->grid(-row=>1,-column=>1,-sticky=>"e");
   $msf_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove', -background=>$white,
      -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");
@@ -2067,9 +2066,9 @@ sub add_nm_inst {
 ### Purpose : Add a local NM installation to Pirana
 ### Compat  : W+L+
   my $nm_inst_w = $mw -> Toplevel(-title=>"Add NONMEM installation to Piraña");
-  $nm_inst_w -> resizable( 0, 0 );
-  center_window($nm_inst_w);
+  $nm_inst_w -> resizable( 0, 0 );   
   my $nm_inst_frame = $nm_inst_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($nm_inst_w); # center after adding frame (redhat)
   $nm_inst_frame -> Label (-text=>"Local/remote: ",-font=>$font, -background=>$bgcol)->grid(-row=>1,-column=>1,-sticky=>"e");
   $nm_inst_frame -> Label (-text=>"Name in Piraña: ",-font=>$font,-background=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>"e");
   $nm_inst_frame -> Label (-text=>"NM Location: ",-font=>$font,-background=>$bgcol)->grid(-row=>3,-column=>1,-sticky=>"e");
@@ -2169,9 +2168,9 @@ sub remove_nm_inst {
 ### Purpose : Remove an NM installation from Pirana (but don't delete the installation)
 ### Compat  : W+L?
   $nm_remove_w = $mw -> Toplevel(-title=>"Remove NONMEM installation from Piraña");
-  $nm_remove_w -> resizable( 0, 0 );
-  center_window($nm_remove_w);
+  $nm_remove_w -> resizable( 0, 0 );  
   $nm_remove_frame = $nm_remove_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($nm_remove_w); # center after adding frame (redhat)
   $nm_remove_frame -> Label (-text=>"Installation: ")->grid(-row=>1,-column=>1,-sticky=>"e");
   $nm_remove_frame -> Label (-text=>"NONMEM Location: ")->grid(-row=>2,-column=>1,-sticky=>"e");
   $nm_remove_frame -> Label (-text=>"NONMEM version: ")->grid(-row=>3,-column=>1,-sticky=>"e");
@@ -2335,9 +2334,9 @@ sub edit_ini_window {
   }
   close INI;
   my $edit_ini_w = $mw -> Toplevel(-title=>$title);
-  $edit_ini_w -> resizable( 0, 0 );
-  center_window($edit_ini_w);
+  $edit_ini_w -> resizable( 0, 0 );  
   my $edit_ini_frame = $edit_ini_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($edit_ini_w); # center after adding frame (redhat)
   # $edit_ini_frame -> Label (-text=>"Piraña settings: ")->grid(-column=>1, -row=>1);
   my $row=2; my $col=1;
   my $i=0; my $j=0;
@@ -2363,12 +2362,12 @@ sub edit_ini_window {
        $row++;
        $i++;
        if($row==int(((@keys+@sections)/2)-0.1)+3) {$row=2; $col=$col+3};
-  }
+  }  
   if ($title =~ m/preferences/i) {
       $edit_ini_frame -> Label (-text=>"\nNote: Some settings may require a restart of Pirana to take effect.\n", -font=>$font, -background=>$bgcol)->grid(-column=>1, -row=>int((@keys+@sections)/2)+3,-columnspan=>4,-sticky=>"nws");
   } else {
       $edit_ini_frame -> Label (-text=>" ", -font=>$font, -background=>$bgcol)->grid(-column=>1, -row=>int((@keys+@sections)/2)+3,-columnspan=>4,-sticky=>"e");
-  }
+  }  
   $edit_ini_frame -> Button (-text=>'Save', -width=>12, -font=>$font_normal, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
     $i=0;
     foreach(@keys) {  # update %settings
@@ -2554,9 +2553,9 @@ sub install_nonmem_nmq_window {
 ### Purpose : Create dialog for installing NONMEM through NMQual
 ### Compat  : W+
   $install_nm_nmq_w = $mw -> Toplevel(-title=>'Install NONMEM VI using NMQual');
-  $install_nm_nmq_w -> resizable( 0, 0 );
-  center_window($install_nm_nmq_w);
+  $install_nm_nmq_w -> resizable( 0, 0 );  
   $install_nm_nmq_frame = $install_nm_nmq_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($install_nm_nmq_w); # center after adding frame (redhat)
   $install_text = "This will perform a new installation of NONMEM VI using\n".
     "predefined NMQual XML files. Please refer to the documentation\n of NMQual for further information on this subject.\n\n".
     "The location of the NMQual XML files can be specified under 'File --> Software'.\nOnly XML-files prefixed with 'config.' are shown in the optionmenu.\n".
@@ -2592,7 +2591,7 @@ sub install_nonmem_nmq_window {
         edit_model(unix_path($nmq_xml));
   })->grid(-row=>3,-column=>4,-sticky=>"w");
   $install_nm_nmq_frame -> Label (-text=>" ",-justify=>"left")
-    ->grid(-row=>6,-column=>1, -columnspan=>3,-sticky=>"w");
+    ->grid(-row=>6,-column=>1, -columnspan=>3,-sticky=>"w");  
   $install_nm_nmq_frame -> Button (-text=>"Proceed", -width=>12, -font=>$font, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
     if ($nm_dirs{$nm_name}) {message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")} else {
        open (BAT,">".unix_path($base_dir."/internal/nmq_install_nm.bat"));
@@ -2630,9 +2629,9 @@ sub install_nonmem_window {
 ### Purpose : Create dialog for installing NONMEM
 ### Compat  : W+L-
   $install_nm_w = $mw -> Toplevel(-title=>'Install NONMEM VI / VII');
-  $install_nm_w -> resizable( 0, 0 );
-  center_window($install_nm_w);
+  $install_nm_w -> resizable( 0, 0 );  
   my $install_nm_frame = $install_nm_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($install_nm_w); # center after adding frame (redhat)
   $install_text = "This will perform a new installation of NONMEM VI or VII from CD\n";
   $install_nm_frame -> Label (-text=>$install_text, -font=>$font,-justify=>"left")
     ->grid(-column=>1, -columnspan=>2,-sticky=>"w");
@@ -2664,10 +2663,8 @@ sub install_nonmem_window {
   $def_optimize = 1;
   $install_nm_frame -> Checkbutton(-text=>"", -font=>$font,-variable=>\$def_optimize,-selectcolor=>$selectcol, -activebackground=>$bgcol,)
     ->grid(-row=>5,-column=>2,-sticky=>'w');
-  $do_bugfixes = 1;
-
-  $install_nm_frame -> Label (-text=>"  ", -font=>$font)->grid(-column=>1, -row=>8,-columnspan=>2,-sticky=>"e");
-
+  $do_bugfixes = 1;  
+  $install_nm_frame -> Label (-text=>"  ", -font=>$font)->grid(-column=>1, -row=>8,-columnspan=>2,-sticky=>"e");  
   $install_nm_frame -> Button(-image=>$gif{browse_small}, -font=>$font, -border=>0, -command=> sub{
       $nm_install_to = $mw-> chooseDirectory();
       if($cwd eq "") {$install_nm_to_entry -> configure(-textvariable=>\$nm_install_to) };
@@ -2761,15 +2758,14 @@ sub manage_nm_window {
 ### Compat  : W+L+
   $sizes_w = $mw -> Toplevel(-title=>'Configure NM6+ installations');
   $sizes_w -> resizable( 0, 0 );
-  center_window($sizes_w);
 
   my $nm_manage_frame = $sizes_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($sizes_w); # center after adding frame (redhat)
   $nm_manage_frame -> Label (-text=>"NONMEM Installation: ", -font=>$font, -background=>$bgcol)->grid(-column=>1, -row=>1,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Location: ",  -font=>$font,-background=>$bgcol)->grid(-column=>1, -row=>2,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"Version: ", -font=>$font,-background=>$bgcol)->grid(-column=>1, -row=>3,-sticky=>"nws");
   $nm_manage_frame -> Label (-text=>"\nNote: Only SIZES files of local NM installations can be read. Versions will be read\nfrom pirana ini-files, and psn.conf (if found). Only regular (non-NMQual) installations\ncan be altered and recompiled. Hover over records to view description.", -font=>$font, -background=>$bgcol,-font=>$font_normal,-justify=>'left')
     ->grid(-column=>1, -row=>5, -columnspan=>4, -sticky=>"nws");
-
   my $nm_save = $nm_manage_frame -> Button (-text=>"Save",  -font=>$font,-width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
     save_sizes($nm_chosen, \@sizes_key, \@sizes_value);
     $sizes_w->destroy;
@@ -2783,8 +2779,9 @@ sub manage_nm_window {
     my $compile_command = "cdsetup6 ".@nm_loc[0]." ".@nm_loc[0]." ".substr(@nm_loc[1],1,length(@nm_loc[1]))." ".$setting{compiler}." y link";
     $compile_nm = $mw -> Toplevel(-title=>'Delete project');
     $compile_nm -> resizable( 0, 0 );
-    center_window($compile_nm);
+    
     $compile_nm_frame = $compile_nm -> Frame (-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10);
+	center_window($compile_nm); # center after adding frame (redhat)
     $compile_nm_frame -> Label ( -font=>$font,-text=>"folders NM, PR, TL and TR in ".$nm_dirs{$nm_chosen}." will be deleted!", -background=>$bgcol) -> grid(-row=>1,-column=>1,-columnspan=>2,-sticky=>"w");
     $compile_nm_frame -> Label ( -font=>$font,-text=>"Recompile command: \n",-background=>$bgcol,-justify=>'left') -> grid(-row=>2,-column=>1);
     $compile_nm_frame -> Entry ( -font=>$font,-textvariable=>\$compile_command, -background=>$white, -border=>$bbw, -width=>32, -border=>2, -relief=>'groove') -> grid(-row=>2,-column=>2,-sticky=>"wn");
@@ -2918,8 +2915,9 @@ sub csv_tab_window {
    if ($file =~ m/.$setting{ext_tab}/i) {$new_file=~ s/.$setting{ext_tab}/.$setting{ext_csv}/i};
    $csv_tab_w = $mw -> Toplevel(-title=>'Convert datafile');
    $csv_tab_w -> resizable( 0, 0 );
-   center_window($csv_tab_w);
+   
    $csv_tab_frame = $csv_tab_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'20',-ipady=>'10',-sticky=>'nws');
+   center_window($csv_tab_w); # center after adding frame (redhat) 
    $csv_tab_frame -> Label(-text=> "Convert file: ", -font=>$font, -justify=>"left")->grid(-column=>1, -row=>1,-sticky=>"wns");
    $csv_tab_frame -> Label(-text=> $file,-font=>$font,-justify=>"left")->grid(-column=>2, -row=>1,-sticky=>"wns");
    $csv_tab_frame -> Label(-text=> "to: ",-font=>$font,-justify=>"left")->grid(-column=>1, -row=>2,-sticky=>"wns");
@@ -3071,10 +3069,10 @@ sub message {
 ### Purpose : Show a small window with a text and an OK button
 ### Compat  : W+L+
     my $text = shift;
-    my $message_box = $mw -> Toplevel (-title => "Pirana message", -background=> $bgcol);
-    center_window($message_box);
+    my $message_box = $mw -> Toplevel (-title => "Pirana message", -background=> $bgcol);    
     my $message_frame = $message_box -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
-    $message_frame -> Label (-text=> $text."\n", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1);
+	center_window($message_box); # center after adding frame (redhat) 
+    $message_frame -> Label (-text=> $text."\n", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1);		
     $message_frame -> Button (-text=>"OK", -font=>$font_normal, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>5, -command => sub{
 	$message_box -> destroy();
 	return(1);
@@ -3383,8 +3381,8 @@ sub cluster_monitor {
 	    undef $cluster_monitor_grid;
 				     });
 	$cluster_view -> resizable( 0, 0 );
-	center_window($cluster_view);
 	our $cluster_view_frame = $cluster_view -> Frame(-background=>$bgcol)->grid(-ipadx=>5,-ipady=>5);
+	center_window($cluster_view); # center after adding frame (redhat)
 	our $cluster_monitor_grid = $cluster_view_frame ->Scrolled('HList',
 								   -head       => 1, -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
 								   -width      => 32, -height => 16, -border => 1, -background => 'white',
@@ -3451,9 +3449,8 @@ sub save_project {
   $new_dir = @_[0];
   $save_dialog = $mw -> Toplevel(-title=>'Save project folder');
   $save_dialog -> resizable( 0, 0 );
-  center_window($save_dialog);
   $save_proj_frame = $save_dialog -> Frame(-background=>$bgcol) -> grid(-ipadx=>10, -ipady=>10);
-
+  center_window($save_dialog); # center after adding frame (redhat)
   $save_proj_frame->Label(-text=>"folder:" ,-background=>$bgcol, -font=>$font)->grid(-row=>1,-column=>1,-columnspan=>2,-sticky=>'w');
   $save_proj_frame->Label(-text=>@_[0],-background=>$bgcol, -font=>$font)->grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>'w');
   $save_proj_frame->Label(-text=>"Overwrite project: ", -font=>$font, -background=>$bgcol,-activebackground=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>'w');
@@ -3574,9 +3571,9 @@ sub delete_models_window {
   my @del_files = @ctl_show; # make copy, since @ctl_file can change during delete process!
   my @runs = @del_files[@$sel_ref];
   my $del_dialog = $mw -> Toplevel( -title=>"Delete model, results and/or tables");
-  $del_dialog -> resizable( 0, 0 );
-  center_window($del_dialog);
+  $del_dialog -> resizable( 0, 0 );  
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($del_dialog); # center after adding frame (redhat)
   my $type = @file_type_copy[@runs];
 
   $del_dialog_frame -> Label (-text=>"Models / folders:",  -font=>$font,-background=>$bgcol) -> grid(-row=>0, -column=>1,-sticky=>"nws"); # spacer
@@ -3682,9 +3679,9 @@ sub cleanup_runtime_files_window {
 ### Purpose : Create dialog for deleting NM models/results
 ### Compat  : W+L+
   my $del_dialog = $mw -> Toplevel( -title=>"Clean up folder");
-  $del_dialog -> resizable( 0, 0 );
-  center_window($del_dialog);
+  $del_dialog -> resizable( 0, 0 );  
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($del_dialog); # center after adding frame (redhat)
   my $type = @file_type_copy[@runs];
 
   $del_dialog_frame -> Label (-text=>"Files / folders to delete:", -font=>$font, -background=>$bgcol) -> grid(-row=>0, -column=>2, -columnspan=>2,-sticky=>"nws"); # spacer
@@ -3743,9 +3740,9 @@ sub duplicate_model_window {
   my $runno = @ctl_show[@runs[0]];
   $new_ctl_name = new_model_name($runno);
   $dupl_dialog = $mw -> Toplevel(-title=>'Duplicate');
-  $dupl_dialog -> resizable( 0, 0 );
-  center_window($dupl_dialog);
+  $dupl_dialog -> resizable( 0, 0 );  
   $dupl_dialog_frame = $dupl_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($dupl_dialog); # center after adding frame (redhat)
   $dupl_dialog_frame -> Label (-background=>$bgcol,  -font=>$font,-text=>'New model number (without '.$setting{ext_ctl}.'):')->grid(-row=>1,-column=>1,-sticky=>"we");
   $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove',  -background=>$white,
      -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");
@@ -3808,9 +3805,9 @@ sub new_ctl {
 ### Compat  : W+L+
   my $overwrite_bool=1;
   $new_ctl_dialog = $mw -> Toplevel(-title=>'New model file');
-  $new_ctl_dialog -> resizable( 0, 0 );
-  center_window($new_ctl_dialog);
+  $new_ctl_dialog -> resizable( 0, 0 );  
   $new_ctl_frame = $new_ctl_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+  center_window($new_ctl_dialog); # center after adding frame (redhat)
   $new_ctl_frame -> Label (-text=>'Model number (without .'.$setting{ext_ctl}.'):',  -font=>$font)-> grid(-column=>1, -row=>1,-sticky=>'nse');
   $new_ctl_frame -> Entry ( -background=>$white,-width=>10, -border=>2, -relief=>'groove', -textvariable=>\$new_ctl_name)->grid(-column=>2,-row=>1, -sticky=>'w');
   chdir($base_dir."/templates");
@@ -3856,9 +3853,9 @@ sub new_dir {
 ### Compat  : W+L+
   my $overwrite_bool=1;
   $newdir_dialog = $mw -> Toplevel(-title=>'New folder');
-  $newdir_dialog -> resizable( 0, 0 );
-  center_window($newdir_dialog);
-  $newdir_dialog_frame = $newdir_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');;
+  $newdir_dialog -> resizable( 0, 0 );  
+  $newdir_dialog_frame = $newdir_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($newdir_dialog); # center after adding frame (redhat)
   $newdir_dialog_frame -> Label (-text=>"Folder name: \n", -font=>$font)->grid(-column=>1,-row=>1,-sticky=>"ne");
   $newdir_dialog_frame -> Entry ( -background=>$white, -width=>20, -border=>2, -relief=>'groove', -textvariable=>\$new_dir_name)->grid(-column=>2,-row=>1,-sticky=>"ne");
   $newdir_dialog_frame -> Button (-text=>'Create folder', -font=>$font,  -width=>12, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
@@ -3885,9 +3882,9 @@ sub rename_ctl {
   my $overwrite_bool=1;
   $old = @_[0];
   $ren_dialog = $mw -> Toplevel(-title=>'Rename model file');
-  $ren_dialog -> resizable( 0, 0 );
-  center_window($ren_dialog);
+  $ren_dialog -> resizable( 0, 0 );  
   $ren_dialog_frame = $ren_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($ren_dialog); # center after adding frame (redhat)
   $ren_dialog_frame -> Label (-background=>$bgcol,-text=>'New model (without .'.$setting{ext_ctl}.'): '."\n",-font=>$font_normal)->grid(-column=>1,-row=>1,-sticky=>"ne");
   $ren_dialog_frame -> Label (-background=>$bgcol,-text=>"\nNB. Both model files and result file and will be renamed.\nOther files (e.g. table files) will not be modified.\n", -foreground=>'#777777', -justify=>"l", -font=>$font_normal)->grid(-column=>2,-row=>4,-sticky=>"nw",-columnspan=>1);
   $ren_dialog_frame -> Entry ( -background=>$white, -width=>10, -border=>2, -relief=>'groove', -textvariable=>\$ren_ctl_name)->grid(-column=>2,-row=>1,-sticky=>"nw");
@@ -4930,9 +4927,9 @@ sub copy_dir_res {
     my $lst_files = join("\n",@lst_all_loc);
     my $tab_files = join("\n",@tab_all_loc);
     our $copy_dir_res_window = $mw -> Toplevel(-title=>'Copy results from directory');;
-    $copy_dir_res_window -> resizable( 0, 0 );
-    center_window($copy_dir_res_window);
+    $copy_dir_res_window -> resizable( 0, 0 );    
     $copy_dir_res_frame = $copy_dir_res_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
+	center_window($copy_dir_res_window); # center after adding frame (redhat)
     $copy_dir_res_frame -> Label (-text=>"Copy files:",-font=>$font_normal,)->grid(-row=>1, -column=>1, -sticky=>"ne");
     $copy_dir_res_text = $copy_dir_res_frame -> Scrolled ('Text', -font=>$font_normal,-width=>32, -height=>8, -scrollbars=>'e')
       -> grid (-row=>1, -column=>2, -ipady=>5, -columnspan=>2);
@@ -5558,9 +5555,9 @@ sub new_data_file_window {
     if ($type eq "R") { $new_datfile_name .= ".R" }
     if ($type eq "*") { $new_datfile_name .= ".txt" }
     $newdatfile_dialog = $mw -> Toplevel(-title=>'New folder');
-    $newdatfile_dialog -> resizable( 0, 0 );
-    center_window($newdatfile_dialog);
-    $newdatfile_dialog_frame = $newdatfile_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');;
+    $newdatfile_dialog -> resizable( 0, 0 );    
+    $newdatfile_dialog_frame = $newdatfile_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+	center_window($newdatfile_dialog); # center after adding frame (redhat)
     $newdatfile_dialog_frame -> Label (-text=>"File name: \n", -font=>$font)->grid(-column=>1,-row=>1,-sticky=>"ne");
     $newdatfile_dialog_frame -> Entry ( -background=>$white, -width=>20, -border=>2, -relief=>'groove', -textvariable=>\$new_datfile_name)->grid(-column=>2,-row=>1,-sticky=>"ne");
     $newdatfile_dialog_frame -> Button (-text=>'Create file', -font=>$font,  -width=>12, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
@@ -5859,8 +5856,7 @@ sub nmfe_run_window {
     # build dialog window
     my $run_in_new_dir = 0;
     my $title = 'Run model using nmfe ' ;
-    my $nmfe_run_window = $mw -> Toplevel(-title=>$title);
-    center_window($nmfe_run_window);
+    my $nmfe_run_window = $mw -> Toplevel(-title=>$title);    
     $nmfe_run_window -> OnDestroy ( sub{
 	undef $unmfe_run_window; undef $nmfe_run_frame;
     });
@@ -5881,9 +5877,9 @@ sub nmfe_run_window {
 
     # build notebook
     my $nmfe_run_frame = $nmfe_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
+	center_window($nmfe_run_window); # center after adding frame (redhat)
    # my $nmfe_notebook = $nmfe_frame ->NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
    # my $nmfe_run_frame = $nmfe_notebook -> add("general", -label=>"General");
-
     my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>15,-sticky=>'nws');
     my $command_area = $nmfe_run_frame -> Text (
       -width=>60, -height=>8, -yscrollcommand => ['set' => $command_area_scrollbar],
@@ -6143,8 +6139,7 @@ sub psn_run_window {
     my $run_in_new_dir = 0;
     my $psn_run_window = $mw -> Toplevel(-title=>'PsN Toolkit ('.$psn_option.")");
     my $psn_help_not_found = "PsN help information not imported into Pirana. Please go to: \n    Tools --> PsN --> Update PsN help files. \n\n";
-
-    center_window($psn_run_window);
+    
     $psn_run_window -> OnDestroy ( sub{
         undef $unmfe_run_window; undef $nmfe_run_frame;
                                    });
@@ -6152,6 +6147,7 @@ sub psn_run_window {
 
     # build notebook
     my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
+	center_window($psn_run_window); # center after adding frame (redhat)
     my $psn_notebook = $psn_run_frame -> NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
     my $psn_run_frame = $psn_notebook -> add("general", -label=>"General");
     my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
@@ -6261,10 +6257,10 @@ sub psn_run_window {
             } else {
                 $run_method_nm_type="nmfe"
             };
-            unless ($psn_option eq "sumo") {
+	    unless ($psn_option eq "sumo") { # no need for building the PsN statement
                 $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-                $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
-            }
+                $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);				
+            }			
             $psn_command_line_entry -> delete("1.0","end");
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
@@ -6349,7 +6345,7 @@ sub psn_run_window {
 		$psn_command_line = $psn_command_line." &";
 	    } else {
 		if ($setting{terminal} ne "") {
-		    if ($setting{quit_shell}==0) { # don't close terminal window after completion
+		    if (($setting{quit_shell}==0)||($psn_option eq "sumo")) { # don't close terminal window after completion
 			$psn_command_line .= ';read -n1';
 		    }
 		    $psn_command_line = $setting{terminal}.' -e "'.$psn_command_line.'" &';
@@ -6903,9 +6899,9 @@ sub table_info_window {
   my $file = shift; my $mod; my $file_descr=$table_descr{$file};
   my $file_notes = $table_note{$file}; my $creator=$table_creator{$file};
   my $table_info_window = $mw -> Toplevel(-title=>'File properties');
-  $table_info_window -> resizable( 0, 0 );
-  center_window($table_info_window);
+  $table_info_window -> resizable( 0, 0 );  
   my $table_info_frame = $table_info_window -> Frame(-relief=>'groove', -border=>0, -padx=>7, -pady=>7)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($table_info_window); # center after adding frame (redhat)
   $table_info_frame -> Label (-text=>"Filename:\n",-font=>$font) -> grid(-row=>2, -column=>1,-sticky=>"en");
   $table_info_frame -> Entry (-background=>$white,-font=>$font, -text=>unix_path($cwd."/".$file),-font=>$font_normal, -relief=>'sunken', -background=>$button, -border=>0, -width=>60, -state=>'disabled') -> grid(-row=>2, -column=>2,-sticky=>"wn");
   $table_info_frame -> Label (-text=>"Last modified:\n",-font=>$font) -> grid(-row=>3, -column=>1, -sticky=>"en");
@@ -6953,9 +6949,8 @@ sub model_properties_window {
   $descr_new = $descr;
   my $model_prop_window = $mw -> Toplevel(-title=>'Model properties');
   $model_prop_window -> resizable( 0, 0 );
-  center_window($model_prop_window);
-
   my $model_prop_frame = $model_prop_window -> Frame(-relief=>'groove', -background=>$bgcol, -border=>0, -padx=>7, -pady=>7)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+  center_window($model_prop_window); # center after adding frame (redhat)
   $model_prop_frame -> Label (-text=>"Model no:\n",-font=>$font,-background=>$bgcol) -> grid(-row=>1, -column=>1,-sticky=>"en");
   $model_prop_frame -> Entry (-text=>$model_id,-font=>$font, -background=>$bgcol, -font=>$font_normal, -width=>15, -state=>'disabled', -disabledforeground=>'#727272',-relief=>'sunken', -border=>0, -background=>$button) -> grid(-row=>1, -column=>2,-sticky=>"wn");
   $model_prop_frame -> Label (-text=>"Filename:\n",-font=>$font, -background=>$bgcol) -> grid(-row=>2, -column=>1,-sticky=>"en");
@@ -7901,9 +7896,9 @@ sub create_duplicates_window {
       return() ;
     }
     our $duplicates_window = $mw -> Toplevel(-title=>'Create n duplicates from model(s)');;
-    $duplicates_window -> resizable( 0, 0 );
-    center_window($duplicates_window);
+    $duplicates_window -> resizable( 0, 0 );    
     $duplicates_frame = $duplicates_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
+	center_window($duplicates_window); # center after adding frame (redhat)
     $duplicates_frame -> Label (-background=>$bgcol, -text=>"This will create n copies from one or more model(s),\nadding a suffix (i.e. 'model_001', 'model_002' etc).",-font=>$font_normal,-justify=>"left")->grid(-row=>1, -column=>1, -columnspan=>2,-sticky=>"nw");
     $duplicates_frame -> Label (-background=>$bgcol, -justify=>'left',-text=>" ",-font=>$font_normal,)->grid(-row=>2, -column=>1, -columnspan=>2,-sticky=>"nw");
     $duplicates_frame -> Label (-background=>$bgcol, -text=>"Duplicate models:",-font=>$font_normal,)->grid(-row=>3, -column=>1, -sticky=>"ne");
@@ -7959,9 +7954,9 @@ sub batch_replace_block { # change block in models
       return() ;
     }
     our $replace_block_window = $mw -> Toplevel(-title=>'Change block in models', -background=>$bgcol);;
-    $replace_block_window -> resizable( 0, 0 );
-    center_window($replace_block_window);
+    $replace_block_window -> resizable( 0, 0 );    
     $replace_block_frame = $replace_block_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
+	center_window($replace_block_window); # center after adding frame (redhat)
     my $block = "\$TABLE";
     $replace_block_frame -> Label (-text=>"This will replace the specified block with a new one.\n",
         -font=>$font_normal,-justify=>"left", -background=>$bgcol)
@@ -8012,9 +8007,9 @@ sub add_code {
       return() ;
     }
     our $add_code_window = $mw -> Toplevel(-title=>'Change block in models', -background=>$bgcol);;
-    $add_code_window -> resizable( 0, 0 );
-    center_window($add_code_window);
+    $add_code_window -> resizable( 0, 0 );    
     $add_code_frame = $add_code_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
+	center_window($add_code_window); # center after adding frame (redhat)
     my $block = "\$TABLE";
     $add_code_frame -> Label (-text=>"This will add the specified code at the end\nof the selected model files.\n",
         -font=>$font_normal,-justify=>"left", -background=>$bgcol)
@@ -8073,9 +8068,9 @@ sub random_sim_block_window {
     $sim_seed_window -> OnDestroy ( sub{
         undef $sim_seed_window; undef $sim_seed_frame;
       });
-    $sim_seed_window -> resizable( 0, 0 );
-    center_window($sim_seed_window);
+    $sim_seed_window -> resizable( 0, 0 );    
     my $sim_seed_frame = $sim_seed_window->Frame(-background=>$bgcol)->grid(-ipadx=>8, -ipady=>8);
+	center_window($sim_seed_window); # center after adding frame (redhat)
     $sim_seed_frame -> Label (-text=>"This will change the seeds in the \$SIMULATION block\nto a random number. Other specifications such as\nUNIFORM/NEW/NONPARAMETRIC are kept.\n",
       -font=>$font_normal,-justify=>"left", -background=>$bgcol)->grid(-row=>1, -column=>1, -columnspan=>2,-sticky=>"nw");
     $sim_seed_frame -> Label (-text=>"Change seeds in:",-font=>$font_normal, -background=>$bgcol)->grid(-row=>2, -column=>1, -sticky=>"ne");

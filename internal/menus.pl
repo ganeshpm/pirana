@@ -267,9 +267,9 @@ sub create_menu_bar {
   $mbar_view -> command (-label => "    Execution log", -font=>$font, -image=>$gif{log}, -compound=>'left',-background=>$bgcol, -command=>sub {
       show_exec_runs_window();
     });
-  if ($^O =~ m/MSWin/i) {
-      $mbar_view -> command(-label => "PCluster monitor", -font=>$font, -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol, -command=>sub {cluster_monitor()});
-  }
+  #if ($setting{use_cluster} == 1) {
+  #    $mbar_view -> command(-label => "PCluster monitor", -font=>$font, -image=>$gif{pcluster_active}, -compound=>'left',-background=>$bgcol, -command=>sub {cluster_monitor()});
+  #}
  #$mbar_view -> checkbutton (-label => "Console output", -variable=> \$process_monitor, -background=>$bgcol,-underline=>1,
  #  -command=>sub {
  #     show_console_output();
