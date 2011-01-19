@@ -144,7 +144,8 @@ sub retrieve_nm_help {
 		$header =~ s/\|//g;
 		$header =~ s/^\s+//; # leading spaces
 		$header =~ s/\s+$//; # trailing space
-		my $sql_command = 'INSERT INTO nm_help (nm_key, nm_help) VALUES ("'.$header.'", "'.$nm_help.'")';
+                chomp($header);
+                my $sql_command = 'INSERT INTO nm_help (nm_key, nm_help) VALUES ("'.$header.'", "'.$nm_help.'")';
 		$db -> do($sql_command);
 		$nm_help = "";
 		$header = "";
@@ -4713,13 +4714,14 @@ sub text_window_nm_help {
     my $text_window_keywords_frame = $text_window_keywords -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
     $text_window_keywords_frame -> Label (-text=> "Keyword:", -font=>$font_normal) -> grid(-row=>0, -column=>1, -sticky=>"nw");
     $nm_help_filename = $text_window_keywords_frame -> Label (-text=> "", -font=>$font_bold) -> grid(-row=>0, -column=>3, -sticky=>"nw");
-    our $keywords_list = $text_window_keywords_frame -> Listbox (
-	-width=>24, -height=>32, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2, -selectmode=>'single',
+    our $keywords_list = $text_window_keywords_frame -> Scrolled ("Listbox", -scrollbars=>'e',
+	-width=>24, -height=>30, -activestyle=> 'none', -exportselection => 0, 
+        -relief=>'groove', -border=>2, -selectmode=>'single',
 	-selectbackground=>'#CCCCCC', -highlightthickness =>0, -background=>'#ffffff', -font=> $font_normal
     ) -> grid(-column=>1,-row=>1, -columnspan=>2, -sticky=>'nwe');
     my $text_text = $text_window_keywords_frame -> Scrolled ('Text',
         -scrollbars=>'e', -width=>80, -height=>32,
-        -background=>"#FFFFFF",-exportselection => 0,
+        -background=>"#FFFFFF", -exportselection => 0,
         -relief=>'groove', -border=>2,
         -font=>$font,
         -selectbackground=>'#606060', -highlightthickness =>0
