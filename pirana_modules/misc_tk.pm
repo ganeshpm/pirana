@@ -66,9 +66,9 @@ sub message_yesno {
 sub center_window {
 ### Purpose : Center dialog window
 ### Compat  : W+L+M-
-### Notes   : Doesn't work properly on mac correct yet...
+### Notes   : Doesn't work properly on mac correct yet, and on Linux only Ubuntu nseems to get it right...
     my $win = shift;
-    unless ($^O =~ m/darwin/i) {
+    if ($^O =~ m/MSWin/i) {
 	$win -> withdraw;   # Hide the window while we move it about
 	$win -> update;     # Make sure width and height are current
 	my $width = $win->width;
