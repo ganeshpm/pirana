@@ -27,7 +27,7 @@ sub no_resize {
     # switches off the resizing of dialog-windows
     my $win = shift;
     # unless ($^O =~ m/linux/) { 
-	$win -> resizable (0,0) 
+    $win -> resizable (0,0) ;
     # }
 }
 
@@ -496,26 +496,26 @@ sub refresh_sge_monitor_ssh {
     populate_jobs_hlist ($jobs_hlist_finished, $job_info_finished_ref);
     return();
 }
-
 sub refresh_sge_monitor {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
+    my ($job_info_running_ref, $job_info_scheduled_ref, $job_info_finished_ref, $node_info_ref, $node_use_ref);
+    my @dum = [];
     if ($ssh{connect_ssh}==1) {
         refresh_sge_monitor_ssh(@_);
         return();
     } else {
-        my @dum = [];
         unless (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
-            my $job_info_running_ref = qstat_get_jobs_info ("qstat -u '*' -s r |");
-            my $job_info_scheduled_ref = qstat_get_jobs_info ("qstat -u '*' -s p |");
-            my $job_info_finished_ref = qstat_get_jobs_info ("qstat -u '*' -s z |");
-            my $node_info_ref = qstat_get_nodes_info ("qhost |");
-            my $node_use_ref = qstat_get_nodes_info ("qstat -g c |");
+	    $job_info_running_ref = qstat_get_nodes_info ("qstat -u '*' -s r |");
+	    $job_info_scheduled_ref = qstat_get_nodes_info ("qstat -u '*' -s p |");
+	    $job_info_finished_ref = qstat_get_nodes_info ("qstat -u '*' -s z |");
+	    $node_info_ref = qstat_get_nodes_info ("qhost |");
+	    $node_use_ref = qstat_get_nodes_info ("qstat -g c |");
         } else {
-            my $job_info_running_ref = \@dum;
-            my $job_info_scheduled_ref = \@dum;
-            my $job_info_finished_ref  = \@dum;
-            my $node_info_ref = \@dum;
-            my $node_info_ref = \@dum;
+	    $job_info_running_ref = \@dum;
+	    $job_info_scheduled_ref = \@dum;
+	    $job_info_finished_ref  = \@dum;
+	    $node_info_ref = \@dum;
+	    $node_info_ref = \@dum;
         }
         populate_nodes_hlist ($nodes_hlist, $node_info_ref);
         populate_nodes_hlist ($use_hlist, $node_use_ref);
@@ -4568,8 +4568,7 @@ sub build_nmfe_run_command {
             }
             $command .= './'.$run_script; #only on linux
         }
-	$command .= "'";
-	if ($ssh{connect_ssh}==1) { $command .= ""};
+	if ($ssh{connect_ssh}==1) { $command .= "'"};
 	unless (($os =~ m/MSWin/ )||($run_in_background==0)) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
@@ -5909,7 +5908,7 @@ sub nmfe_run_window {
     my $command_area = $nmfe_run_frame -> Text (
       -width=>60, -height=>8, -yscrollcommand => ['set' => $command_area_scrollbar],
       -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none',
-      -border=>1, -font=>$font_normal, -relief=>'groove',
+      -border=>1, -font=>$font_fixed, -relief=>'groove',
       -selectbackground=>'#606060', -highlightthickness =>0
     ) -> grid(-row=>15,-column=>2,-columnspan=>2,-sticky=>"nwe");
     $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
@@ -6237,7 +6236,7 @@ sub psn_run_window {
     my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>4,
-        -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
+        -font=>$font_fixed, -background=>"#FFFFFF", -state=>'normal'
         )->grid(-column=>2, -row=>11, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
