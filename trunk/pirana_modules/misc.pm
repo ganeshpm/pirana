@@ -381,14 +381,18 @@ sub win_start {
 }
 sub linux_start {
     my $curr_dir = cwd();
-    system (@_[0]." ".@_[1]." &");
 #    print @_[0]." ".@_[1]." &";
+    system (@_[0]." ".@_[1]." &");
 }
 sub darwin_start {
     my $curr_dir = cwd();
   #  @_[0] =~ s/\s/\\ /g;
-    system ("open -a '".@_[0]."' ".@_[1]." &");
-
+    if (-e @_[0]) {
+#	print (@_[0]." ".@_[1]." &");
+	system (@_[0]." ".@_[1]." &");
+    } else {
+	system ("open -a '".@_[1]."' &");
+    }
 }
 
 sub start_command {
