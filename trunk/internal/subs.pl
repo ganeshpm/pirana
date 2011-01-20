@@ -5908,7 +5908,7 @@ sub nmfe_run_window {
     my $command_area = $nmfe_run_frame -> Text (
       -width=>60, -height=>8, -yscrollcommand => ['set' => $command_area_scrollbar],
       -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none',
-      -border=>1, -font=>$font_fixed, -relief=>'groove',
+      -border=>1, -font=>$font_normal, -relief=>'groove',
       -selectbackground=>'#606060', -highlightthickness =>0
     ) -> grid(-row=>15,-column=>2,-columnspan=>2,-sticky=>"nwe");
     $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
@@ -6236,7 +6236,7 @@ sub psn_run_window {
     my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>4,
-        -font=>$font_fixed, -background=>"#FFFFFF", -state=>'normal'
+        -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
         )->grid(-column=>2, -row=>11, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
