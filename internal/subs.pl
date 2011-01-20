@@ -448,7 +448,7 @@ sub refresh_sge_monitor_ssh {
     my %ssh = %$ssh_ref;
 
     $ssh{connect_ssh} = $ssh{default};
-    my $ssh_pre; my $ssh_post;
+    my $ssh_pre; my $ssh_post = "'";
     if ($ssh{connect_ssh} == 1) {
 	$ssh_pre .= $ssh{login}.' ';	
 	if ($ssh{parameters} ne "") {
@@ -458,20 +458,19 @@ sub refresh_sge_monitor_ssh {
 	if ($ssh{execute_before} ne "") {
 	    $ssh_pre .= $ssh{execute_before}.'; ';
 	}
-        $ssh_post = "'";
     }
     my $get_info_cmd = $ssh_pre.
-        "echo :P:running_jobs:; qstat -u '*' -s r;".
-        "echo :P:scheduled_jobs:; qstat -u '*' -s p;".
-        "echo :P:finished_jobs:; qstat -u '*' -s z;".
-        "echo :P:node_info:; qhost;".
-        "echo :P:node_use:; qstat -g c;echo :P:end:;";
-    open (OUT, $get_info_cmd.'" |');
+        'echo :P:running_jobs:; qstat -u "*" -s r;'.
+        'echo :P:scheduled_jobs:; qstat -u "*" -s p;'.
+        'echo :P:finished_jobs:; qstat -u "*" -s z;'.
+        'echo :P:node_info:; qhost;'.
+        'echo :P:node_use:; qstat -g c;echo :P:end:;'. $ssh_post;
+    open (OUT, $get_info_cmd." |");
     my $data;
     my $info_cat;
     my %sge_data;
     while (my $line = <OUT>) {
-         if ($line =~ m/:P:/) {
+	if ($line =~ m/:P:/) {	     
              unless ($info_cat eq "") {
                  $sge_data{$info_cat} = $data;
              }
@@ -3242,11 +3241,14 @@ sub initialize {
    
     # check header widths, if not correct number then read from default settings
     our @models_hlist_widths = split (";", $setting_internal{header_widths});
-    if (int(@models_hlist_widths) != 12) {
+    if (int(@models_hlist_widths) < 12) {
 	my ($def_setting_internal_ref, $def_setting_internal_descr_ref) = read_ini($base_dir."/ini_defaults/internal.ini");
 	my %def_setting_internal = %$def_setting_internal_ref;
 	$setting_internal{header_widths} = $def_setting_internal{header_widths};
 	save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
+    }
+    foreach (@models_hlist_widths) {
+	if ($_ < 5) {$_ = 5};
     }
     our @models_hlist_widths = split (";", $setting_internal{header_widths});
 

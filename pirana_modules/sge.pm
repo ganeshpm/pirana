@@ -35,7 +35,7 @@ sub qstat_process_nodes_info {
     my @txt = split ("\n", $txt);
     my @all;
     foreach my $line (@txt) {
-        if (!(($line =~ m/HOSTNAME/)||($line =~ m/----/)||($line =~ m/CLUSTER/)||($line =~ m/global/))) {
+        if (!(($line =~ m/HOSTNAME/)||($line =~ m/----/)||($line =~ m/CLUSTER/)||($line =~ m/global/)||($line =~ m/job-ID/i))) {
 	    chomp ($line);
 	    my @arr = split (" ", $line);
 	    my $i=0; foreach(@arr) {
@@ -66,7 +66,8 @@ sub qstat_process_jobs_info {
     my @all;
     my %comb;
     foreach my $line (@all) {
-	if (!(($line =~ m/job-ID/)||($line =~ m/----/))) {
+	unless (($line =~ m/job-ID/i)||($line =~ m/----/)) {
+	    print $line;
 	    chomp($line);
 	    my @arr = split (" ", $line);
 	    my $i=0; foreach(@arr) {
