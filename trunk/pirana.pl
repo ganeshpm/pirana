@@ -217,23 +217,23 @@ if ($^O =~ m/Darwin/i) {
 our $font = $font_family.' 7';
 our $font_normal =  $font_family.' 7';
 our $font_small =  $font_family.' 6';
-our $font_fixed = $font_fixed_family." 8";
+our $font_fixed = $font_fixed_family." 7";
 our $font_bold =  $font_family.' 8 bold';
 if ($setting{font_size}==2) {
     our $font =  $font_family.' 8';
     our $font_normal =  $font_family.' 8';
     our $font_small =  $font_family.' 7';
-    our $font_fixed = $font_fixed_family." 9";
-    our $font_fixed2 = $font_fixed_family." 10";
+    our $font_fixed = $font_fixed_family." 8";
+    our $font_fixed2 = $font_fixed_family." 9";
     our $font_bold =  $font_family.' 8 bold';
 }
 if ($setting{font_size}==3) {
     our $font =  $font_family.' 10';
     our $font_normal =  $font_family.' 10';
     our $font_small =  $font_family.' 8';
-    our $font_fixed =  $font_fixed_family." 11";
+    our $font_fixed =  $font_fixed_family." 10";
     our $font_fixed2 =  $font_fixed_family." 11";
-    our $font_bold =  $font_family.' 11 bold';
+    our $font_bold =  $font_family.' 10 bold';
 }
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
