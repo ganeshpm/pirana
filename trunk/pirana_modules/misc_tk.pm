@@ -8,9 +8,17 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(text_window message_yesno center_window);
+our @EXPORT_OK = qw(no_resize text_window message_yesno center_window);
 my $bgcol ="#ece9d8"; my $button="#dddac9"; my $abutton = "#cecbba";
 my $font_fixed = "Courier 9";
+
+sub no_resize {
+    # switches off the resizing of dialog-windows
+    my $win = shift;
+    # unless ($^O =~ m/linux/) { 
+    $win -> resizable (0,0) ;
+    # }
+}
 
 sub text_window {
 ### Purpose : Show a window with a text-widget containing the specified text

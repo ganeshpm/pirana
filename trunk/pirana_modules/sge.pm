@@ -26,7 +26,6 @@ sub qstat_get_nodes_info {
     }
     my $txt = join ("", @txt);
     my $all_ref = qstat_process_nodes_info ($txt);
-
     return ($all_ref);
 }
 
