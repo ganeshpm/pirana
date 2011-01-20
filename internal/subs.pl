@@ -23,14 +23,6 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
-sub no_resize {
-    # switches off the resizing of dialog-windows
-    my $win = shift;
-    # unless ($^O =~ m/linux/) { 
-    $win -> resizable (0,0) ;
-    # }
-}
-
 sub retrieve_nm_help_window {
     my $nm_help_window = $mw -> Toplevel (-title => "Import / update NONMEM help files", -background=> $bgcol);
     my $nm_help_frame = $nm_help_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
@@ -459,6 +451,7 @@ sub refresh_sge_monitor_ssh {
 	    $ssh_pre .= $ssh{execute_before}.'; ';
 	}
     }
+    # faster if all commands are performed in one SSH-call
     my $get_info_cmd = $ssh_pre.
         'echo :P:running_jobs:; qstat -u "*" -s r;'.
         'echo :P:scheduled_jobs:; qstat -u "*" -s p;'.
@@ -485,6 +478,7 @@ sub refresh_sge_monitor_ssh {
     }    
     close OUT;
     my $node_info_ref = qstat_process_nodes_info ($sge_data{node_info});
+    unless ( @$node_info_ref[0] =~ m/ARRAY/ ) {return (0) };
     my $node_use_ref = qstat_process_nodes_info ($sge_data{node_use});
     my $job_info_running_ref = qstat_process_nodes_info ($sge_data{running_jobs});
     my $job_info_scheduled_ref = qstat_process_nodes_info ($sge_data{scheduled_jobs});
@@ -494,17 +488,20 @@ sub refresh_sge_monitor_ssh {
     populate_jobs_hlist ($jobs_hlist_running, $job_info_running_ref);
     populate_jobs_hlist ($jobs_hlist_scheduled, $job_info_scheduled_ref);
     populate_jobs_hlist ($jobs_hlist_finished, $job_info_finished_ref);
-    return();
+    return(1);
 }
+
 sub refresh_sge_monitor {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my ($job_info_running_ref, $job_info_scheduled_ref, $job_info_finished_ref, $node_info_ref, $node_use_ref);
     my @dum = [];
     if ($ssh{connect_ssh}==1) {
-        refresh_sge_monitor_ssh(@_);
-        return();
+        my $res = refresh_sge_monitor_ssh(@_);
+        return($res);
     } else {
         unless (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
+	    $node_info_ref = qstat_get_nodes_info ("qhost |");
+	    unless ( @$node_info_ref[0] =~ m/ARRAY/ ) {return (0) }; # SGE probably not installed, don't waste precious time
 	    $job_info_running_ref = qstat_get_nodes_info ("qstat -u '*' -s r |");
 	    $job_info_scheduled_ref = qstat_get_nodes_info ("qstat -u '*' -s p |");
 	    $job_info_finished_ref = qstat_get_nodes_info ("qstat -u '*' -s z |");
@@ -523,6 +520,7 @@ sub refresh_sge_monitor {
         populate_jobs_hlist ($jobs_hlist_scheduled, $job_info_scheduled_ref);
         populate_jobs_hlist ($jobs_hlist_finished, $job_info_finished_ref);
     }
+    return(1);
 }
 
 sub tk_table_from_model_output {
@@ -696,6 +694,7 @@ sub populate_jobs_hlist {
 }
 
 sub sge_monitor_window {
+# build dialog
     my $sge_monitor_window = $mw -> Toplevel (-title=>"SGE monitor", -background=>$bgcol);
     my $sge_monitor_window_frame = $sge_monitor_window -> Frame (-background=>$bgcol)->grid(-column=>1, -row=>1,-ipadx=>10, -ipady=>10);
     my $sge_notebook = $sge_monitor_window_frame -> NoteBook(-tabpadx=>5, -font=>$font, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>10);
@@ -706,6 +705,7 @@ sub sge_monitor_window {
     my $sge_use = $sge_notebook -> add("use", -label=>"Usage");
   #  my $sge_ssh = $sge_notebook -> add("ssh", -label=>"SSH");
 
+# set up ssh if needed
     $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; my $ssh_post;
     if ($ssh{connect_ssh} == 1) {
@@ -721,11 +721,18 @@ sub sge_monitor_window {
     }
    # ssh_notebook_tab ($sge_ssh, 3, "");
 
+### Build running Jobs tab
+    $jobs_hlist_running = tk_table_from_model_output ($ssh_pre."qstat -s r |".$ssh_post, $sge_running);
+    $jobs_hlist_scheduled = tk_table_from_model_output ($ssh_pre."qstat -s p |".$ssh_post, $sge_scheduled);
+    $jobs_hlist_finished = tk_table_from_model_output ($ssh_pre."qstat -s z |".$ssh_post, $sge_finished);
+
+# nodes
+ #   my $node_info_ref = qstat_get_nodes_info ($ssh_pre."qhost |".$ssh_post);
+ #   my $use_info_ref = qstat_get_nodes_info ($ssh_pre."qstat -g c |".$ssh_post);
+
 ### Nodes tab:
     my @nodes_headers = qw/hostname architecture ncpu load memtot memuse swapto swapuse/;
     my $nodes_hlist;
-    my $node_info_ref = qstat_get_nodes_info ($ssh_pre."qhost |".$ssh_post);
-    print $ssh_pre."qhost |".$ssh_post;
     $nodes_hlist = $sge_nodes ->Scrolled('HList',
         -head       => 1,
         -selectmode => "single",
@@ -750,7 +757,7 @@ sub sge_monitor_window {
     }
     my @use_headers = qw/queue cqload used res avail total aoacds cdsue/;
     my $use_hlist;
-    my $use_info_ref = qstat_get_nodes_info ($ssh_pre."qstat -g c |".$ssh_post);
+    
     $use_hlist = $sge_use ->Scrolled('HList',
         -head       => 1,
         -selectmode => "single",
@@ -773,14 +780,14 @@ sub sge_monitor_window {
         $use_hlist -> header('create', $x, -text=> @use_headers[$x], -headerbackground => 'gray');
        # $cluster_monitor_grid -> columnWidth($x, @widths[$i]);
     }
-
-### Running Jobs tab
-    $jobs_hlist_running = tk_table_from_model_output ($ssh_pre."qstat -s r |".$ssh_post, $sge_running);
-    $jobs_hlist_scheduled = tk_table_from_model_output ($ssh_pre."qstat -s p |".$ssh_post, $sge_scheduled);
-    $jobs_hlist_finished = tk_table_from_model_output ($ssh_pre."qstat -s z |".$ssh_post, $sge_finished);
     
-    refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
-
+    my $res = refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
+    print $res;
+    if ($res == 0) {
+	$sge_monitor_window -> destroy();
+	message ("Pirana can't start SGE commands. SGE is probably not installed, or environment variables\nare not set properly. Please check your SGE installation.\n\nNote: If you connect to an SGE cluster over SSH, please switch on 'Use SSH-mode by default'\nin the SSH settings.");
+	return(0);
+    }
 
 # main buttons
     my $ssh_connect_button = $sge_monitor_window_frame -> Checkbutton (-text => "SSH-mode", -variable=> \$ssh{connect_ssh}, -font=>$font_normal, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub {
@@ -3076,12 +3083,12 @@ sub message {
     my $message_box = $mw -> Toplevel (-title => "Pirana message", -background=> $bgcol);    
     my $message_frame = $message_box -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
 	center_window($message_box); # center after adding frame (redhat) 
-    $message_frame -> Label (-text=> $text."\n", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1);		
+    $message_frame -> Label (-text=> $text."\n", -font=>$font_normal, -background=>$bgcol, -justify=>"left") -> grid(-row=>1, -column=>1);		
     $message_frame -> Button (-text=>"OK", -font=>$font_normal, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>5, -command => sub{
 	$message_box -> destroy();
 	return(1);
     }) -> grid(-row=>2, -column=>1);
-    $message_box -> focus ();
+    $message_box -> focus ();  
  # $mw -> messageBox(-type=>'ok', -message=>@_[0]);
 }
 
@@ -4220,7 +4227,8 @@ sub populate_models_hlist {
 	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
 	   $runno_text .= $runno;
 	   my $method_temp = $models_method{$runno};
-	   my $dataset_temp = $models_dataset{$runno};
+	   my $dataset_temp = extract_file_name ($models_dataset{$runno});
+	   
 	   my $ofv_temp    = $models_ofv{$runno};
 	   my $dofv_temp   = $ofv_diff;
 	   my $succ_temp; my $cov_temp; my $bnd_temp; my $sig_temp;
@@ -5337,8 +5345,15 @@ sub bind_tab_menu {
            my $tabsel = $tab_hlist -> selectionGet ();
            my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
            if (-e $tab_file) {
-             unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, \%software, \$gif{pirana_r}, \$gif{close} );}
-           }
+	       my $fsize = (-s $tab_file);
+	       my $open_bool = 1;
+	       if ($fsize > 5000000 ) { # if larger than 5 MB ask
+	          $open_bool = message_yesno ($tab_file." is quite large (".rnd(($fsize/(1024*1024)),1)." Mb)\nAre you sure you want to open this file?\n(DataInspector may become really slow...)", $mw, $bgcol, $font_normal);
+	       }
+	       if ($open_bool == 1 ) {
+		   unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, \%software, \$gif{pirana_r}, \$gif{close} );}
+	       }
+	   }
         }],
        [Button => " Open in spreadsheet", -background=>$bgcol, -font=>$font_normal, -image=>$gif{spreadsheet},-compound=>"left", -state=>@tab_menu_enabled[0],-command => sub{
          if ((-e $software{spreadsheet})||($^O =~ m/darwin/i)) {
