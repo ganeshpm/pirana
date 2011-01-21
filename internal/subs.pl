@@ -3255,7 +3255,7 @@ sub initialize {
 	save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
     }
     foreach (@models_hlist_widths) {
-	if ($_ < 25) {$_ = 25};
+	if ($_ < 5) {$_ = 5};
     }
     unshift (@models_hlist_widths, 0);
 
@@ -5862,13 +5862,13 @@ sub save_header_widths {
 #  my @header_widths = ();
   foreach(@main_headers) {
     @models_hlist_widths[$x] = $models_hlist->columnWidth($x);
-    if (@models_hlist_widths[$x] < 10) {@models_hlist_widths[$x] = 10};
+    if (@models_hlist_widths[$x] < 5) {@models_hlist_widths[$x] = 5};
     $x++;
   }
   shift(@models_hlist_widths);
   $new_models_hlist_widths = join (";",@models_hlist_widths);
-  if ($setting_internal{models_hlist_widths} ne $new_models_hlist_widths) {
-    $setting_internal{models_hlist_widths} = join (";",@models_hlist_widths);
+  if ($setting_internal{header_widths} ne $new_models_hlist_widths) {
+    $setting_internal{header_widths} = join (";",@models_hlist_widths);
     save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
   }
   unshift(@models_hlist_widths, 0);
