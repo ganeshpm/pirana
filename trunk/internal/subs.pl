@@ -2717,13 +2717,13 @@ sub install_nonmem_window {
 sub nm_env_var_window {
 ### Purpose : Create the dialog for editing the NM sizes file
 ### Compat  : W+L+
-  $nm_env_var_w = $mw -> Toplevel(-title=>'Configure Environment variables');
+  $nm_env_var_w = $mw -> Toplevel(-title=>'Update environment variables');
   no_resize($nm_env_var_w);
   my $nm_env_var_frame = $nm_env_var_w ->
   Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   my $text = "NONMEM and the FORTRAN compiler that is used require the environment variables\nset correctly. Especially with the Intel compiler environment this can be troublesome,\nas numerous variables should be included. A detailed explanation for the relevance\nof this issue (on Windows) for running NONMEM can be found here:\nhttp://www.cognigencorp.com/nonmem/current/2009-October/2077.html.
   \nUsing the functionality below, commands can be specified that are executed before\na NONMEM run is started. This way, environment variables will be set each time a run is\nexecuted, and the variables do not need to be set globally.
-  \nAlternatively, other commands can be specified that are executed before or after\na NONMEM run is executed.\n";
+  \nOf course, other commands to be executed before or after a NONMEM run may be\nspecified as well.\n";
   $nm_env_var_frame -> Label ( -text =>$text , -font=>$font, -justify=>"l", -background=>$bgcol)->grid(-column=>1, -row=>1,-sticky=>"nws");
   $nm_env_var_frame -> Label ( -text =>"Before NONMEM execution:" , -font=>$font_bold, -justify=>"l", -background=>$bgcol)->grid(-column=>1, -row=>2,-sticky=>"nws");
   $nm_env_var_frame -> Label ( -text =>"After NONMEM execution:" , -font=>$font_bold, -justify=>"l", -background=>$bgcol)->grid(-column=>1, -row=>4,-sticky=>"nws");
@@ -3255,9 +3255,9 @@ sub initialize {
 	save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
     }
     foreach (@models_hlist_widths) {
-	if ($_ < 5) {$_ = 5};
+	if ($_ < 25) {$_ = 25};
     }
-    our @models_hlist_widths = split (";", $setting_internal{header_widths});
+    unshift (@models_hlist_widths, 0);
 
     print LOG "Deleting temporary files...\n";
     if(chdir ($base_dir."/temp")){
@@ -4179,13 +4179,13 @@ sub populate_models_hlist {
     my ($ctl_show_ref, $tree_text) = tree_models();
     @ctl_show = @$ctl_show_ref;
     $models_hlist->columnWidth(0, 0);
-    $models_hlist->columnWidth(1, (@header_widths[1]+@header_widths[2]));
+    $models_hlist->columnWidth(1, (@models_hlist_widths[1]+@models_hlist_widths[2]));
     $models_hlist->columnWidth(2, 0);
   } else {
     @ctl_show = @ctl_copy;
     $models_hlist->columnWidth(0, 0); # Dummy column, needed to remove whitespace between columns (bug in Tk?)
-    $models_hlist->columnWidth(1, @header_widths[1]);
-    $models_hlist->columnWidth(2, @header_widths[2]);
+    $models_hlist->columnWidth(1, @models_hlist_widths[1]);
+    $models_hlist->columnWidth(2, @models_hlist_widths[2]);
   }
   if ($models_hlist) {
     $models_hlist -> delete("all");
@@ -5859,17 +5859,19 @@ sub save_header_widths {
 ### Purpose : Save the columnwidths of the main Listbox
 ### Compat  : W+L+
   my $x=0;
+#  my @header_widths = ();
   foreach(@main_headers) {
-    @header_widths[$x] = $models_hlist->columnWidth($x);
+    @models_hlist_widths[$x] = $models_hlist->columnWidth($x);
+    if (@models_hlist_widths[$x] < 25) {@models_hlist_widths[$x] = 25};
     $x++;
   }
-  shift(@header_widths);
-  $new_header_widths = join (";",@header_widths);
-  if ($setting_internal{header_widths} ne $new_header_widths) {
-    $setting_internal{header_widths} = join (";",@header_widths);
+  shift(@models_hlist_widths);
+  $new_models_hlist_widths = join (";",@models_hlist_widths);
+  if ($setting_internal{models_hlist_widths} ne $new_models_hlist_widths) {
+    $setting_internal{models_hlist_widths} = join (";",@models_hlist_widths);
     save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
   }
-  unshift(@header_widths, 0);
+  unshift(@models_hlist_widths, 0);
 
 }
 
@@ -6562,8 +6564,6 @@ sub frame_models_show {
 #  our $model_hlist_frame = $mw-> Frame(-background=>"$bgcol")->grid(-row=>3,-column=>1,-columnspan=>2,-sticky=>'nswe',-ipadx=>5,-ipady=>0);
   ### Status bar: 
   @models_hlist_headers = ("", " #", "Ref#","Description", "Method","Dataset","OFV","dOFV","S","C","B","Sig","Notes");
-  my @models_hlist_widths = split (";", $setting_internal{header_widths});
-  unshift (@models_hlist_widths, 0);
   my $sel_type = "";
   our $models_hlist = $mw -> Scrolled('HList',
         -head       => 1,
