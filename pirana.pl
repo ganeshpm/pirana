@@ -204,37 +204,24 @@ our $mw = MainWindow -> new (-title => "Pirana", -background=>$bgcol);
 $mw -> setPalette ($bgcol);
 #our $font = $mw -> fontCreate('main_normal', -family=>'Helvetica', -size=>int(-11));
 
-our $font_family = "Helvetica";
+our $font_family = "Verdana";
 our $font_fixed_family = "Courier";
-if ($^O =~ m/MSWin/i) {
-    $font_family = "Verdana"
-}; # looks a bit clearer on MSWin
 if ($^O =~ m/Darwin/i) {
-    $font_family = "Arial";
     $font_fixed_family = "System";
 }; 
-
-our $font = $font_family.' 7';
-our $font_normal =  $font_family.' 7';
-our $font_small =  $font_family.' 6';
-our $font_fixed = $font_fixed_family." 7";
-our $font_bold =  $font_family.' 8 bold';
-if ($setting{font_size}==2) {
-    our $font =  $font_family.' 8';
-    our $font_normal =  $font_family.' 8';
-    our $font_small =  $font_family.' 7';
-    our $font_fixed = $font_fixed_family." 8";
-    our $font_fixed2 = $font_fixed_family." 9";
-    our $font_bold =  $font_family.' 8 bold';
+# Font face can always be overriden by user from settings
+if (length($setting{font_face}) >= 4) { # quick 'n dirty check if it is a valid font name
+    $font_family = $setting{font_face};  
 }
-if ($setting{font_size}==3) {
-    our $font =  $font_family.' 10';
-    our $font_normal =  $font_family.' 10';
-    our $font_small =  $font_family.' 8';
-    our $font_fixed =  $font_fixed_family." 10";
-    our $font_fixed2 =  $font_fixed_family." 11";
-    our $font_bold =  $font_family.' 10 bold';
-}
+if ($setting{font_size} < 5) { # probably setting from old version of Pirana
+    $setting{font_size} = 10 ;
+} 
+my $font_small_size = ($setting{font_size} - 1);
+our $font = $font_family.' '.$setting{font_size};
+our $font_normal =  $font_family.' '.$setting{font_size};
+our $font_small =  $font_family.' '.$font_small_size;
+our $font_fixed = $font_fixed_family.' '.$setting{font_size};
+our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
 $mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
