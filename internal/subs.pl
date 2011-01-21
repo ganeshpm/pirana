@@ -5862,7 +5862,7 @@ sub save_header_widths {
 #  my @header_widths = ();
   foreach(@main_headers) {
     @models_hlist_widths[$x] = $models_hlist->columnWidth($x);
-    if (@models_hlist_widths[$x] < 25) {@models_hlist_widths[$x] = 25};
+    if (@models_hlist_widths[$x] < 10) {@models_hlist_widths[$x] = 10};
     $x++;
   }
   shift(@models_hlist_widths);
