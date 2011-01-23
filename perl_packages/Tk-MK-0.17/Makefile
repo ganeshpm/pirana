@@ -1,17 +1,19 @@
 # This Makefile is for the Tk::MK extension to perl.
 #
 # It was generated automatically by MakeMaker version
-# 6.4801 (Revision: 64801) from the contents of
+# 6.55_02 (Revision: 65502) from the contents of
 # Makefile.PL. Don't edit this file, edit Makefile.PL instead.
 #
 #       ANY CHANGES MADE HERE WILL BE LOST!
 #
 #   MakeMaker ARGV: ()
 #
+
 #   MakeMaker Parameters:
 
 #     ABSTRACT => q[Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)]
 #     AUTHOR => q[M. Krause]
+#     BUILD_REQUIRES => {  }
 #     DISTNAME => q[Tk-MK]
 #     NAME => q[Tk::MK]
 #     PREREQ_PM => { Tk=>q[804.027] }
@@ -23,35 +25,35 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via C:/Perl589/lib/Config.pm).
+# These definitions are from config.sh (via /usr/lib/perl/5.10/Config.pm).
 # They may have been overridden via Makefile.PL or on the command line.
-AR = C:\Perl589\site\bin\ar.exe
-CC = C:/Perl589/site/bin/gcc.exe
-CCCDLFLAGS =  
-CCDLFLAGS =  
-DLEXT = dll
-DLSRC = dl_win32.xs
-EXE_EXT = .exe
-FULL_AR = 
-LD = C:\Perl589\site\bin\g++.exe
-LDDLFLAGS = -mdll -L"C:\Perl589\lib\CORE"
-LDFLAGS = -L"C:\Perl589\lib\CORE"
-LIBC = msvcrt.lib
+AR = ar
+CC = cc
+CCCDLFLAGS = -fPIC
+CCDLFLAGS = -Wl,-E
+DLEXT = so
+DLSRC = dl_dlopen.xs
+EXE_EXT = 
+FULL_AR = /usr/bin/ar
+LD = cc
+LDDLFLAGS = -shared -O2 -g -L/usr/local/lib -fstack-protector
+LDFLAGS =  -fstack-protector -L/usr/local/lib
+LIBC = /lib/libc-2.12.so
 LIB_EXT = .a
 OBJ_EXT = .o
-OSNAME = MSWin32
-OSVERS = 5.00
-RANLIB = rem
-SITELIBEXP = C:\Perl589\site\lib
-SITEARCHEXP = C:\Perl589\site\lib
-SO = dll
-VENDORARCHEXP = 
-VENDORLIBEXP = 
+OSNAME = linux
+OSVERS = 2.6.24-27-server
+RANLIB = :
+SITELIBEXP = /usr/local/share/perl/5.10.1
+SITEARCHEXP = /usr/local/lib/perl/5.10.1
+SO = so
+VENDORARCHEXP = /usr/lib/perl5
+VENDORLIBEXP = /usr/share/perl5
 
 
 # --- MakeMaker constants section:
 AR_STATIC_ARGS = cr
-DIRFILESEP = \\
+DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = Tk::MK
 NAME_SYM = Tk_MK
@@ -62,73 +64,66 @@ DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
 XS_VERSION = 0.17
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
-INST_ARCHLIB = blib\arch
-INST_SCRIPT = blib\script
-INST_BIN = blib\bin
-INST_LIB = blib\lib
-INST_MAN1DIR = blib\man1
-INST_MAN3DIR = blib\man3
-INST_HTMLDIR = blib\html
-MAN1EXT = 1
-MAN3EXT = 3
+INST_ARCHLIB = blib/arch
+INST_SCRIPT = blib/script
+INST_BIN = blib/bin
+INST_LIB = blib/lib
+INST_MAN1DIR = blib/man1
+INST_MAN3DIR = blib/man3
+MAN1EXT = 1p
+MAN3EXT = 3pm
 INSTALLDIRS = site
 DESTDIR = 
-PREFIX = $(SITEPREFIX)
-PERLPREFIX = C:\Perl589
-SITEPREFIX = C:\Perl589\site
-VENDORPREFIX = 
-INSTALLPRIVLIB = C:\Perl589\lib
+PREFIX = /usr
+PERLPREFIX = $(PREFIX)
+SITEPREFIX = $(PREFIX)/local
+VENDORPREFIX = $(PREFIX)
+INSTALLPRIVLIB = $(PERLPREFIX)/share/perl/5.10
 DESTINSTALLPRIVLIB = $(DESTDIR)$(INSTALLPRIVLIB)
-INSTALLSITELIB = C:\Perl589\site\lib
+INSTALLSITELIB = $(SITEPREFIX)/share/perl/5.10.1
 DESTINSTALLSITELIB = $(DESTDIR)$(INSTALLSITELIB)
-INSTALLVENDORLIB = 
+INSTALLVENDORLIB = $(VENDORPREFIX)/share/perl5
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
-INSTALLARCHLIB = C:\Perl589\lib
+INSTALLARCHLIB = $(PERLPREFIX)/lib/perl/5.10
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = C:\Perl589\site\lib
+INSTALLSITEARCH = $(SITEPREFIX)/lib/perl/5.10.1
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
-INSTALLVENDORARCH = 
+INSTALLVENDORARCH = $(VENDORPREFIX)/lib/perl5
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
-INSTALLBIN = C:\Perl589\bin
+INSTALLBIN = $(PERLPREFIX)/bin
 DESTINSTALLBIN = $(DESTDIR)$(INSTALLBIN)
-INSTALLSITEBIN = C:\Perl589\site\bin
+INSTALLSITEBIN = $(SITEPREFIX)/bin
 DESTINSTALLSITEBIN = $(DESTDIR)$(INSTALLSITEBIN)
-INSTALLVENDORBIN = 
+INSTALLVENDORBIN = $(VENDORPREFIX)/bin
 DESTINSTALLVENDORBIN = $(DESTDIR)$(INSTALLVENDORBIN)
-INSTALLSCRIPT = C:\Perl589\bin
+INSTALLSCRIPT = $(PERLPREFIX)/bin
 DESTINSTALLSCRIPT = $(DESTDIR)$(INSTALLSCRIPT)
-INSTALLSITESCRIPT = C:\Perl589\site\bin
+INSTALLSITESCRIPT = $(SITEPREFIX)/bin
 DESTINSTALLSITESCRIPT = $(DESTDIR)$(INSTALLSITESCRIPT)
-INSTALLVENDORSCRIPT = 
+INSTALLVENDORSCRIPT = $(VENDORPREFIX)/bin
 DESTINSTALLVENDORSCRIPT = $(DESTDIR)$(INSTALLVENDORSCRIPT)
-INSTALLMAN1DIR = C:\Perl589\man\man1
+INSTALLMAN1DIR = $(PERLPREFIX)/share/man/man1
 DESTINSTALLMAN1DIR = $(DESTDIR)$(INSTALLMAN1DIR)
-INSTALLSITEMAN1DIR = $(INSTALLMAN1DIR)
+INSTALLSITEMAN1DIR = $(SITEPREFIX)/man/man1
 DESTINSTALLSITEMAN1DIR = $(DESTDIR)$(INSTALLSITEMAN1DIR)
-INSTALLVENDORMAN1DIR = 
+INSTALLVENDORMAN1DIR = $(VENDORPREFIX)/share/man/man1
 DESTINSTALLVENDORMAN1DIR = $(DESTDIR)$(INSTALLVENDORMAN1DIR)
-INSTALLMAN3DIR = C:\Perl589\man\man3
+INSTALLMAN3DIR = $(PERLPREFIX)/share/man/man3
 DESTINSTALLMAN3DIR = $(DESTDIR)$(INSTALLMAN3DIR)
-INSTALLSITEMAN3DIR = $(INSTALLMAN3DIR)
+INSTALLSITEMAN3DIR = $(SITEPREFIX)/man/man3
 DESTINSTALLSITEMAN3DIR = $(DESTDIR)$(INSTALLSITEMAN3DIR)
-INSTALLVENDORMAN3DIR = 
+INSTALLVENDORMAN3DIR = $(VENDORPREFIX)/share/man/man3
 DESTINSTALLVENDORMAN3DIR = $(DESTDIR)$(INSTALLVENDORMAN3DIR)
-INSTALLHTMLDIR = C:\Perl589\html
-DESTINSTALLHTMLDIR = $(DESTDIR)$(INSTALLHTMLDIR)
-INSTALLSITEHTMLDIR = C:\Perl589\html
-DESTINSTALLSITEHTMLDIR = $(DESTDIR)$(INSTALLSITEHTMLDIR)
-INSTALLVENDORHTMLDIR = C:\Perl589\html
-DESTINSTALLVENDORHTMLDIR = $(DESTDIR)$(INSTALLVENDORHTMLDIR)
-PERL_LIB = C:\Perl589\lib
-PERL_ARCHLIB = C:\Perl589\lib
+PERL_LIB = /usr/share/perl/5.10
+PERL_ARCHLIB = /usr/lib/perl/5.10
 LIBPERL_A = libperl.a
 FIRST_MAKEFILE = Makefile
 MAKEFILE_OLD = Makefile.old
 MAKE_APERL_FILE = Makefile.aperl
 PERLMAINCC = $(CC)
-PERL_INC = C:\Perl589\lib\CORE
-PERL = C:\Perl589\bin\perl.exe
-FULLPERL = C:\Perl589\bin\perl.exe
+PERL_INC = /usr/lib/perl/5.10/CORE
+PERL = /usr/bin/perl
+FULLPERL = /usr/bin/perl
 ABSPERL = $(PERL)
 PERLRUN = $(PERL)
 FULLPERLRUN = $(FULLPERL)
@@ -137,19 +132,20 @@ PERLRUNINST = $(PERLRUN) "-I$(INST_ARCHLIB)" "-I$(INST_LIB)"
 FULLPERLRUNINST = $(FULLPERLRUN) "-I$(INST_ARCHLIB)" "-I$(INST_LIB)"
 ABSPERLRUNINST = $(ABSPERLRUN) "-I$(INST_ARCHLIB)" "-I$(INST_LIB)"
 PERL_CORE = 0
+PERM_DIR = 755
 PERM_RW = 644
 PERM_RWX = 755
 
-MAKEMAKER   = C:/Perl589/lib/ExtUtils/MakeMaker.pm
-MM_VERSION  = 6.4801
-MM_REVISION = 64801
+MAKEMAKER   = /usr/share/perl/5.10/ExtUtils/MakeMaker.pm
+MM_VERSION  = 6.55_02
+MM_REVISION = 65502
 
 # FULLEXT = Pathname for extension directory (eg Foo/Bar/Oracle).
 # BASEEXT = Basename part of FULLEXT. May be just equal FULLEXT. (eg Oracle)
 # PARENT_NAME = NAME without BASEEXT and no trailing :: (eg Foo::Bar)
 # DLBASE  = Basename part of dynamic library. May be just equal BASEEXT.
-MAKE = C:\Perl589\site\bin\dmake.exe
-FULLEXT = Tk\MK
+MAKE = make
+FULLEXT = Tk/MK
 BASEEXT = MK
 PARENT_NAME = Tk
 DLBASE = $(BASEEXT)
@@ -181,19 +177,19 @@ MAN3PODS = lib/Tk/BootSplash.pm \
 CONFIGDEP = $(PERL_ARCHLIB)$(DFSEP)Config.pm $(PERL_INC)$(DFSEP)config.h
 
 # Where to build things
-INST_LIBDIR      = $(INST_LIB)\Tk
-INST_ARCHLIBDIR  = $(INST_ARCHLIB)\Tk
+INST_LIBDIR      = $(INST_LIB)/Tk
+INST_ARCHLIBDIR  = $(INST_ARCHLIB)/Tk
 
-INST_AUTODIR     = $(INST_LIB)\auto\$(FULLEXT)
-INST_ARCHAUTODIR = $(INST_ARCHLIB)\auto\$(FULLEXT)
+INST_AUTODIR     = $(INST_LIB)/auto/$(FULLEXT)
+INST_ARCHAUTODIR = $(INST_ARCHLIB)/auto/$(FULLEXT)
 
 INST_STATIC      = 
 INST_DYNAMIC     = 
 INST_BOOT        = 
 
 # Extra linker info
-EXPORT_LIST        = $(BASEEXT).def
-PERL_ARCHIVE       = $(PERL_INC)\perl58.lib
+EXPORT_LIST        = 
+PERL_ARCHIVE       = 
 PERL_ARCHIVE_AFTER = 
 
 
@@ -210,36 +206,37 @@ TO_INST_PM = lib/Tk/BootSplash.pm \
 	lib/Tk/Statusbox.pm
 
 PM_TO_BLIB = lib/Tk/BootSplash.pm \
-	blib\lib\Tk\BootSplash.pm \
+	blib/lib/Tk/BootSplash.pm \
 	lib/Tk/ProgressBarPlus.pm \
-	blib\lib\Tk\ProgressBarPlus.pm \
+	blib/lib/Tk/ProgressBarPlus.pm \
 	lib/Tk/Statusbox.pm \
-	blib\lib\Tk\Statusbox.pm \
+	blib/lib/Tk/Statusbox.pm \
 	lib/Tk/Checkbox.pm \
-	blib\lib\Tk\Checkbox.pm \
-	lib/Tk/Optionbox.pm \
-	blib\lib\Tk\Optionbox.pm \
+	blib/lib/Tk/Checkbox.pm \
 	lib/Tk/HListplus.pm \
-	blib\lib\Tk\HListplus.pm \
+	blib/lib/Tk/HListplus.pm \
+	lib/Tk/Optionbox.pm \
+	blib/lib/Tk/Optionbox.pm \
 	lib/Tk/Buttonplus.pm \
-	blib\lib\Tk\Buttonplus.pm \
+	blib/lib/Tk/Buttonplus.pm \
 	lib/Tk/DTree.pm \
-	blib\lib\Tk\DTree.pm \
+	blib/lib/Tk/DTree.pm \
 	lib/Tk/HdrResizeButton.pm \
-	blib\lib\Tk\HdrResizeButton.pm \
+	blib/lib/Tk/HdrResizeButton.pm \
 	lib/Tk/PopUpSelectBox.pm \
-	blib\lib\Tk\PopUpSelectBox.pm \
+	blib/lib/Tk/PopUpSelectBox.pm \
 	lib/Tk/DHList.pm \
-	blib\lib\Tk\DHList.pm
+	blib/lib/Tk/DHList.pm
 
 
 # --- MakeMaker platform_constants section:
-MM_Win32_VERSION = 6.48
+MM_Unix_VERSION = 6.55_02
+PERL_MALLOC_DEF = -DPERL_EXTMALLOC_DEF -Dmalloc=Perl_malloc -Dfree=Perl_mfree -Drealloc=Perl_realloc -Dcalloc=Perl_calloc
 
 
 # --- MakeMaker tool_autosplit section:
 # Usage: $(AUTOSPLITFILE) FileToSplit AutoDirToSplitInto
-AUTOSPLITFILE = $(ABSPERLRUN)  -e "use AutoSplit;  autosplit($$ARGV[0], $$ARGV[1], 0, 1, 1)" --
+AUTOSPLITFILE = $(ABSPERLRUN)  -e 'use AutoSplit;  autosplit($$ARGV[0], $$ARGV[1], 0, 1, 1)' --
 
 
 
@@ -247,31 +244,34 @@ AUTOSPLITFILE = $(ABSPERLRUN)  -e "use AutoSplit;  autosplit($$ARGV[0], $$ARGV[1
 
 
 # --- MakeMaker tools_other section:
-CHMOD = $(ABSPERLRUN) -MExtUtils::Command -e chmod
-CP = $(ABSPERLRUN) -MExtUtils::Command -e cp
-MV = $(ABSPERLRUN) -MExtUtils::Command -e mv
-NOOP = rem
+SHELL = /bin/sh
+CHMOD = chmod
+CP = cp
+MV = mv
+NOOP = $(TRUE)
 NOECHO = @
-RM_F = $(ABSPERLRUN) -MExtUtils::Command -e rm_f
-RM_RF = $(ABSPERLRUN) -MExtUtils::Command -e rm_rf
-TEST_F = $(ABSPERLRUN) -MExtUtils::Command -e test_f
-TOUCH = $(ABSPERLRUN) -MExtUtils::Command -e touch
+RM_F = rm -f
+RM_RF = rm -rf
+TEST_F = test -f
+TOUCH = touch
 UMASK_NULL = umask 0
-DEV_NULL = > NUL
-MKPATH = $(ABSPERLRUN) "-MExtUtils::Command" -e mkpath
-EQUALIZE_TIMESTAMP = $(ABSPERLRUN) "-MExtUtils::Command" -e eqtime
-ECHO = $(ABSPERLRUN) -l -e "print qq{{@ARGV}" --
-ECHO_N = $(ABSPERLRUN)  -e "print qq{{@ARGV}" --
+DEV_NULL = > /dev/null 2>&1
+MKPATH = $(ABSPERLRUN) -MExtUtils::Command -e 'mkpath' --
+EQUALIZE_TIMESTAMP = $(ABSPERLRUN) -MExtUtils::Command -e 'eqtime' --
+FALSE = false
+TRUE = true
+ECHO = echo
+ECHO_N = echo -n
 UNINST = 0
 VERBINST = 0
-MOD_INSTALL = $(ABSPERLRUN) -MExtUtils::Install -e "install({{@ARGV}, '$(VERBINST)', 0, '$(UNINST)');" --
-DOC_INSTALL = $(ABSPERLRUN) "-MExtUtils::Command::MM" -e perllocal_install
-UNINSTALL = $(ABSPERLRUN) "-MExtUtils::Command::MM" -e uninstall
-WARN_IF_OLD_PACKLIST = $(ABSPERLRUN) "-MExtUtils::Command::MM" -e warn_if_old_packlist
+MOD_INSTALL = $(ABSPERLRUN) -MExtUtils::Install -e 'install([ from_to => {@ARGV}, verbose => '\''$(VERBINST)'\'', uninstall_shadows => '\''$(UNINST)'\'', dir_mode => '\''$(PERM_DIR)'\'' ]);' --
+DOC_INSTALL = $(ABSPERLRUN) -MExtUtils::Command::MM -e 'perllocal_install' --
+UNINSTALL = $(ABSPERLRUN) -MExtUtils::Command::MM -e 'uninstall' --
+WARN_IF_OLD_PACKLIST = $(ABSPERLRUN) -MExtUtils::Command::MM -e 'warn_if_old_packlist' --
 MACROSTART = 
 MACROEND = 
 USEMAKEFILE = -f
-FIXIN = pl2bat.bat
+FIXIN = $(ABSPERLRUN) -MExtUtils::MY -e 'MY->fixin(shift)' --
 
 
 # --- MakeMaker makemakerdflt section:
@@ -317,14 +317,17 @@ DISTVNAME = Tk-MK-0.17
 
 
 # --- MakeMaker pasthru section:
-PASTHRU = 
+
+PASTHRU = LIBPERL_A="$(LIBPERL_A)"\
+	LINKTYPE="$(LINKTYPE)"\
+	PREFIX="$(PREFIX)"
+
 
 # --- MakeMaker special_targets section:
 .SUFFIXES : .xs .c .C .cpp .i .s .cxx .cc $(OBJ_EXT)
 
 .PHONY: all config static dynamic test linkext manifest blibdirs clean realclean disttest distdir
 
-.USESHELL :
 
 
 # --- MakeMaker c_o section:
@@ -337,7 +340,7 @@ PASTHRU =
 
 
 # --- MakeMaker top_targets section:
-all :: pure_all htmlifypods
+all :: pure_all manifypods
 	$(NOECHO) $(NOOP)
 
 
@@ -364,42 +367,42 @@ blibdirs.ts : blibdirs
 
 $(INST_LIBDIR)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_LIBDIR)
-	$(NOECHO) $(CHMOD) 755 $(INST_LIBDIR)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_LIBDIR)
 	$(NOECHO) $(TOUCH) $(INST_LIBDIR)$(DFSEP).exists
 
 $(INST_ARCHLIB)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_ARCHLIB)
-	$(NOECHO) $(CHMOD) 755 $(INST_ARCHLIB)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_ARCHLIB)
 	$(NOECHO) $(TOUCH) $(INST_ARCHLIB)$(DFSEP).exists
 
 $(INST_AUTODIR)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_AUTODIR)
-	$(NOECHO) $(CHMOD) 755 $(INST_AUTODIR)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_AUTODIR)
 	$(NOECHO) $(TOUCH) $(INST_AUTODIR)$(DFSEP).exists
 
 $(INST_ARCHAUTODIR)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_ARCHAUTODIR)
-	$(NOECHO) $(CHMOD) 755 $(INST_ARCHAUTODIR)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_ARCHAUTODIR)
 	$(NOECHO) $(TOUCH) $(INST_ARCHAUTODIR)$(DFSEP).exists
 
 $(INST_BIN)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_BIN)
-	$(NOECHO) $(CHMOD) 755 $(INST_BIN)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_BIN)
 	$(NOECHO) $(TOUCH) $(INST_BIN)$(DFSEP).exists
 
 $(INST_SCRIPT)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_SCRIPT)
-	$(NOECHO) $(CHMOD) 755 $(INST_SCRIPT)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_SCRIPT)
 	$(NOECHO) $(TOUCH) $(INST_SCRIPT)$(DFSEP).exists
 
 $(INST_MAN1DIR)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_MAN1DIR)
-	$(NOECHO) $(CHMOD) 755 $(INST_MAN1DIR)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_MAN1DIR)
 	$(NOECHO) $(TOUCH) $(INST_MAN1DIR)$(DFSEP).exists
 
 $(INST_MAN3DIR)$(DFSEP).exists :: Makefile.PL
 	$(NOECHO) $(MKPATH) $(INST_MAN3DIR)
-	$(NOECHO) $(CHMOD) 755 $(INST_MAN3DIR)
+	$(NOECHO) $(CHMOD) $(PERM_DIR) $(INST_MAN3DIR)
 	$(NOECHO) $(TOUCH) $(INST_MAN3DIR)$(DFSEP).exists
 
 
@@ -411,10 +414,6 @@ linkext :: $(LINKTYPE)
 
 
 # --- MakeMaker dlsyms section:
-
-MK.def: Makefile.PL
-	$(PERLRUN) -MExtUtils::Mksymlists \
-     -e "Mksymlists('NAME'=>\"Tk::MK\", 'DLBASE' => '$(BASEEXT)', 'DL_FUNCS' => {  }, 'FUNCLIST' => [], 'IMPORTS' => {  }, 'DL_VARS' => []);"
 
 
 # --- MakeMaker dynamic section:
@@ -453,48 +452,26 @@ manifypods : pure_all  \
 	lib/Tk/ProgressBarPlus.pm \
 	lib/Tk/Statusbox.pm \
 	lib/Tk/Checkbox.pm \
-	lib/Tk/Optionbox.pm \
 	lib/Tk/HListplus.pm \
+	lib/Tk/Optionbox.pm \
 	lib/Tk/Buttonplus.pm \
 	lib/Tk/DTree.pm \
 	lib/Tk/HdrResizeButton.pm \
 	lib/Tk/PopUpSelectBox.pm \
 	lib/Tk/DHList.pm
-	$(NOECHO) $(POD2MAN) --section=3 --perm_rw=$(PERM_RW) \
-	  lib/Tk/BootSplash.pm $(INST_MAN3DIR)\Tk.BootSplash.$(MAN3EXT) \
-	  lib/Tk/ProgressBarPlus.pm $(INST_MAN3DIR)\Tk.ProgressBarPlus.$(MAN3EXT) \
-	  lib/Tk/Statusbox.pm $(INST_MAN3DIR)\Tk.Statusbox.$(MAN3EXT) \
-	  lib/Tk/Checkbox.pm $(INST_MAN3DIR)\Tk.Checkbox.$(MAN3EXT) \
-	  lib/Tk/Optionbox.pm $(INST_MAN3DIR)\Tk.Optionbox.$(MAN3EXT) \
-	  lib/Tk/HListplus.pm $(INST_MAN3DIR)\Tk.HListplus.$(MAN3EXT) \
-	  lib/Tk/Buttonplus.pm $(INST_MAN3DIR)\Tk.Buttonplus.$(MAN3EXT) \
-	  lib/Tk/DTree.pm $(INST_MAN3DIR)\Tk.DTree.$(MAN3EXT) \
-	  lib/Tk/HdrResizeButton.pm $(INST_MAN3DIR)\Tk.HdrResizeButton.$(MAN3EXT) \
-	  lib/Tk/PopUpSelectBox.pm $(INST_MAN3DIR)\Tk.PopUpSelectBox.$(MAN3EXT) \
-	  lib/Tk/DHList.pm $(INST_MAN3DIR)\Tk.DHList.$(MAN3EXT) 
+	$(NOECHO) $(POD2MAN) --section=$(MAN3EXT) --perm_rw=$(PERM_RW) \
+	  lib/Tk/BootSplash.pm $(INST_MAN3DIR)/Tk::BootSplash.$(MAN3EXT) \
+	  lib/Tk/ProgressBarPlus.pm $(INST_MAN3DIR)/Tk::ProgressBarPlus.$(MAN3EXT) \
+	  lib/Tk/Statusbox.pm $(INST_MAN3DIR)/Tk::Statusbox.$(MAN3EXT) \
+	  lib/Tk/Checkbox.pm $(INST_MAN3DIR)/Tk::Checkbox.$(MAN3EXT) \
+	  lib/Tk/HListplus.pm $(INST_MAN3DIR)/Tk::HListplus.$(MAN3EXT) \
+	  lib/Tk/Optionbox.pm $(INST_MAN3DIR)/Tk::Optionbox.$(MAN3EXT) \
+	  lib/Tk/Buttonplus.pm $(INST_MAN3DIR)/Tk::Buttonplus.$(MAN3EXT) \
+	  lib/Tk/DTree.pm $(INST_MAN3DIR)/Tk::DTree.$(MAN3EXT) \
+	  lib/Tk/HdrResizeButton.pm $(INST_MAN3DIR)/Tk::HdrResizeButton.$(MAN3EXT) \
+	  lib/Tk/PopUpSelectBox.pm $(INST_MAN3DIR)/Tk::PopUpSelectBox.$(MAN3EXT) \
+	  lib/Tk/DHList.pm $(INST_MAN3DIR)/Tk::DHList.$(MAN3EXT) 
 
-
-
-
-# --- MakeMaker htmlifypods section:
-
-POD2HTML_EXE = $(PERLRUN) "-MActivePerl::DocTools" -e "UpdateHTML_blib(installdirs => "$(INSTALLDIRS)")"
-POD2HTML = $(POD2HTML_EXE)
-
-
-htmlifypods :  \
-	lib/Tk/BootSplash.pm \
-	lib/Tk/ProgressBarPlus.pm \
-	lib/Tk/Statusbox.pm \
-	lib/Tk/Checkbox.pm \
-	lib/Tk/Optionbox.pm \
-	lib/Tk/HListplus.pm \
-	lib/Tk/Buttonplus.pm \
-	lib/Tk/DTree.pm \
-	lib/Tk/HdrResizeButton.pm \
-	lib/Tk/PopUpSelectBox.pm \
-	lib/Tk/DHList.pm
-	$(NOECHO) $(POD2HTML)
 
 
 
@@ -521,13 +498,13 @@ clean_subdirs :
 clean :: clean_subdirs
 	- $(RM_F) \
 	  *$(LIB_EXT) core \
-	  core.[0-9] core.[0-9][0-9] \
-	  $(BASEEXT).bso $(INST_ARCHAUTODIR)\extralibs.ld \
+	  core.[0-9] $(INST_ARCHAUTODIR)/extralibs.all \
+	  core.[0-9][0-9] $(BASEEXT).bso \
 	  pm_to_blib.ts core.[0-9][0-9][0-9][0-9] \
 	  $(BASEEXT).x $(BOOTSTRAP) \
 	  perl$(EXE_EXT) tmon.out \
-	  $(INST_ARCHAUTODIR)\extralibs.all *$(OBJ_EXT) \
-	  pm_to_blib blibdirs.ts \
+	  *$(OBJ_EXT) pm_to_blib \
+	  $(INST_ARCHAUTODIR)/extralibs.ld blibdirs.ts \
 	  core.[0-9][0-9][0-9][0-9][0-9] *perl.core \
 	  core.*perl.*.? $(MAKE_APERL_FILE) \
 	  perl $(BASEEXT).def \
@@ -536,7 +513,6 @@ clean :: clean_subdirs
 	  perl.exe so_locations \
 	  $(BASEEXT).exp 
 	- $(RM_RF) \
-	  dll.exp dll.base \
 	  blib 
 	- $(MV) $(FIRST_MAKEFILE) $(MAKEFILE_OLD) $(DEV_NULL)
 
@@ -558,26 +534,28 @@ realclean purge ::  clean realclean_subdirs
 # --- MakeMaker metafile section:
 metafile : create_distdir
 	$(NOECHO) $(ECHO) Generating META.yml
-	$(NOECHO) $(ECHO) "--- #YAML:1.0" > META_new.yml
-	$(NOECHO) $(ECHO) "name:               Tk-MK" >> META_new.yml
-	$(NOECHO) $(ECHO) "version:            0.17" >> META_new.yml
-	$(NOECHO) $(ECHO) "abstract:           Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)" >> META_new.yml
-	$(NOECHO) $(ECHO) "author:" >> META_new.yml
-	$(NOECHO) $(ECHO) "    - M. Krause" >> META_new.yml
-	$(NOECHO) $(ECHO) "license:            unknown" >> META_new.yml
-	$(NOECHO) $(ECHO) "distribution_type:  module" >> META_new.yml
-	$(NOECHO) $(ECHO) "configure_requires:" >> META_new.yml
-	$(NOECHO) $(ECHO) "    ExtUtils::MakeMaker:  0" >> META_new.yml
-	$(NOECHO) $(ECHO) "requires:" >> META_new.yml
-	$(NOECHO) $(ECHO) "    Tk:  804.027" >> META_new.yml
-	$(NOECHO) $(ECHO) "no_index:" >> META_new.yml
-	$(NOECHO) $(ECHO) "    directory:" >> META_new.yml
-	$(NOECHO) $(ECHO) "        - t" >> META_new.yml
-	$(NOECHO) $(ECHO) "        - inc" >> META_new.yml
-	$(NOECHO) $(ECHO) "generated_by:       ExtUtils::MakeMaker version 6.4801" >> META_new.yml
-	$(NOECHO) $(ECHO) "meta-spec:" >> META_new.yml
-	$(NOECHO) $(ECHO) "    url:      http://module-build.sourceforge.net/META-spec-v1.4.html" >> META_new.yml
-	$(NOECHO) $(ECHO) "    version:  1.4" >> META_new.yml
+	$(NOECHO) $(ECHO) '--- #YAML:1.0' > META_new.yml
+	$(NOECHO) $(ECHO) 'name:               Tk-MK' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version:            0.17' >> META_new.yml
+	$(NOECHO) $(ECHO) 'abstract:           Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)' >> META_new.yml
+	$(NOECHO) $(ECHO) 'author:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    - M. Krause' >> META_new.yml
+	$(NOECHO) $(ECHO) 'license:            unknown' >> META_new.yml
+	$(NOECHO) $(ECHO) 'distribution_type:  module' >> META_new.yml
+	$(NOECHO) $(ECHO) 'configure_requires:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    ExtUtils::MakeMaker:  0' >> META_new.yml
+	$(NOECHO) $(ECHO) 'build_requires:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    ExtUtils::MakeMaker:  0' >> META_new.yml
+	$(NOECHO) $(ECHO) 'requires:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    Tk:  804.027' >> META_new.yml
+	$(NOECHO) $(ECHO) 'no_index:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    directory:' >> META_new.yml
+	$(NOECHO) $(ECHO) '        - t' >> META_new.yml
+	$(NOECHO) $(ECHO) '        - inc' >> META_new.yml
+	$(NOECHO) $(ECHO) 'generated_by:       ExtUtils::MakeMaker version 6.55_02' >> META_new.yml
+	$(NOECHO) $(ECHO) 'meta-spec:' >> META_new.yml
+	$(NOECHO) $(ECHO) '    url:      http://module-build.sourceforge.net/META-spec-v1.4.html' >> META_new.yml
+	$(NOECHO) $(ECHO) '    version:  1.4' >> META_new.yml
 	-$(NOECHO) $(MV) META_new.yml $(DISTVNAME)/META.yml
 
 
@@ -607,8 +585,8 @@ veryclean : realclean
 # --- MakeMaker dist_core section:
 
 dist : $(DIST_DEFAULT) $(FIRST_MAKEFILE)
-	$(NOECHO) $(ABSPERLRUN) -l -e "print 'Warning: Makefile possibly out of date with $(VERSION_FROM)'\
-    if -e '$(VERSION_FROM)' and -M '$(VERSION_FROM)' < -M '$(FIRST_MAKEFILE)';" --
+	$(NOECHO) $(ABSPERLRUN) -l -e 'print '\''Warning: Makefile possibly out of date with $(VERSION_FROM)'\''' \
+	  -e '    if -e '\''$(VERSION_FROM)'\'' and -M '\''$(VERSION_FROM)'\'' < -M '\''$(FIRST_MAKEFILE)'\'';' --
 
 tardist : $(DISTVNAME).tar$(SUFFIX)
 	$(NOECHO) $(NOOP)
@@ -670,15 +648,15 @@ ci :
 
 # --- MakeMaker distmeta section:
 distmeta : create_distdir metafile
-	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e "eval {{ maniadd({{q{{META.yml} => q{{Module meta-data (added by MakeMaker)}}}) } \
-    or print \"Could not add META.yml to MANIFEST: $${{'@'}\n\"" --
+	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e 'eval { maniadd({q{META.yml} => q{Module meta-data (added by MakeMaker)}}) } ' \
+	  -e '    or print "Could not add META.yml to MANIFEST: $${'\''@'\''}\n"' --
 
 
 
 # --- MakeMaker distsignature section:
 distsignature : create_distdir
-	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e "eval {{ maniadd({{q{{SIGNATURE} => q{{Public-key signature (added by MakeMaker)}}}) } \
-    or print \"Could not add SIGNATURE to MANIFEST: $${{'@'}\n\"" --
+	$(NOECHO) cd $(DISTVNAME) && $(ABSPERLRUN) -MExtUtils::Manifest=maniadd -e 'eval { maniadd({q{SIGNATURE} => q{Public-key signature (added by MakeMaker)}}) } ' \
+	  -e '    or print "Could not add SIGNATURE to MANIFEST: $${'\''@'\''}\n"' --
 	$(NOECHO) cd $(DISTVNAME) && $(TOUCH) SIGNATURE
 	cd $(DISTVNAME) && cpansign -s
 
@@ -686,16 +664,16 @@ distsignature : create_distdir
 
 # --- MakeMaker install section:
 
-install :: all pure_install doc_install doc_update
+install :: pure_install doc_install
 	$(NOECHO) $(NOOP)
 
-install_perl :: all pure_perl_install doc_perl_install
+install_perl :: pure_perl_install doc_perl_install
 	$(NOECHO) $(NOOP)
 
-install_site :: all pure_site_install doc_site_install
+install_site :: pure_site_install doc_site_install
 	$(NOECHO) $(NOOP)
 
-install_vendor :: all pure_vendor_install doc_vendor_install
+install_vendor :: pure_vendor_install doc_vendor_install
 	$(NOECHO) $(NOOP)
 
 pure_install :: pure_$(INSTALLDIRS)_install
@@ -704,101 +682,72 @@ pure_install :: pure_$(INSTALLDIRS)_install
 doc_install :: doc_$(INSTALLDIRS)_install
 	$(NOECHO) $(NOOP)
 
-doc_update ::
-	$(NOECHO) $(PERLRUN) "-MActivePerl::DocTools" -e ActivePerl::DocTools::WriteTOC
-
 pure__install : pure_site_install
 	$(NOECHO) $(ECHO) INSTALLDIRS not defined, defaulting to INSTALLDIRS=site
 
 doc__install : doc_site_install
 	$(NOECHO) $(ECHO) INSTALLDIRS not defined, defaulting to INSTALLDIRS=site
 
-pure_perl_install ::
-	$(NOECHO) $(MOD_INSTALL) \
-		read $(PERL_ARCHLIB)\auto\$(FULLEXT)\.packlist \
-		write $(DESTINSTALLARCHLIB)\auto\$(FULLEXT)\.packlist \
+pure_perl_install :: all
+	$(NOECHO) umask 022; $(MOD_INSTALL) \
 		$(INST_LIB) $(DESTINSTALLPRIVLIB) \
 		$(INST_ARCHLIB) $(DESTINSTALLARCHLIB) \
 		$(INST_BIN) $(DESTINSTALLBIN) \
 		$(INST_SCRIPT) $(DESTINSTALLSCRIPT) \
 		$(INST_MAN1DIR) $(DESTINSTALLMAN1DIR) \
-		$(INST_MAN3DIR) $(DESTINSTALLMAN3DIR) \
-		$(INST_HTMLDIR) $(DESTINSTALLHTMLDIR)
+		$(INST_MAN3DIR) $(DESTINSTALLMAN3DIR)
 	$(NOECHO) $(WARN_IF_OLD_PACKLIST) \
-		$(SITEARCHEXP)\auto\$(FULLEXT)
+		$(SITEARCHEXP)/auto/$(FULLEXT)
 
 
-pure_site_install ::
-	$(NOECHO) $(MOD_INSTALL) \
-		read $(SITEARCHEXP)\auto\$(FULLEXT)\.packlist \
-		write $(DESTINSTALLSITEARCH)\auto\$(FULLEXT)\.packlist \
+pure_site_install :: all
+	$(NOECHO) umask 02; $(MOD_INSTALL) \
+		read $(SITEARCHEXP)/auto/$(FULLEXT)/.packlist \
+		write $(DESTINSTALLSITEARCH)/auto/$(FULLEXT)/.packlist \
 		$(INST_LIB) $(DESTINSTALLSITELIB) \
 		$(INST_ARCHLIB) $(DESTINSTALLSITEARCH) \
 		$(INST_BIN) $(DESTINSTALLSITEBIN) \
 		$(INST_SCRIPT) $(DESTINSTALLSITESCRIPT) \
 		$(INST_MAN1DIR) $(DESTINSTALLSITEMAN1DIR) \
-		$(INST_MAN3DIR) $(DESTINSTALLSITEMAN3DIR) \
-		$(INST_HTMLDIR) $(DESTINSTALLSITEHTMLDIR)
+		$(INST_MAN3DIR) $(DESTINSTALLSITEMAN3DIR)
 	$(NOECHO) $(WARN_IF_OLD_PACKLIST) \
-		$(PERL_ARCHLIB)\auto\$(FULLEXT)
+		$(PERL_ARCHLIB)/auto/$(FULLEXT)
 
-pure_vendor_install ::
-	$(NOECHO) $(MOD_INSTALL) \
-		read $(VENDORARCHEXP)\auto\$(FULLEXT)\.packlist \
-		write $(DESTINSTALLVENDORARCH)\auto\$(FULLEXT)\.packlist \
+pure_vendor_install :: all
+	$(NOECHO) umask 022; $(MOD_INSTALL) \
 		$(INST_LIB) $(DESTINSTALLVENDORLIB) \
 		$(INST_ARCHLIB) $(DESTINSTALLVENDORARCH) \
 		$(INST_BIN) $(DESTINSTALLVENDORBIN) \
 		$(INST_SCRIPT) $(DESTINSTALLVENDORSCRIPT) \
 		$(INST_MAN1DIR) $(DESTINSTALLVENDORMAN1DIR) \
-		$(INST_MAN3DIR) $(DESTINSTALLVENDORMAN3DIR) \
-		$(INST_HTMLDIR) $(DESTINSTALLVENDORHTMLDIR)
+		$(INST_MAN3DIR) $(DESTINSTALLVENDORMAN3DIR)
 
-doc_perl_install ::
-	$(NOECHO) $(ECHO) Appending installation info to $(DESTINSTALLARCHLIB)/perllocal.pod
-	-$(NOECHO) $(MKPATH) $(DESTINSTALLARCHLIB)
-	-$(NOECHO) $(DOC_INSTALL) \
-		"Module" "$(NAME)" \
-		"installed into" "$(INSTALLPRIVLIB)" \
-		LINKTYPE "$(LINKTYPE)" \
-		VERSION "$(VERSION)" \
-		EXE_FILES "$(EXE_FILES)" \
-		>> $(DESTINSTALLARCHLIB)\perllocal.pod
+doc_perl_install :: all
 
-doc_site_install ::
-	$(NOECHO) $(ECHO) Appending installation info to $(DESTINSTALLARCHLIB)/perllocal.pod
-	-$(NOECHO) $(MKPATH) $(DESTINSTALLARCHLIB)
-	-$(NOECHO) $(DOC_INSTALL) \
+doc_site_install :: all
+	$(NOECHO) $(ECHO) Appending installation info to $(DESTINSTALLSITEARCH)/perllocal.pod
+	-$(NOECHO) umask 02; $(MKPATH) $(DESTINSTALLSITEARCH)
+	-$(NOECHO) umask 02; $(DOC_INSTALL) \
 		"Module" "$(NAME)" \
 		"installed into" "$(INSTALLSITELIB)" \
 		LINKTYPE "$(LINKTYPE)" \
 		VERSION "$(VERSION)" \
 		EXE_FILES "$(EXE_FILES)" \
-		>> $(DESTINSTALLARCHLIB)\perllocal.pod
+		>> $(DESTINSTALLSITEARCH)/perllocal.pod
 
-doc_vendor_install ::
-	$(NOECHO) $(ECHO) Appending installation info to $(DESTINSTALLARCHLIB)/perllocal.pod
-	-$(NOECHO) $(MKPATH) $(DESTINSTALLARCHLIB)
-	-$(NOECHO) $(DOC_INSTALL) \
-		"Module" "$(NAME)" \
-		"installed into" "$(INSTALLVENDORLIB)" \
-		LINKTYPE "$(LINKTYPE)" \
-		VERSION "$(VERSION)" \
-		EXE_FILES "$(EXE_FILES)" \
-		>> $(DESTINSTALLARCHLIB)\perllocal.pod
+doc_vendor_install :: all
 
 
-uninstall :: uninstall_from_$(INSTALLDIRS)dirs doc_update
+uninstall :: uninstall_from_$(INSTALLDIRS)dirs
 	$(NOECHO) $(NOOP)
 
 uninstall_from_perldirs ::
-	$(NOECHO) $(UNINSTALL) $(PERL_ARCHLIB)\auto\$(FULLEXT)\.packlist
 
 uninstall_from_sitedirs ::
-	$(NOECHO) $(UNINSTALL) $(SITEARCHEXP)\auto\$(FULLEXT)\.packlist
+	$(NOECHO) $(UNINSTALL) $(SITEARCHEXP)/auto/$(FULLEXT)/.packlist
 
 uninstall_from_vendordirs ::
-	$(NOECHO) $(UNINSTALL) $(VENDORARCHEXP)\auto\$(FULLEXT)\.packlist
+
 
 
 # --- MakeMaker force section:
@@ -822,7 +771,7 @@ $(FIRST_MAKEFILE) : Makefile.PL $(CONFIGDEP)
 	$(PERLRUN) Makefile.PL 
 	$(NOECHO) $(ECHO) "==> Your Makefile has been rebuilt. <=="
 	$(NOECHO) $(ECHO) "==> Please rerun the $(MAKE) command.  <=="
-	false
+	$(FALSE)
 
 
 
@@ -830,7 +779,7 @@ $(FIRST_MAKEFILE) : Makefile.PL $(CONFIGDEP)
 
 # --- MakeMaker makeaperl section ---
 MAP_TARGET    = perl
-FULLPERL      = C:\Perl589\bin\perl.exe
+FULLPERL      = /usr/bin/perl
 
 $(MAP_TARGET) :: static $(MAKE_APERL_FILE)
 	$(MAKE) $(USEMAKEFILE) $(MAKE_APERL_FILE) $@
@@ -860,11 +809,11 @@ subdirs-test ::
 
 
 test_dynamic :: pure_all
-	$(FULLPERLRUN) "-MExtUtils::Command::MM" "-e" "test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
-	$(FULLPERLRUN) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+	PERL_DL_NONLAZY=1 $(FULLPERLRUN) "-MExtUtils::Command::MM" "-e" "test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+	PERL_DL_NONLAZY=1 $(FULLPERLRUN) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 testdb_dynamic :: pure_all
-	$(FULLPERLRUN) $(TESTDB_SW) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
+	PERL_DL_NONLAZY=1 $(FULLPERLRUN) $(TESTDB_SW) "-I$(INST_LIB)" "-I$(INST_ARCHLIB)" $(TEST_FILE)
 
 test_ : test_dynamic
 
@@ -875,34 +824,32 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) "<SOFTPKG NAME=\"$(DISTNAME)\" VERSION=\"0,17,0,0\">" > $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "    <TITLE>$(DISTNAME)</TITLE>" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "    <ABSTRACT>Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)</ABSTRACT>" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "    <AUTHOR>M. Krause</AUTHOR>" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "    <IMPLEMENTATION>" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "        <DEPENDENCY NAME=\"Tk\" VERSION=\"804,027,0,0\" />" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "        <OS NAME=\"$(OSNAME)\" />" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "        <ARCHITECTURE NAME=\"MSWin32-x86-multi-thread-5.8\" />" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "        <CODEBASE HREF=\"\" />" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "    </IMPLEMENTATION>" >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) "</SOFTPKG>" >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="0.17">' > $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <ABSTRACT>Several Add-on widgets (Buttonplus, HListplus, DHList, DTree, Checkbox, Optionbox, PopUpSelectBox, Statusbox, BootSplash, ProgressBarPlus & HdrResizeButton)</ABSTRACT>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <AUTHOR>M. Krause</AUTHOR>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Tk::" VERSION="804.027" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="i686-linux-gnu-thread-multi-5.10" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '</SOFTPKG>' >> $(DISTNAME).ppd
 
 
 # --- MakeMaker pm_to_blib section:
 
-pm_to_blib : $(TO_INST_PM)
-	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e "pm_to_blib({{@ARGV}, '$(INST_LIB)\auto', '$(PM_FILTER)')" -- \
-	  lib/Tk/BootSplash.pm blib\lib\Tk\BootSplash.pm \
-	  lib/Tk/ProgressBarPlus.pm blib\lib\Tk\ProgressBarPlus.pm \
-	  lib/Tk/Statusbox.pm blib\lib\Tk\Statusbox.pm \
-	  lib/Tk/Checkbox.pm blib\lib\Tk\Checkbox.pm \
-	  lib/Tk/Optionbox.pm blib\lib\Tk\Optionbox.pm \
-	  lib/Tk/HListplus.pm blib\lib\Tk\HListplus.pm \
-	  lib/Tk/Buttonplus.pm blib\lib\Tk\Buttonplus.pm \
-	  lib/Tk/DTree.pm blib\lib\Tk\DTree.pm \
-	  lib/Tk/HdrResizeButton.pm blib\lib\Tk\HdrResizeButton.pm \
-	  lib/Tk/PopUpSelectBox.pm blib\lib\Tk\PopUpSelectBox.pm \
-	  lib/Tk/DHList.pm blib\lib\Tk\DHList.pm 
+pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
+	$(NOECHO) $(ABSPERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', q[$(PM_FILTER)], '\''$(PERM_DIR)'\'')' -- \
+	  lib/Tk/BootSplash.pm blib/lib/Tk/BootSplash.pm \
+	  lib/Tk/ProgressBarPlus.pm blib/lib/Tk/ProgressBarPlus.pm \
+	  lib/Tk/Statusbox.pm blib/lib/Tk/Statusbox.pm \
+	  lib/Tk/Checkbox.pm blib/lib/Tk/Checkbox.pm \
+	  lib/Tk/HListplus.pm blib/lib/Tk/HListplus.pm \
+	  lib/Tk/Optionbox.pm blib/lib/Tk/Optionbox.pm \
+	  lib/Tk/Buttonplus.pm blib/lib/Tk/Buttonplus.pm \
+	  lib/Tk/DTree.pm blib/lib/Tk/DTree.pm \
+	  lib/Tk/HdrResizeButton.pm blib/lib/Tk/HdrResizeButton.pm \
+	  lib/Tk/PopUpSelectBox.pm blib/lib/Tk/PopUpSelectBox.pm \
+	  lib/Tk/DHList.pm blib/lib/Tk/DHList.pm 
 	$(NOECHO) $(TOUCH) pm_to_blib
 
 
