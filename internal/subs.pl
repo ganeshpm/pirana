@@ -6557,6 +6557,25 @@ sub models_hlist_action {
     }
 }
 
+sub reload_styles {
+  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady=> $hlist_pady, -background=>$dir_bgcol, -font => $font_normal);
+  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'white', -font => $font_normal);
+  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'red', -font => $font_normal);
+  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal);
+  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
+  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
+  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#008800', -background=>'white',-font => $font_fixed);
+  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#990000', -background=>'white',-font => $font_fixed);
+  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#888800', -background=>'white',-font => $font_fixed);
+  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#000000', -background=>'white',-font => $font_fixed);
+  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#d5e5ff', -font => $font_normal);
+  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady, -background=>'#ffffe5', -font => $font_normal);
+}
+
 sub frame_models_show {
 ### Purpose : Create the frame and the HList object that show the models
 ### Compat  : W+L+
@@ -6580,7 +6599,7 @@ sub frame_models_show {
         -padx       => 0,
 #        -background => '#',
         -selectbackground => $pirana_orange,
-        -font       => $font_normal,
+#        -font       => $font_normal,
         -command    => sub { models_hlist_action () },
          -browsecmd   => sub{
            my @sel = $models_hlist -> selectionGet ();
@@ -6678,22 +6697,7 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>75);
 
   bind_models_menu($sel_type);
 
-  our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady=> $hlist_pady, -background=>$dir_bgcol, -font => $font_normal);
-  our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'white', -font => $font_normal);
-  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'red', -font => $font_normal);
-  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal);
-  our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
-  our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
-  our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#008800', -background=>'white',-font => $font_fixed);
-  our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#990000', -background=>'white',-font => $font_fixed);
-  our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#888800', -background=>'white',-font => $font_fixed);
-  our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
-  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
-  our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#d5e5ff', -font => $font_normal);
-  our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady, -background=>'#ffffe5', -font => $font_normal);
+  reload_styles();
 
   # headers of model list
   our @main_headers;

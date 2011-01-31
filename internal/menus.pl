@@ -6,7 +6,7 @@ sub create_menu_bar {
 ### Purpose : Create the menu bar
 ### Compat  : W+L+
   pirana_debug ($debug_mode, "Declare menu bar.");
-  $mbar = $mw -> Menu(-background=>$bgcol, -border=>0);
+  my $mbar = $mw -> Menu(-background=>$bgcol, -border=>0);
   $mw -> configure(-menu => $mbar);
   
   pirana_debug ($debug_mode, "Declare FILE menu.");
@@ -14,6 +14,19 @@ sub create_menu_bar {
   my $mbar_file_settings = $mbar_file -> cascade (-label => "Settings", -font=>$font,-background=>$bgcol,-underline=>1, -tearoff => 0);
   $mbar_file_settings -> command(-label => "General", -font=>$font, -background=>$bgcol,-underline=>0, -command=>sub {
       edit_ini_window("settings.ini", \%setting, \%setting_descr, "General settings",0)});
+
+  # $mbar_file_settings -> command(-label => "Select Font",-font=>$font, -underline=>0,-background=>$bgcol, -command=>sub {
+  #     my $font = $mw -> FontDialog -> Show;
+  #     our $font_normal = $mw -> GetDescriptiveFontName ($font);
+  #     if (defined $font_normal) {
+  # 	  $setting{font_face} = $font_normal;
+  # 	  save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
+  # 	  reload_styles();
+  # 	  refresh_pirana();
+  # 	  $mw -> RefontTree(-font => $font_normal) ;
+  #     }
+  #  } );
+
   $mbar_file_settings -> command (-label => "SSH settings",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
        ssh_setup_window();
     });
@@ -320,4 +333,5 @@ sub create_menu_bar {
       my $about_text = "Piraña (version ".$version.")\n\n Development team:\nRon Keizer (2007-2010)\nCoen van Hasselt(2010)\n\nDepartment of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by various modelers from around the world.\n\nhttp://pirana.sf.net\n";
       message ($about_text);
   });
+  return($mbar);
 }

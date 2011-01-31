@@ -50,6 +50,7 @@ use Tk::Text;               # Textarea widget
 use Tk::PlotDataset;        # For DataInspector
 use Tk::LineGraphDataset;   # ..
 use Tk::PNG;
+# use Tk::FontDialog;
 pirana_debug ($debug_mode, "3. Loading other modules.");
 use File::Copy;             # File info and operations
 use File::stat;             # ..
@@ -188,7 +189,6 @@ if ($^O =~ m/MSWin/i) {
 our $hlist_pady     = 1;
 our $filter         = "";
 
-
 #*** Some other variables *****************************************************
 our $full_screen = 0;
 our $show_tab_list = 1;
@@ -206,6 +206,9 @@ $mw -> setPalette ($bgcol);
 
 our $font_family = "Verdana";
 our $font_fixed_family = "Courier";
+if ($^O =~ m/Linux/i) {
+    $font_fixed_family = "{FreeSans}";
+}; 
 if ($^O =~ m/Darwin/i) {
     $font_fixed_family = "System";
 }; 
@@ -259,8 +262,8 @@ pirana_debug ($debug_mode, "10. Building menu bar.");
 our $mbar;
 do ($base_dir."/internal/menus.pl");
 do ($base_dir."/internal/menus_custom.pl");
-create_menu_bar();
-menu_bar_add_custom (); # allow developers to easily add menu items (located in internal/menu_custom.pl)
+our $mbar = create_menu_bar();
+menu_bar_add_custom ($mbar); # allow developers to easily add menu items (located in internal/menu_custom.pl)
 
 #*** Main Loop ***********************************************************
 $mw -> optionAdd('*BorderWidth' => 1);
