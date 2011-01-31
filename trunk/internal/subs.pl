@@ -23,6 +23,54 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
+sub new_scm_file {
+### Purpose : Dialog for creating a new scm config file
+### Compat  : W+L+
+    my $new_scm_name = shift;
+    my $overwrite_bool=1;
+    $new_scm_dialog = $mw -> Toplevel(-title=>'New scm config file');
+    no_resize ($new_scm_dialog);  
+    $new_scm_frame = $new_scm_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+    center_window($new_scm_dialog); # center after adding frame (redhat)
+    $new_scm_frame -> Label (-text=>'scm config file: ',  -font=>$font_normal)-> grid(-column=>1, -row=>1,-sticky=>'nse');
+    $new_scm_frame -> Entry ( -background=>$white,-width=>10, -border=>2, -relief=>'groove', -textvariable=>\$new_scm_name)->grid(-column=>2,-row=>1, -sticky=>'w');
+
+    chdir($base_dir."/templates");
+    my @templates = <*.scm> ; my @templates_descr = ();
+    my %template_file;
+    $i=0; foreach (@templates) {
+	open (IN,$_); @lines=<IN>; close IN;
+	my $descr = @lines[0];
+	$descr =~ s/\;//;
+	$descr =~ s/\n//;
+	push (@templates_descr,$descr);
+	$template_file{$descr} = $_;
+	$i++;
+    };
+    $new_scm_frame -> Label (-text=>'Template: ', -font=>$font)-> grid(-column=>1, -row=>2, -sticky=>'nse');
+    $new_scm_frame -> Label (-text=>'  ', -font=>$font)-> grid(-column=>1, -row=>3, -sticky=>'nse');
+    $menu = $new_scm_frame -> Optionmenu(-options => [@templates_descr], -border=>$bbw,
+					 -variable=>\$template_chosen,-background=>$lightblue,-activebackground=>$darkblue,-foreground=>$white, -activeforeground=>$white, -justify=>'left', -border=>$bbw
+        )-> grid(-column=>2,-row=>2);
+
+    $new_scm_frame -> Button (-text=>'Create file',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
+	if (-e $cwd."/".$new_scm_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
+	    $overwrite_bool = message_yesno ("SCM file with name ".$new_scm_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
+	}
+	if ($new_scm_name eq "") {
+	    message ("Please specify a valid filename.");
+	    $overwrite_bool = 0;
+	}
+	if ($overwrite_bool==1) {
+	    copy ($base_dir."/templates/".$template_file{$template_chosen}, $cwd."/".$new_scm_name);
+	    destroy $new_scm_dialog;
+	    edit_model (unix_path($cwd."/".$new_scm_name));
+	}
+			      }
+	)-> grid(-column=>2,-row=>4, -sticky=>'w');
+}
+
+
 sub retrieve_nm_help_window {
     my $nm_help_window = $mw -> Toplevel (-title => "Import / update NONMEM help files", -background=> $bgcol);
     my $nm_help_frame = $nm_help_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
@@ -992,10 +1040,6 @@ sub psn_command {
     foreach (@sel) {
 	push (@mods, @ctl_show[$_]);
     }
-    if ($command eq "scm") {
-	psn_scm_window (\@mods);
-	return();
-    } 
     psn_run_window (\@mods, $command);
 }
 sub wfn_command {
@@ -6206,7 +6250,7 @@ sub psn_run_window {
     my $psn_run_frame = $psn_notebook -> add("general", -label=>"General");
     my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
 
-    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -row=> 0, -sticky=>"nw");
+    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -columnspan=>2, -row=> 0, -sticky=>"nw");
     my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
@@ -6234,7 +6278,7 @@ sub psn_run_window {
   #          my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "h");
 	    psn_info_update_text ($psn_run_text, $$psn_text_ref, $psn_run_button);
 	}
-	}) -> grid (-column=>1, -row=> 1, -sticky=>"nswe");
+	}) -> grid (-column=>1, -row=> 1, -columnspan=>1, -sticky=>"nswe");
        
     $psn_help_buttons_frame -> Button(-text=>"Help", -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
 	my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_help.txt");
@@ -6246,14 +6290,14 @@ sub psn_run_window {
 #        my $psn_text = get_psn_info($psn_option, $software{psn_toolkit}, \%ssh, "help");
 	    psn_info_update_text ($psn_run_text, $$psn_text_ref, $psn_run_button);
 	}
-	}) -> grid (-column=>1, -row=> 2, -sticky=>"nswe");
+	}) -> grid (-column=>1, -row=> 2, -columnspan=>1, -sticky=>"nswe");
 	
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Model file:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>2,-column=>1,-sticky=>"w");
 #  my $models = @$modelfile;
     $psn_run_frame -> Entry (-textvariable=> $modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled', -border=>1, -relief=>'groove',) -> grid(-row=>2,-column=>2,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
-    $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50,-border=>1, -relief=>'groove',) -> grid(-row=>3,-column=>2,-sticky=>"w");
+    $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50,-border=>1, -relief=>'groove',) -> grid(-row=>3,-column=>2,-sticky=>"wens");
 
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
 
@@ -6262,17 +6306,42 @@ sub psn_run_window {
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>4,
         -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
-        )->grid(-column=>2, -row=>11, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
+        )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
  #   $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
     $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -border=>$bbw)
-        -> grid(-row=>11, -column=>3, -rowspan=>2,-sticky=>"wns");
+        -> grid(-row=>12, -column=>3, -rowspan=>2, -columnspan=>2, -sticky=>"wens");
     $help -> attach($psn_run_button, "Start run");
 
     my $nm_text = "NM installation";
     $psn_run_frame -> Label (-text=>$nm_text.":", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
+
+    my $scm_file;
+    if ($psn_option eq "scm") {
+	$psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
+	$psn_run_frame -> Label (-text=>"SCM config file:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>9,-column=>1,-sticky=>"w");
+	$scm_file = @models[0].".scm";
+	my $types = [
+	    ['SCM files','.scm'],
+	    ['All Files','*',  ], ];
+	my $scm_entry =  $psn_run_frame -> Entry (-textvariable => \$scm_file, -font=>$font_normal,-background=>$white, -state=>'normal', -width=>32,-border=>1, -relief=>'groove',) -> grid(-row=>9,-column=>2,-sticky=>"wens");
+	$scm_entry -> bind ('<KeyPress>' => sub{
+	    $psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
+            $psn_command_line_entry -> delete("1.0","end");
+            $psn_command_line_entry =~ s/\n//g;
+            $psn_command_line_entry -> insert("1.0", $psn_command_line);
+	 });
+	$psn_run_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0,-background=>$button, -activebackground=>$abutton, -command=> sub{
+	    my $scm_file_choose = $mw-> getOpenFile(-defaultextension => "*.scm", -filetypes=> $types);
+	    unless ($scm_file_choose eq "") {$scm_file = $scm_file_choose; };
+	}) -> grid(-row=>9, -column=>3, -rowspan=>1, -sticky => 'nwes');
+	$new_button = $psn_run_frame -> Button(-image=>$gif{new}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
+	    new_scm_file($scm_file);
+	}) -> grid(-row=>9,-column=>4, -sticky=>'wens');
+     }
+
 #  my $psn_background = 0;
     $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
     $psn_run_frame -> Checkbutton (-text=>" ", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
@@ -6292,15 +6361,15 @@ sub psn_run_window {
 	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	}
-    }) -> grid(-row=>10,-column=>2,-columnspan=>2,-sticky=>"nw");
+    }) -> grid(-row=>11,-column=>2,-columnspan=>2,-sticky=>"nw");
 
     $psn_run_frame -> Label (-text=>"PsN command line:",-font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>11,-column=>1,-sticky=>"w");
+	) -> grid(-row=>12,-column=>1,-sticky=>"w");
     # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 
     $psn_run_frame -> Button (-text=>"History", -background=>$button, -activebackground=>$abutton, -border=>$bbw, -font=>$font_normal , -command=> sub {
         psn_command_history_window ($psn_command_line_entry);
-                              }) -> grid(-row=>12,-column=>1,-sticky=>"w");
+                              }) -> grid(-row=>13,-column=>1,-sticky=>"w");
 
     my $nm_versions_menu = $psn_run_frame -> Optionmenu(
         -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
@@ -6334,6 +6403,14 @@ sub psn_run_window {
     # get PsN.conf and display
     my ($text, $conf_file) = update_psn_conf_window ();
     my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
+
+    # update scm config file in run command if necessary
+    if ($psn_option eq "scm") {
+	$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
+	$psn_command_line_entry -> delete("1.0","end");
+	$psn_command_line_entry =~ s/\n//g;
+	$psn_command_line_entry -> insert("1.0", $psn_command_line);
+    }
 
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
@@ -6417,7 +6494,7 @@ sub psn_run_window {
 	    $psn_run_window -> destroy();
 	}
                                    });
-
+ 
 # Apparently this code gives trouble on RedHat as well. 
    # unless ($^O =~ m/(MSWin|darwin)/i) {
    #    # on Windows, 'resizable' makes window go to background; 
