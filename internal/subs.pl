@@ -927,7 +927,7 @@ sub create_nm_start_script {
       }
       $run_dir = unix_path($run_dir);
   }
-  push (@script, "cd ".$run_dir."\n");
+  push (@script, "cd '".$run_dir."'\n");
   foreach my $model (@mod) {
       if (($clusters{run_on_sge})&&($sge{model_as_jobname} == 1)) {
 	  $active_project =~ s/\s/\_/g;
@@ -7146,7 +7146,7 @@ sub create_wfn_start_script {
         foreach (@idx) {
 	    copy ($file.".".$setting{ext_ctl}, $file."_bs_".$_.".".$setting{ext_ctl});
 	    open (BAT_RUN,">".$rand_filename."_".$_.".bat");
-	    print BAT_RUN substr($cwd,0,2)."\ncd ".win_path(substr($cwd,2,(length($cwd)-2)))."\n";
+	    print BAT_RUN substr($cwd,0,2)."\ncd '".win_path(substr($cwd,2,(length($cwd)-2)))."'\n";
 	    print BAT_RUN "CALL ".win_path($wfn_dir."/bin/wfn.bat ").$wfn_parameters."\n";
 	    print BAT_RUN "CALL ".win_path($wfn_dir."/bin/".$wfn_option.".bat ".$file."_bs".$_." ".$_." ".($_ + $per_run -1)."\n");
 	    print BAT_RUN "del ".win_path($cwd."\\".$file."_".$_.".".$setting{ext_ctl})."\n";
