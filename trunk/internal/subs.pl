@@ -4011,7 +4011,7 @@ sub read_curr_dir {
 
 	$i=0; if (@ctl_files>0) {
 	    foreach (@ctl_files) {
-		@ctl_files[$i] =~ s/.$setting{ext_ctl}//i;
+		@ctl_files[$i] =~ s/\.$setting{ext_ctl}//i;
 		if (-e $_.".".$setting{ext_ctl}) {
 		    $models_dates{$_} = stat($_.".".$setting{ext_ctl})->mtime;
 		}
@@ -4202,7 +4202,7 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 3, -text => @ctl_descr_copy[$i], -style=>$style );
           for ($j=4; $j<=12; $j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
         } else {
-           $runno=@ctl_show[$i];
+           $runno = @ctl_show[$i];
 	   my $mod_background = "#FFFFFF";
            unless ($models_colors{$runno} eq "") {
              $mod_background = $models_colors{$runno};

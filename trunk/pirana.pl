@@ -207,7 +207,7 @@ $mw -> setPalette ($bgcol);
 our $font_family = "Verdana";
 our $font_fixed_family = "Courier";
 if ($^O =~ m/Linux/i) {
-    $font_fixed_family = "{FreeSans}";
+    $font_fixed_family = "{helvetica}";
 }; 
 if ($^O =~ m/Darwin/i) {
     $font_fixed_family = "System";
