@@ -73,6 +73,9 @@ sub create_menu_bar {
     $mbar_model_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
 				  psn_command("sse");
 				});
+    $mbar_model_psn -> command (-label=> " scm",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+				  psn_command("scm");
+				});
     $mbar_model_psn -> command (-label=> " sumo",-font=>$font, -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
 				  psn_command("sumo");
 				});
@@ -319,13 +322,16 @@ sub create_menu_bar {
   $mbar_help_psn -> command(-label => "PsN documentation", -font=>$font, -background=>$bgcol,-command=>sub {
       start_command($software{browser}, "http://psn.sourceforge.net/docs.php");
   });
-  $mbar_help_psn -> command(-label => "execute", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("execute", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "vpc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("vpc", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "npc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("npc", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "bootstrap", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("bootstrap", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "llp", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("llp", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sse", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sse", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
-  $mbar_help_psn -> command(-label => "sumo", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = get_psn_help ("sumo", $software{psn_toolkit}); text_window($mw, $psn_help_command, "PsN Help files"); });
+    my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_h.txt" );
+
+  $mbar_help_psn -> command(-label => "execute", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/execute_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "vpc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/vpc_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "npc", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/npc_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "bootstrap", -font=>$font, -background=>$bgcol,-command=>sub {$psn_help_command = file_to_text ($base_dir."/doc/psn/bootstrap_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "llp", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/llp_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sse", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/sse_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "scm", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/scm_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
+  $mbar_help_psn -> command(-label => "sumo", -font=>$font, -background=>$bgcol,-command=>sub { $psn_help_command = file_to_text ($base_dir."/doc/psn/sumo_help.txt"); text_window($mw, $$psn_help_command, "PsN Help files"); });
 
   $mbar_help -> command(-label => "Xpose", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
   $mbar_help -> command(-label => "WFN", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});

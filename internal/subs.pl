@@ -992,6 +992,10 @@ sub psn_command {
     foreach (@sel) {
 	push (@mods, @ctl_show[$_]);
     }
+    if ($command eq "scm") {
+	psn_scm_window (\@mods);
+	return();
+    } 
     psn_run_window (\@mods, $command);
 }
 sub wfn_command {
@@ -5254,6 +5258,9 @@ sub bind_models_menu {
     $models_menu_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("sse");
     });
+    $models_menu_psn -> command (-label=> " scm",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+       psn_command("scm");
+    });
     $models_menu_psn -> command (-label=> " sumo", -font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
     });
@@ -7380,22 +7387,24 @@ sub show_exec_runs_window {
 sub populate_run_log_hlist {
     my ($exec_runs_hlist) = @_;
     $db_results = db_read_exec_runs("pirana.dir");
-    my $i=0;
-    $style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font);;
-    foreach my $row (reverse @$db_results) {
-	my ($model, $descr, $date_execute, $name_modeler, $nm_version, $method,
-	    $exec_where, $command) = @$row;
-	$exec_runs_hlist -> add($i);
-	$exec_runs_hlist -> itemCreate($i, 0, -text => $model, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 1, -text => $descr, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 2, -text => $date_execute, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 3, -text => $method, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 4, -text => $exec_where, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 5, -text => $name_modeler, -style=>$style);
-	$exec_runs_hlist -> itemCreate($i, 6, -text => $command, -style=>$style);
-	$i++;
+    if ($db_results =~ m/ARRAY/) {
+	my $i=0;
+	$style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'white', -font => $font);;
+	foreach my $row (reverse @$db_results) {
+	    my ($model, $descr, $date_execute, $name_modeler, $nm_version, $method,
+		$exec_where, $command) = @$row;
+	    $exec_runs_hlist -> add($i);
+	    $exec_runs_hlist -> itemCreate($i, 0, -text => $model, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 1, -text => $descr, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 2, -text => $date_execute, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 3, -text => $method, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 4, -text => $exec_where, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 5, -text => $name_modeler, -style=>$style);
+	    $exec_runs_hlist -> itemCreate($i, 6, -text => $command, -style=>$style);
+	    $i++;
+	}
+	$exec_runs_hlist -> update();
     }
-    $exec_runs_hlist -> update();
     return ($db_results);
 }
 

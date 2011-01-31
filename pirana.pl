@@ -205,10 +205,10 @@ $mw -> setPalette ($bgcol);
 #our $font = $mw -> fontCreate('main_normal', -family=>'Helvetica', -size=>int(-11));
 
 our $font_family = "Verdana";
-our $font_fixed_family = "Courier";
 if ($^O =~ m/Linux/i) {
-    $font_fixed_family = "{helvetica}";
+    $font_family = "Helvetica";
 }; 
+our $font_fixed_family = "Courier";
 if ($^O =~ m/Darwin/i) {
     $font_fixed_family = "System";
 }; 
