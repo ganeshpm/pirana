@@ -213,10 +213,10 @@ PM_TO_BLIB = lib/Tk/BootSplash.pm \
 	blib/lib/Tk/Statusbox.pm \
 	lib/Tk/Checkbox.pm \
 	blib/lib/Tk/Checkbox.pm \
-	lib/Tk/HListplus.pm \
-	blib/lib/Tk/HListplus.pm \
 	lib/Tk/Optionbox.pm \
 	blib/lib/Tk/Optionbox.pm \
+	lib/Tk/HListplus.pm \
+	blib/lib/Tk/HListplus.pm \
 	lib/Tk/Buttonplus.pm \
 	blib/lib/Tk/Buttonplus.pm \
 	lib/Tk/DTree.pm \
@@ -452,8 +452,8 @@ manifypods : pure_all  \
 	lib/Tk/ProgressBarPlus.pm \
 	lib/Tk/Statusbox.pm \
 	lib/Tk/Checkbox.pm \
-	lib/Tk/HListplus.pm \
 	lib/Tk/Optionbox.pm \
+	lib/Tk/HListplus.pm \
 	lib/Tk/Buttonplus.pm \
 	lib/Tk/DTree.pm \
 	lib/Tk/HdrResizeButton.pm \
@@ -464,8 +464,8 @@ manifypods : pure_all  \
 	  lib/Tk/ProgressBarPlus.pm $(INST_MAN3DIR)/Tk::ProgressBarPlus.$(MAN3EXT) \
 	  lib/Tk/Statusbox.pm $(INST_MAN3DIR)/Tk::Statusbox.$(MAN3EXT) \
 	  lib/Tk/Checkbox.pm $(INST_MAN3DIR)/Tk::Checkbox.$(MAN3EXT) \
-	  lib/Tk/HListplus.pm $(INST_MAN3DIR)/Tk::HListplus.$(MAN3EXT) \
 	  lib/Tk/Optionbox.pm $(INST_MAN3DIR)/Tk::Optionbox.$(MAN3EXT) \
+	  lib/Tk/HListplus.pm $(INST_MAN3DIR)/Tk::HListplus.$(MAN3EXT) \
 	  lib/Tk/Buttonplus.pm $(INST_MAN3DIR)/Tk::Buttonplus.$(MAN3EXT) \
 	  lib/Tk/DTree.pm $(INST_MAN3DIR)/Tk::DTree.$(MAN3EXT) \
 	  lib/Tk/HdrResizeButton.pm $(INST_MAN3DIR)/Tk::HdrResizeButton.$(MAN3EXT) \
@@ -843,8 +843,8 @@ pm_to_blib : $(FIRST_MAKEFILE) $(TO_INST_PM)
 	  lib/Tk/ProgressBarPlus.pm blib/lib/Tk/ProgressBarPlus.pm \
 	  lib/Tk/Statusbox.pm blib/lib/Tk/Statusbox.pm \
 	  lib/Tk/Checkbox.pm blib/lib/Tk/Checkbox.pm \
-	  lib/Tk/HListplus.pm blib/lib/Tk/HListplus.pm \
 	  lib/Tk/Optionbox.pm blib/lib/Tk/Optionbox.pm \
+	  lib/Tk/HListplus.pm blib/lib/Tk/HListplus.pm \
 	  lib/Tk/Buttonplus.pm blib/lib/Tk/Buttonplus.pm \
 	  lib/Tk/DTree.pm blib/lib/Tk/DTree.pm \
 	  lib/Tk/HdrResizeButton.pm blib/lib/Tk/HdrResizeButton.pm \

@@ -1,0 +1,101 @@
+; Pirana wizard-file for the creation of text files
+[TYPE]NM parallelization file[/TYPE]
+ 
+; ##########################################################################
+; Arguments can be supplied to the wizard script from Pirana, which can be 
+; used in both the building of the wizard and the construction of the 
+; output text file 
+[ARG] os, nonmem_dir [/ARG]
+; ##########################################################################
+
+
+; ##########################################################################
+; In the first part, the questions for the Wizard are implemented.
+; Basically, here you start to collect all information in variables,
+; which are then stored in a hash, and can be used afterwards.
+; [S] = create new screen in wizard
+; [Q] = Question
+; [E] = Entry [key_name, width of entry-widget]
+; [O] = Optionmenu [key_name, options]
+; [C] = Checkbox
+; ##########################################################################
+
+[WIZ]
+[S] Basic information
+
+[Q] [filename] Filename for parallelization file: 
+[E] [filename, 40] nm.pnm [/E]
+[/Q]
+
+[/S]
+
+[S] Parallelization options
+
+[Q] [n_nodes_declare] Number of nodes to declare: 
+[O] [n_nodes_declare, ("1", "2", "4", "6", "8", "10", "12", "16")] 4 [/O]
+[/Q]
+
+[Q] [n_nodes_use] Number of nodes to use: 
+[O] [n_nodes_use, ("1", "2", "4", "6", "8", "10", "12", "16")] 2 [/O]
+[/Q]
+
+[Q] [parse_type] Parse type: 
+[O] [parse_type, ("0: Give each node n subjects", "1: Evenly distribute n subjects", "2: Load balancing among nodes", "3: Assign subjects to nodes", "4: Load balancing, take into account loading time")] 2 [/O]
+[/Q]
+
+[Q] [parse_num] Number of subjects for each node:\n(parse type 3 only) 
+[E] [parse_num, 3] 3
+[/Q]
+
+[/S]
+
+[S] Communication
+
+[Q] [transfer_type] Transfer type 
+[O] [transfer_type, ("0 (MPI): Use MPICH communication", "1 (FPI): Use file transfer ")] 0 [/O]
+[/Q]
+
+[/S]
+[/WIZ]
+
+; ##########################################################################
+; In the second part, the text file is built based on the gathered data.
+; The variables can be used when put between [[...]] 
+; For string-variables, you can specify how much of the string you want to 
+; use, by putting ", n", with n specifying the number. 
+; You can also create IF / ELSE structures and FOR loops, which need to be 
+; specified between brackets. See examples.
+; ##########################################################################
+
+[OUT] ; Starts output
+$GENERAL
+NODES=[[n_nodes]] PARSE_TYPE=[[parse_type,1]] TIMEOUTI=20 TIMEOUT=500 PARAPRINT=[[paraprint]] TRANSFER_TYPE=[[transfer_type]]
+
+;THE EXCLUDE/INCLUDE may be used to selectively use certain nodes, out of a large list.
+;$EXCLUDE 5-7 ; exclude nodes 5-7
+;$EXCLUDE ALL 
+;$INCLUDE 1,4-6
+
+[IF,transfer_type,MPI]
+[/IF]
+[IF,transfer_type,FPI]
+[/IF]
+
+$NAMES ; Worker names 
+1:MANAGER
+[LOOP, 2:n_nodes] ; Use [[%i]] as counter
+[[%i]]:WORKER[[%i]] 
+[/LOOP]
+
+$COMMANDS ; command line for each node
+1:NONE
+[LOOP, 2:n_nodes] 
+[[%i]]:./beolaunch.sh worker[[%i]]/ ./nonmem model_file [[lic_file]] >worker[[%i]].out 
+[/LOOP]
+
+[IF,os,linux] ; Files need to be touched on Linux
+$CONTROL
+[LOOP, 2:n_nodes] 
+[[%i]]: MTOUCH=1 WSlEEP=1 WTOUCH=0 MSLEEP=0
+[/LOOP]
+[/IF]
