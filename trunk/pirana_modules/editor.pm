@@ -54,7 +54,13 @@ sub text_edit_window_build {
   my $save_note_button = $text_edit_window_frame -> Button (-text=>'Save', -background=> $button, -activebackground=>$button, -border=>0, -command=> sub {
     save_model ($filename, $text_edit_text, $text_line_nrs, $edit_status_bar);
   }) -> grid(-row=>0, -column=>3, -sticky=>"nsw");
-  unless (-w $filename) {$save_note_button -> configure(-state=>'disabled')};
+#  unless (-W $filename) {$save_note_button -> configure(-state=>'disabled')};
+# the above commented command doesn't work on all systems, better done through stat()
+  my $mode = (stat($filename))[2];
+  my $mode2 = sprintf ("%04o", $mode & 07777);
+  if ( substr($mode2, 0, 2) < 6) {
+      $save_note_button -> configure(-state=>'disabled');
+  }
 
   $text_edit_text -> bind('<Motion>' => sub {  # The MouseWheel event is not working on Linux, so this is used instead
       my @idx = $text_edit_text -> yview();
@@ -155,19 +161,21 @@ sub refresh_edit_window {
       unless ($^O =~ m/MSWin/i) {
 	  $_ =~ s/\r\n?//g;
       }
-      $_ =~ s///;
       if (substr($_, 0,1) eq "\$") {
 	  $flag = "";
 	  $_ =~ m/\s/;
 	  my $pos = length $`;
 	  if ($pos == 0) { $pos = length($_)}
 	  $text_edit_text -> insert('end', substr($_,0,$pos)."", 'block');
-	  $_ = substr($_, $pos, );
+	  $_ = substr($_, $pos);
       }
-      if ($_ =~ m/\;/g) {
+      if ($_ =~ m/;/g) {
 	  my $pos = length $`;
-	  $text_edit_text -> insert('end', substr($_,0,$pos));
-	  $text_edit_text -> insert('end', substr($_,$pos,length($_)), 'comment');
+	  unless ($pos == 0) {
+	      $text_edit_text -> insert('end', substr($_,0,$pos));
+	      $_ = substr($_, $pos);
+	  }
+	  $text_edit_text -> insert('end', $_, 'comment');
 	  $_ = "";
       }
       $text_edit_text -> insert('end', $_."\n");
