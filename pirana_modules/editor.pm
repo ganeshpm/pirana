@@ -7,8 +7,11 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(text_edit_window text_edit_window_build refresh_edit_window save_model);
 
-our $bgcol ="#ece9d8"; our $button="#dddac9"; our $abutton = "#cecbba";
-our $status_col = "#fffdec";
+our $status_col = "#eae8e2";
+our $white          = "#ffffff";
+our $bgcol          = "#efebe7";
+our $button         = "#dad7d3";
+our $abutton        = "#c6c3c0";
 
 sub text_edit_window {
 ### Purpose : A built-in text editor for NM model files, the actual dialog
@@ -51,9 +54,9 @@ sub text_edit_window_build {
   }) -> grid(-row=>0, -column=>3, -sticky=>"nsw");
   unless (-w $filename) {$save_note_button -> configure(-state=>'disabled')};
 
-  $text_edit_text -> bind('<MouseWheel>' => sub {
-    my @idx = $text_edit_text -> yview();
-    if ($line_nrs == 1) {
+  $text_edit_text -> bind('<Motion>' => sub {  # The MouseWheel event is not working on Linux, so this is used instead
+      my @idx = $text_edit_text -> yview();
+      if ($line_nrs == 1) {
       $text_line_nrs -> yview(moveto => @idx[0]);
     }
   });
