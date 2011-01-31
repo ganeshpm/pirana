@@ -4555,6 +4555,7 @@ sub build_nmfe_run_command {
 	    $dir = $dir_entry -> get();
 	    $dir =~ s/$ssh{local_folder}//gi;
             my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
+	    $dir_new =~ s/\s/\\\s/g; # put in an escape character before each space
 	    $ssh .= "cd ".$dir_new."; ";
 	    $command = $ssh;
 	    $cwd = $dir_entry -> get();
