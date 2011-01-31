@@ -34,6 +34,7 @@ sub text_edit_window_build {
   my $text_edit_text = $text_edit_window_frame -> Text (
       -width=>$width, -height=>$height, -yscrollcommand => ['set' => $text_edit_scrollbar],
       -background=>"#ffffff", -exportselection => 0, -wrap=>'none',
+      -spacing1=>2, -spacing2=>0, -spacing3=>2,
       -relief=>'groove', -border=>2,
       -selectbackground=>'#606060',-font=>$font, -highlightthickness =>0
   )-> grid(-column=>3, -row=>1, -columnspan=>1,-sticky=>'nwes');
@@ -45,7 +46,8 @@ sub text_edit_window_build {
   if ($line_nrs == 1) {
       $text_line_nrs = $text_edit_window_frame -> Text (
 	  -background=>$status_col, -font=>$font, -foreground=>'#888888', -highlightthickness =>0,-relief=>'groove',
-	  -width=>4, -height=>$height, -pady=>2,-spacing1=>0) -> grid(-column=>2, -row=>1, -sticky=>'nwes');
+	  -spacing1=>2, -spacing2=>0, -spacing3=>2,
+	  -width=>4, -height=>$height, -pady=>2) -> grid(-column=>2, -row=>1, -sticky=>'nwes');
       $text_line_nrs -> tagConfigure('line', -justify=>'right');
   }
   my $filename_label = $text_edit_window_frame -> Label (-text=>$filename, -font=>$font) -> grid(-row=>0, -column=>3, -sticky=>"nse");
@@ -150,25 +152,29 @@ sub refresh_edit_window {
   $text_edit_text -> delete ("0.0", "end");
   my $flag="";
   foreach (@lines) {
-    if (substr($_, 0,1) eq "\$") {
-      $flag = "";
-      $_ =~ m/\s/;
-      my $pos = length $`;
-      if ($pos == 0) { $pos = length($_)}
-      $text_edit_text -> insert('end', substr($_,0,$pos)."", 'block');
-      $_ = substr($_, $pos, );
-    }
-    if ($_ =~ m/\;/g) {
-      my $pos = length $`;
-      $text_edit_text -> insert('end', substr($_,0,$pos));
-      $text_edit_text -> insert('end', substr($_,$pos,length($_)), 'comment');
-      $_ = "";
-    }
-    $text_edit_text -> insert('end', $_."\n");
+      unless ($^O =~ m/MSWin/i) {
+	  $_ =~ s/\r\n?//g;
+      }
+      $_ =~ s///;
+      if (substr($_, 0,1) eq "\$") {
+	  $flag = "";
+	  $_ =~ m/\s/;
+	  my $pos = length $`;
+	  if ($pos == 0) { $pos = length($_)}
+	  $text_edit_text -> insert('end', substr($_,0,$pos)."", 'block');
+	  $_ = substr($_, $pos, );
+      }
+      if ($_ =~ m/\;/g) {
+	  my $pos = length $`;
+	  $text_edit_text -> insert('end', substr($_,0,$pos));
+	  $text_edit_text -> insert('end', substr($_,$pos,length($_)), 'comment');
+	  $_ = "";
+      }
+      $text_edit_text -> insert('end', $_."\n");
   }
   $text_edit_text -> yview(moveto => @yloc[0]); # set the view back to the original location
   if ($text_line_nrs ne "") {
-     $text_line_nrs  -> yview(moveto => @yloc[0]);
+      $text_line_nrs  -> yview(moveto => @yloc[0]);
   }
   $text_edit_text -> SetCursor( $curs );
 }

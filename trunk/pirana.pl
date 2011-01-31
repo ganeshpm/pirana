@@ -185,7 +185,7 @@ if ($^O =~ m/MSWin/i) {
 } else {
     our $selectcol = $darkerred;
 };
-our $hlist_pady     = 2;
+our $hlist_pady     = 1;
 our $filter         = "";
 
 
