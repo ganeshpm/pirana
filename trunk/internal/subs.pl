@@ -1950,26 +1950,35 @@ sub project_info_window {
 
 sub show_estim_window {
 ### Purpose : Show window with final parameter estimates
-### Compat  : W+L?
+### Compat  : W+L+
     my $lstfile = shift;
     my $modelfile = $lstfile;
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
 
-    my ($th_ref, $om_ref, $si_ref, $th_se_ref, $om_se_ref, $si_se_ref) = get_estimates_from_lst ($lstfile);
-    my ($methods_ref, $est_ref, $term_ref) = get_estimates_from_lst ($lstfile);
+    my ($methods_ref, $est_ref, $se_est_ref, $term_ref) = get_estimates_from_lst ($lstfile);
     my @methods = @$methods_ref;
     my %est = %$est_ref;
+    my %se_est = %$se_est_ref;
 
-#    print @methods;
     my $last_method = @methods[-1] ;  # take results from the last estimation method
     my $res_ref = $est{$last_method};
     my @res = @$res_ref;
     my $theta_ref = @res[0];  my @th = @$theta_ref;
     my $omega_ref = @res[1];  my @om = @$omega_ref;
     my $sigma_ref = @res[2];  my @si = @$sigma_ref;
-    my $theta_se_ref = @res[3];  my @th_se = @$theta_se_ref;
-    my $omega_se_ref = @res[4];  my @om_se = @$omega_se_ref;
-    my $sigma_se_ref = @res[5];  my @si_se = @$sigma_se_ref;
+
+    # do the same for RSE%
+    my $se_ref = $se_est{$last_method};
+    my @se_est= @$se_ref;
+    my @th_se; my @om_se; my @si_se;
+    if ($se_ref =~ m/ARRAY/) {
+	@se_est = @$se_ref;
+	if (@se_est>1) {
+	    my $th_se_ref = @se_est[0];  @th_se = @$th_se_ref;
+	    my $om_se_ref = @se_est[1];  @om_se = @$om_se_ref;
+	    my $si_se_ref = @se_est[2];  @si_se = @$si_se_ref;
+	}
+    } 
 
     # and get information from NM model file
     my $modelno = $modelfile;
