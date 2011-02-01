@@ -6259,7 +6259,7 @@ sub psn_run_window {
     my $psn_run_frame = $psn_notebook -> add("general", -label=>"General");
     my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
 
-    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -columnspan=>2, -row=> 0, -sticky=>"nw");
+    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -columnspan=>3, -row=> 0, -sticky=>"nwe");
     my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
@@ -6332,6 +6332,14 @@ sub psn_run_window {
 	$psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 	$psn_run_frame -> Label (-text=>"SCM config file:", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>9,-column=>1,-sticky=>"w");
 	$scm_file = @models[0].".scm";
+	# try to guess name of intended scm file
+	my @scm = <*.scm>;
+	if (@scm > 0) { # use the name of the first available file
+	    $scm_file = @scm[0];
+	}
+	foreach (@scm) { # and if there is one with the run name in it, pick that one 
+	    if ($_ =~ m/@models[0]/i) {$scm_file = $_};
+	}
 	my $types = [
 	    ['SCM files','.scm'],
 	    ['All Files','*',  ], ];
@@ -6342,13 +6350,25 @@ sub psn_run_window {
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
 	 });
-	$psn_run_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0,-background=>$button, -activebackground=>$abutton, -command=> sub{
+	my $browse_button = $psn_run_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0,-background=>$button, -activebackground=>$abutton, -command=> sub{
 	    my $scm_file_choose = $mw-> getOpenFile(-defaultextension => "*.scm", -filetypes=> $types);
-	    unless ($scm_file_choose eq "") {$scm_file = $scm_file_choose; };
+	    unless ($scm_file_choose eq "") {
+		$scm_file = $scm_file_choose; 
+		$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
+		$psn_command_line_entry -> delete("1.0","end");
+		$psn_command_line_entry =~ s/\n//g;
+		$psn_command_line_entry -> insert("1.0", $psn_command_line);
+	    };
 	}) -> grid(-row=>9, -column=>3, -rowspan=>1, -sticky => 'nwes');
-	$new_button = $psn_run_frame -> Button(-image=>$gif{new}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
-	    new_scm_file($scm_file);
+	$help -> attach ($browse_button, "Browse for scm file"); 
+	my $edit_button = $psn_run_frame -> Button(-image=>$gif{notepad}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
+	    edit_model($scm_file);
 	}) -> grid(-row=>9,-column=>4, -sticky=>'wens');
+	$help -> attach ($edit_button, "Edit scm file"); 
+	my $new_button = $psn_run_frame -> Button(-image=>$gif{new}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
+	    new_scm_file($scm_file);
+	}) -> grid(-row=>9,-column=>5, -sticky=>'wens');
+	$help -> attach ($new_button, "New scm file"); 
      }
 
 #  my $psn_background = 0;

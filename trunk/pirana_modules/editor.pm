@@ -3,6 +3,8 @@
 package pirana_modules::editor;
 
 use strict;
+use Tk;
+use pirana_modules::misc qw(extract_file_name);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(text_edit_window text_edit_window_build refresh_edit_window save_model);
@@ -19,7 +21,7 @@ sub text_edit_window {
   my ($text, $filename, $mw_ref, $font) = @_;
   if ($font eq "" ) {$font = "Courier 10"};
   my $mw = $$mw_ref;
-  my $text_edit_window = $mw -> Toplevel(-title=>'Edit file: '.$filename);
+  my $text_edit_window = $mw -> Toplevel(-title=>'Edit file');
   $text_edit_window -> resizable( 0, 0 );
   my $text_edit_window_frame = $text_edit_window -> Frame(-background=>$bgcol)->grid(-ipadx=>8,-ipady=>5)->grid(-row=>1,-column=>1, -sticky=>'nwse');
   text_edit_window_build ($text_edit_window_frame, $text, $filename, $font, 90, 40, 1) ;
@@ -29,7 +31,7 @@ sub text_edit_window_build {
   my ($text_edit_window_frame, $text, $filename, $font, $width, $height, $line_nrs) = @_;
   my $edit_status_bar = $text_edit_window_frame -> Label (
     -text=>"", -anchor=>"w", -font=>"Arial 8", -width=>$width, -background=>$bgcol, -foreground=>"#757575"
-  )->grid(-column=>3,-row=>3,-sticky=>"w", -ipady=>0, -columnspan=>1);
+  )->grid(-column=>3,-row=>3,-sticky=>"w", -ipady=>0, -columnspan=>3);
   my $text_edit_scrollbar = $text_edit_window_frame -> Scrollbar()->grid(-column=>4,-row=>1,-sticky=>'nws');
   my $text_edit_text = $text_edit_window_frame -> Text (
       -width=>$width, -height=>$height, -yscrollcommand => ['set' => $text_edit_scrollbar],
@@ -37,7 +39,7 @@ sub text_edit_window_build {
       -spacing1=>2, -spacing2=>0, -spacing3=>2,
       -relief=>'groove', -border=>2,
       -selectbackground=>'#606060',-font=>$font, -highlightthickness =>0
-  )-> grid(-column=>3, -row=>1, -columnspan=>1,-sticky=>'nwes');
+  )-> grid(-column=>3, -row=>1, -columnspan=>3,-sticky=>'nwes');
   $text_edit_text -> tagConfigure('block', -font => $font, -background => '#661111', -foreground=>'#FFFFFF' );
   $text_edit_text -> tagConfigure('comment', -font => $font, -foreground => '#3333bb' );
   $text_edit_text -> tagConfigure('theta', -font => $font, -foreground => '#882222' );
@@ -50,10 +52,29 @@ sub text_edit_window_build {
 	  -width=>4, -height=>$height, -pady=>2) -> grid(-column=>2, -row=>1, -sticky=>'nwes');
       $text_line_nrs -> tagConfigure('line', -justify=>'right');
   }
-  my $filename_label = $text_edit_window_frame -> Label (-text=>$filename, -font=>$font) -> grid(-row=>0, -column=>3, -sticky=>"nse");
+  $text_edit_window_frame -> Label (-text=>" ", -font=>$font, -justify=>"right", -width=>($width-10),
+  ) -> grid(-row=>0, -column=>5, -sticky=>"nse");
+  my $filename_label = $text_edit_window_frame -> Label (-text=>$filename, -font=>$font, -justify=>"right", #-width=>($width-10),
+  ) -> grid(-row=>0, -column=>5, -sticky=>"nse");
   my $save_note_button = $text_edit_window_frame -> Button (-text=>'Save', -background=> $button, -activebackground=>$button, -border=>0, -command=> sub {
-    save_model ($filename, $text_edit_text, $text_line_nrs, $edit_status_bar);
+      unless ($filename eq "") {
+	  save_model ($filename, $text_edit_text, $text_line_nrs, $edit_status_bar);
+      }
   }) -> grid(-row=>0, -column=>3, -sticky=>"nsw");
+  my $save_note_button = $text_edit_window_frame -> Button (-text=>'Save as...', -background=> $button, -activebackground=>$button, -border=>0, -command=> sub {
+      my @spl = split (/\./,$filename);
+      my $def_ext = ".".pop(@spl);
+      my $file = extract_file_name ($filename);
+      $filename = $text_edit_window_frame -> getSaveFile( -title => 'Save File:', -initialfile=> $file, -defaultextension => $def_ext, -initialdir => '.' );
+      unless ($filename eq "") {
+	  if ( save_model ($filename, $text_edit_text, $text_line_nrs, $edit_status_bar) ) {
+	      $filename_label -> configure (-text=>$filename);
+#	      $filename_label -> destroy ();
+#	      $filename_label = $text_edit_window_frame -> Label (-text=>$filename, -font=>$font, -justify=>"right", #-width=>($width-10),
+#		  ) -> grid(-row=>0, -column=>5, -sticky=>"nse");
+	  }
+      }
+  }) -> grid(-row=>0, -column=>4, -sticky=>"nsw");
 #  unless (-W $filename) {$save_note_button -> configure(-state=>'disabled')};
 # the above commented command doesn't work on all systems, better done through stat()
   my $mode = (stat($filename))[2];
@@ -132,11 +153,14 @@ sub save_model {
      open (OUT, ">".$filename);
      print OUT $code;
      close OUT;
-     $edit_status_bar -> configure (-text=>"Modelfile saved.");
+     $edit_status_bar -> configure (-text=>"File saved.");
      $edit_status_bar -> update();
      sleep(1);
      $edit_status_bar -> configure (-text=>"");
      $edit_status_bar -> update();
+     if (-e $filename) {
+	 return(1);
+     }
 }
 
 sub refresh_edit_window {
