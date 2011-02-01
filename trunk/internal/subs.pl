@@ -3750,7 +3750,6 @@ sub populate_cleanup {
   return(\@files);
 }
 
-
 sub cleanup_runtime_files_window {
 ### Purpose : Create dialog for deleting NM models/results
 ### Compat  : W+L+
@@ -4732,7 +4731,14 @@ sub build_psn_run_command {
     foreach (@models) {
 	$_ .= '.'.$setting{ext_ctl}
     };
-    my $psn_command_line = $psn_command." ".$psn_parameters." ".join(" ", @models);
+    my $psn_command_line = $psn_command." ".$psn_parameters." ";
+    if ($sge{sge_default} == 1) {
+	unless ($psn_command_line =~ m/\-run_on_sge/i) {
+	    $psn_command_line .= "-run_on_sge ";
+	}
+    }
+    $psn_command_line .= join(" ", @models);
+
     my $ssh_add = "";
     my $ssh_add2 = "";
     my $outputfile= $model.".".$setting{ext_res};
@@ -6251,7 +6257,6 @@ sub psn_run_window {
 	$ssh{connect_ssh} = 0;
     };
 
-
     # build notebook
     my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
 	center_window($psn_run_window); # center after adding frame (redhat)
@@ -6313,9 +6318,9 @@ sub psn_run_window {
     my $psn_background = 0;
     my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
     my $psn_command_line_entry = $psn_run_frame -> Text (
-        -width=>64, -relief=>'sunken', -border=>0, -height=>4,
+        -width=>64, -relief=>'sunken', -border=>0, -height=>3, -highlightthickness=>0,
         -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
-        )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwe', -ipadx=>0);
+        )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwes', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
  #   $psn_command_line_entry -> insert("1.0", $psn_command_line);
@@ -6344,6 +6349,7 @@ sub psn_run_window {
 	    ['SCM files','.scm'],
 	    ['All Files','*',  ], ];
 	my $scm_entry =  $psn_run_frame -> Entry (-textvariable => \$scm_file, -font=>$font_normal,-background=>$white, -state=>'normal', -width=>32,-border=>1, -relief=>'groove',) -> grid(-row=>9,-column=>2,-sticky=>"wens");
+	
 	$scm_entry -> bind ('<KeyPress>' => sub{
 	    $psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
             $psn_command_line_entry -> delete("1.0","end");
@@ -6351,13 +6357,14 @@ sub psn_run_window {
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
 	 });
 	my $browse_button = $psn_run_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0,-background=>$button, -activebackground=>$abutton, -command=> sub{
-	    my $scm_file_choose = $mw-> getOpenFile(-defaultextension => "*.scm", -filetypes=> $types);
+	    my $scm_file_choose = $mw-> getOpenFile(-defaultextension => "*.scm", -initialdir=> $cwd ,-filetypes=> $types);
 	    unless ($scm_file_choose eq "") {
-		$scm_file = $scm_file_choose; 
+		$scm_file = extract_file_name ($scm_file_choose);  # assume it is in the current folder
 		$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
 		$psn_command_line_entry -> delete("1.0","end");
 		$psn_command_line_entry =~ s/\n//g;
 		$psn_command_line_entry -> insert("1.0", $psn_command_line);
+		$psn_run_window -> raise();
 	    };
 	}) -> grid(-row=>9, -column=>3, -rowspan=>1, -sticky => 'nwes');
 	$help -> attach ($browse_button, "Browse for scm file"); 
@@ -6390,15 +6397,15 @@ sub psn_run_window {
 	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	}
-    }) -> grid(-row=>11,-column=>2,-columnspan=>2,-sticky=>"nw");
+    }) -> grid(-row=>16,-column=>2,-columnspan=>2,-sticky=>"nw");
 
-    $psn_run_frame -> Label (-text=>"PsN command line:",-font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>12,-column=>1,-sticky=>"w");
+    $psn_run_frame -> Label (-text=>"PsN command line:\n",-font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>12,-column=>1,-sticky=>"nw");
     # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 
     $psn_run_frame -> Button (-text=>"History", -background=>$button, -activebackground=>$abutton, -border=>$bbw, -font=>$font_normal , -command=> sub {
         psn_command_history_window ($psn_command_line_entry);
-                              }) -> grid(-row=>13,-column=>1,-sticky=>"w");
+                              }) -> grid(-row=>13,-column=>1,-sticky=>"se");
 
     my $nm_versions_menu = $psn_run_frame -> Optionmenu(
         -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
@@ -6412,7 +6419,11 @@ sub psn_run_window {
 	    unless ($psn_option eq "sumo") { # no need for building the PsN statement
                 $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
                 $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);				
-            }			
+            }  
+	    # update scm config file in run command if necessary
+	    if ($psn_option eq "scm") {
+		$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
+	    }	
             $psn_command_line_entry -> delete("1.0","end");
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
@@ -6420,7 +6431,8 @@ sub psn_run_window {
     $nm_versions_menu -> configure (-options => ["Loading..."], -variable => \$nm_version_chosen,);   
     $psn_run_window -> update();
 
-    my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software,\%$ssh);
+    # update NM installations
+    my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software, \%ssh);
     %psn_nm_versions = %$psn_nm_versions_ref;
     # bit of a workaround to get "default" option as first option...
     my %psn_nm_versions_copy = %psn_nm_versions;
@@ -6433,21 +6445,15 @@ sub psn_run_window {
     my ($text, $conf_file) = update_psn_conf_window ();
     my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
 
-    # update scm config file in run command if necessary
-    if ($psn_option eq "scm") {
-	$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
-	$psn_command_line_entry -> delete("1.0","end");
-	$psn_command_line_entry =~ s/\n//g;
-	$psn_command_line_entry -> insert("1.0", $psn_command_line);
-    }
-
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
         $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
         $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+	$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0", $psn_command_line);
+
         # update NM installations
         my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software, \%ssh);
         %psn_nm_versions = %$psn_nm_versions_ref;

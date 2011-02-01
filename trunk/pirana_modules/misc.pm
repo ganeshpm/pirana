@@ -8,7 +8,16 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub rm_spaces {
+# Remove leading and trailing spaces and \n
+    my $str = shift;
+    chomp ($str);
+    $str =~ s/^\s+//; # leading spaces
+    $str =~ s/\s+$//; # trailing space
+    return ($str);
+}
 
 sub text_to_file {
     my ($text_ref, $filename) = @_;
