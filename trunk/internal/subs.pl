@@ -488,13 +488,18 @@ sub refresh_sge_monitor_ssh {
     my %ssh = %$ssh_ref;
 
     $ssh{connect_ssh} = $ssh{default};
-    my $ssh_pre; my $ssh_post = "'";
+    my $ssh_pre; 
+    unless ($ssh{login} =~ m/plink/i) {
+	    my $ssh_post = "'";
+    }
     if ($ssh{connect_ssh} == 1) {
 	$ssh_pre .= $ssh{login}.' ';	
 	if ($ssh{parameters} ne "") {
 	    $ssh_pre .= $ssh{parameters}.' ';
 	}
-	$ssh_pre .= "'";
+	unless ($ssh{login} =~ m/plink/i) {
+	    $ssh_pre .= "'";
+	}
 	if ($ssh{execute_before} ne "") {
 	    $ssh_pre .= $ssh{execute_before}.'; ';
 	}
@@ -756,16 +761,17 @@ sub sge_monitor_window {
 # set up ssh if needed
     $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; my $ssh_post;
+    unless ($ssh{login} =~ m/plink/i) { $ssh_post = "'" };
     if ($ssh{connect_ssh} == 1) {
 	$ssh_pre .= $ssh{login}.' ';	
 	if ($ssh{parameters} ne "") {
 	    $ssh_pre .= $ssh{parameters}.' ';
 	}
-	$ssh_pre .= '"';
+	unless ($ssh{login} =~ m/plink/i) { $ssh_pre .= "'" };
 	if ($ssh{execute_before} ne "") {
 	    $ssh_pre .= $ssh{execute_before}.'; ';
 	}
-        $ssh_post = '"';
+	unless ($ssh{login} =~ m/plink/i) { $ssh_post = "'" };
     }
    # ssh_notebook_tab ($sge_ssh, 3, "");
 
@@ -830,7 +836,7 @@ sub sge_monitor_window {
     }
     
     my $res = refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
-    print $res;
+#    print $res;
     if ($res == 0) {
 	$sge_monitor_window -> destroy();
 	message ("Pirana can't start SGE commands. SGE is probably not installed, or environment variables\nare not set properly. Please check your SGE installation.\n\nNote: If you connect to an SGE cluster over SSH, please switch on 'Use SSH-mode by default'\nin the SSH settings.");
@@ -852,8 +858,11 @@ sub sge_monitor_window {
 	my $ssh_add1 = "";
 	my $ssh_add2 = "";
 	if ($ssh{connect_ssh} == 1) {
-	    $ssh_add1 = $ssh{login}." ".$ssh{parameters}." '";
-	    $ssh_add2 = "'";
+	    $ssh_add1 = $ssh{login}." ".$ssh{parameters}." ";
+	    unless ($ssh{login} =~ m/plink/g) { # plink (PuTTY) doesn't like the quotes
+		$ssh_add1 .= "'";
+		$ssh_add2 = "'";
+	    }
 	}
 	system ($ssh_add1."qmon ".$ssh_add2."&");
     })-> grid(-column=>4, -row=>8,-sticky=>"nwe");
@@ -4762,14 +4771,14 @@ sub build_psn_run_command {
 	}
 	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
-	unless ($ssh{connect_ssh} =~ m/plink/g) { # plink (PuTTY) doesn't like the quotes
+	unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
 	    $ssh_add .= "'";
 	}
 	if ($ssh{execute_before} ne "") {
 	    $ssh_add .= $ssh{execute_before}."; ";
 	}
         $ssh_add .= "cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
-	unless ($ssh{connect_ssh} =~ m/plink/g) {
+	unless ($ssh{login} =~ m/plink/i) {
 	    $ssh_add2 = "'";
 	}
 	$cwd = $dir_entry -> get();
@@ -4780,7 +4789,7 @@ sub build_psn_run_command {
 	}
     }
     $psn_command_line = $ssh_add.$psn_command_line.$ssh_add2 ;
-
+    print $psn_command_line."\n";
     return( $psn_command_line );
 }
 
