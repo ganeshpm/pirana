@@ -390,7 +390,7 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "PsN location on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Location of psn.conf on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
 
     $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
@@ -4732,12 +4732,14 @@ sub build_psn_run_command {
 	$_ .= '.'.$setting{ext_ctl}
     };
     my $psn_command_line = $psn_command." ".$psn_parameters." ";
-    if ($sge{sge_default} == 1) {
-	unless ($psn_command_line =~ m/\-run_on_sge/i) {
-	    $psn_command_line .= "-run_on_sge ";
+    unless ($psn_command eq "scm") { # usually specified using config file
+	if ($sge{sge_default} == 1) {
+	    unless ($psn_command_line =~ m/\-run_on_sge/i) {
+		$psn_command_line .= "-run_on_sge ";
+	    }
 	}
+	$psn_command_line .= join(" ", @models);
     }
-    $psn_command_line .= join(" ", @models);
 
     my $ssh_add = "";
     my $ssh_add2 = "";
@@ -4760,12 +4762,16 @@ sub build_psn_run_command {
 	}
 	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
-	$ssh_add .= "'";
+	unless ($ssh{connect_ssh} =~ m/plink/g) { # plink (PuTTY) doesn't like the quotes
+	    $ssh_add .= "'";
+	}
 	if ($ssh{execute_before} ne "") {
 	    $ssh_add .= $ssh{execute_before}."; ";
 	}
         $ssh_add .= "cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
-	$ssh_add2 = "'";
+	unless ($ssh{connect_ssh} =~ m/plink/g) {
+	    $ssh_add2 = "'";
+	}
 	$cwd = $dir_entry -> get();
 	my $l = length($cwd);
 	unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
@@ -6319,7 +6325,7 @@ sub psn_run_window {
     my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>3, -highlightthickness=>0,
-        -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal'
+        -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal', -wrap=> 'word'
         )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwes', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
@@ -6442,7 +6448,10 @@ sub psn_run_window {
     $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
 
     # get PsN.conf and display
-    my ($text, $conf_file) = update_psn_conf_window ();
+    my $text; my $conf_file;
+    unless ($ssh{connect_ssh} == 1) {
+	($text, $conf_file) = update_psn_conf_window ();
+    }
     my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
 
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
@@ -6512,7 +6521,11 @@ sub psn_run_window {
 	    } else {
 		if ($setting{terminal} ne "") {
 		    if (($setting{quit_shell}==0)||($psn_option eq "sumo")) { # don't close terminal window after completion
-			$psn_command_line .= ';read -n1';
+			if ($setting{terminal} =~ m/gnome-terminal/) { # for gnome-terminal
+			    $psn_command_line .= '|less';		   
+			} else { # this works for xterm and maybe some other terminals
+			    $psn_command_line .= ';read -n1';
+			}
 		    }
 		    $psn_command_line = $setting{terminal}.' -e "'.$psn_command_line.'" &';
 		}
