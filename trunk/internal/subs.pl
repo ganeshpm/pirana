@@ -4748,6 +4748,8 @@ sub build_psn_run_command {
 	    }
 	}
 	$psn_command_line .= join(" ", @models);
+    } else {
+	$psn_command_line = update_psn_run_command (\$psn_command_line, "-model", $model.".".$setting{ext_ctl}, 1, %ssh, %clusters);
     }
 
     my $ssh_add = "";
@@ -6166,7 +6168,11 @@ sub nmfe_run_window {
 		    $nmfe_run_command_out = "start ".$nmfe_run_command ;
 		} else {
 		    if ($setting{quit_shell}==0) { # don't close terminal window after completion
-			$nmfe_run_command_out .= ';read -n1';
+			if ($setting{terminal} =~ m/gnome-terminal/) { # for gnome-terminal
+			    $nmfe_run_command_out .= '|less';		   
+			} else { # this works for xterm and maybe some other terminals
+			    $nmfe_run_command_out .= ';read -n1';
+			}
 		    }
 		    $nmfe_run_command_out = $setting{terminal}.' -e "'.$nmfe_run_command_out.'" &';
 		}

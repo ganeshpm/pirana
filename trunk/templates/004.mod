@@ -34,7 +34,7 @@ $OMEGA
 (0.2) ; KA
 
 $SIGMA
-(0.2) ; Additinoal error
+(0.2) ; Additive error
 
 $EST METHOD=1 INTER MAXEVAL=2000 NOABORT SIG=3 PRINT=1 POSTHOC
 $COV

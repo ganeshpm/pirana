@@ -28,7 +28,7 @@ $OMEGA BLOCK(2)
 (0.2) ; iiv V
 
 $SIGMA
-(0.2) ; Additional error
+(0.2) ; Additive error
 
 $EST METHOD=1 INTER MAXEVAL=2000 NOABORT SIG=3 PRINT=1 POSTHOC
 $COV
