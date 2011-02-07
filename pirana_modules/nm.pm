@@ -814,6 +814,11 @@ sub duplicate_model {
   print CTL_OUT "; Duplicated from: ".$runno."\n";
   if (@ctl_new[0] =~ m/Model desc/i) {shift @ctl_new};
   if (@ctl_new[0] =~ m/Ref\. model/i) {shift @ctl_new};
+  unless ($^O =~ m/MSWin/) {
+      foreach (@ctl_new) {
+	  $_ =~ s/\r\n$/\n/;
+      }  
+  }
   print CTL_OUT @ctl_new;
   close CTL_OUT;
 }
