@@ -8,7 +8,28 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub time_format {
+# convert time in seconds to human readable format (string)
+    my $t = shift;
+    my $days = int (($t / (24*3600)));
+    my $hrs  = int (($t / 3600)) - ($days*24);
+    my $min  = int ($t / 60) - ($days*24*60) - ($hrs*60);
+    my $sec  = int $t - ($days*24*3600) - ($hrs*3600) - $min*60;
+    my $dur;
+    if ($days > 0 ) {
+	$dur .= $days."d:";
+    }
+    if ($hrs > 0 ) {
+	$dur .= $hrs."h:";
+    } 
+    if ($min > 0 ) {
+	$dur .= $min."m:";
+    } 
+    $dur .= $sec."s";
+    return ($dur);
+}
 
 sub rm_spaces {
 # Remove leading and trailing spaces and \n

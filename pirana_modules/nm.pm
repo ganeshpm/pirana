@@ -7,7 +7,7 @@ require Exporter;
 use Cwd;
 use File::stat;
 use Time::localtime;
-use pirana_modules::misc qw(block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
+use pirana_modules::misc qw(time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
@@ -374,30 +374,31 @@ sub get_estimates_from_lst {
   close (LST);
   my $l_prev = ""; my $est_method = "NA";
   my @text; my $i=0;
-  my $est_area = 0; my $se_area = 0; my $term_area = 0;
+  my $est_area = 0; my $se_area = 0; my $term_area = 0; my $gradient_area;
+  my $eigen_area; my $e = 0; my @eig; my %cond_nr;
   my @term_text; my @est_text; my %ofvs;
   my %estimates; my %se_estimates;
   my %term_res; # results from #TERM section
   my @methods;
   my %cov_mat;
-  my $est_method;
   my %est_times;
   my @times;
   my %bnd; $i=0;
   my $nm6 = 1; # Assume NM6
   my $count_est_methods = 1;
+  my %grad_zero;
+  my $est_method = "#1 First Order"; # assume first order (For NM5/6, if FO, this is not mentioned in the output file!)
   foreach my $line (@lst) {
       if ($line =~ m/NONLINEAR MIXED EFFECTS MODEL PROGRAM \(NONMEM\) VERSION 7/) {
-	  $nm6 = 0;
-      }
+	  $nm6 = 0; #nm version 5 or 6 assumed
+      } 
       # Determine estimation method
-      if ($line =~ m/#METH\:/) {
+      if ($line =~ m/\#METH\:/) {
 	  $est_method = "#".$count_est_methods." ".clean_estim_method($line);
 	  $cov_mat{$est_method} = "N";
 	  $bnd{$est_method} = "N";
 	  $count_est_methods++;
       }
-      if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/NO/)) { $est_method = "#".$count_est_methods." First Order"; $count_est_methods++; }
       if (($nm6 == 1)&&($line =~ m/CONDITIONAL ESTIMATES USED/)&&($line=~m/YES/)) { $est_method = "#".$count_est_methods." First Order Conditional Estimation"; $count_est_methods++; }
       if (($nm6 == 1)&&($line =~ m/LAPLACIAN OBJ. FUNC./)&&($line=~m/YES/)) { $est_method = "#".$count_est_methods." Laplacian Conditional Estimation"; $count_est_methods++; }
       if (($nm6 == 1)&&($line =~ m/EPS-ETA INTERACTION/)&&($line=~m/YES/)) { $est_method .= "#".$count_est_methods." With Interaction"; $count_est_methods++;}
@@ -434,13 +435,52 @@ sub get_estimates_from_lst {
       if ($line =~ m/Elapsed estimation time in seconds:/) {
 	  $line = $';
 	  @times[0] = $line;
-          @times[0] =~ s/\s//g;;
+          @times[0] =~ s/\s//g;
       }
       if ($line =~ m/Elapsed covariance time in seconds:/) {
 	  $line = $';
 	  @times[1] = $line;
-          @times[1] =~ s/\s//g;;
+          @times[1] =~ s/\s//g;
       }
+      if ($line =~ m/EIGENVALUES/) {
+	  $eigen_area = 1;
+	  $e=0;
+      }
+      if (($eigen_area == 1)&&(substr($line,0,1) eq "1")) {
+	  $eigen_area = 0;
+	  if (@eig[0] != 0) {
+	      $cond_nr{$est_method} = @eig[(@eig-1)]/@eig[0];
+	  }
+      }
+      if ($eigen_area == 1) {
+	  $e++;
+	  if (($e>7)&&($e<11)) {
+	      push (@eig, extract_th($line));
+	  }
+      }
+      # get gradients: check if some gradient is 0.
+      if ($line =~ m/GRADIENT/) { $gradient_area = 1; }
+      if ($gradient_area == 1) {
+	 unless (($line =~ m/GRADIENT/)||(substr($line,0,6) eq "      ")) {
+	     $gradient_area = 0;
+	 };
+      }
+      if ($gradient_area == 1) {
+	  $line =~ s/GRADIENT:// ;
+	  my @gradients;
+	  my @gradients_line = split(" ",$line);
+	  foreach (@gradients_line) {
+	      if ($_ ne "") {
+		  chomp($_);
+		  $_ =~ s/\s//g;
+		  push(@gradients, rnd($_,6));
+	      }
+	  }
+	  foreach my $grad (@gradients) {
+	      if ($grad == 0) {$grad_zero{$est_method} = 1}
+	  }
+      }
+
       if ($line =~ m/NEAR ITS BOUNDARY/) {$bnd{$est_method}="Y"};
       if ((substr($line,0,1) eq "1")||(($i+1) == @lst)) {
 	  # if (($est_area==1)&&(!((@lst[$i+4] =~ m/STANDARD ERROR OF ESTIMATE/)||(@lst[$i+3] =~ m/STANDARD ERROR OF ESTIMATE/)))){ # no SE errors
@@ -473,7 +513,7 @@ sub get_estimates_from_lst {
       $i++;
       $est_times{$est_method} = \@times;
   }
-  return (\@methods, \%estimates, \%se_estimates, \%term_res, \%ofvs, \%cov_mat, \%est_times, \%bnd);
+  return (\@methods, \%estimates, \%se_estimates, \%term_res, \%ofvs, \%cov_mat, \%est_times, \%bnd, \%grad_zero, \%cond_nr);
 }
 
 sub get_term_results_from_text {
@@ -974,6 +1014,7 @@ sub extract_from_lst {
   open (LST, "<".$file);
   my @lst = <LST>;
   my $th_area; my $om_area; my $si_area; my $se_area; my $minim_area; my $bnd_area; my $etabar_area;
+  my $obs_rec; my $tot_id; my $nm_ver;
   my $eigen_area; my @etabar; my @etabar_se; my @etabar_p; my $minim_text;
   my @th; my @om; my @si; my @th_se; my @om_se; my @si_se; my @eig; my $e;
   my %all; my $feval; my $sig; my @bnd_low; my @bnd_up; my @bnd_th; my @th_init;
@@ -1024,6 +1065,15 @@ sub extract_from_lst {
       push (@bnd_up, @bnd_th[2]);
       if (substr($line,0,1) eq "0") {$bnd_area=0}
     }
+    if ($line =~ m/TOT. NO. OF OBS RECS:/) {
+        $obs_rec = rm_spaces($'); 
+    }
+    if ($line =~ m/TOT. NO. OF INDIVIDUALS:/) {
+        $tot_id = rm_spaces($');
+    }
+    if ($line =~ m/1NONLINEAR MIXED EFFECTS MODEL PROGRAM \(NONMEM\)/) {
+        $nm_ver = rm_spaces($'); 
+    }
     if ($line =~ m/LOWER BOUND/){
       $bnd_area =1;
     }
@@ -1040,16 +1090,6 @@ sub extract_from_lst {
     if (($minim_area==1)&&(substr($line,0,1) eq "1")) {$minim_area=0};
     if ($minim_area==1) {$minim_text .= $line."\n<BR>"};
 
-    if ($line =~ m/EIGENVALUES/) {
-      $eigen_area = 1;
-      $e=0;
-    }
-    if ($eigen_area == 1) {
-      $e++;
-      if (($e>7)&&($e<11)) {
-        push (@eig, extract_th($line));
-      }
-    }
     $j++;
   }
   close LST;
@@ -1057,11 +1097,11 @@ sub extract_from_lst {
   $all{theta_init} = \@th_init;
   $all{theta_bnd_low} = \@bnd_low;
   $all{theta_bnd_up} = \@bnd_up;
+  $all{nm_ver} = $nm_ver;
   $all{minim_text} = $minim_text;
+  $all{obs_rec} = $obs_rec;
+  $all{tot_id} = $tot_id;
   @eig = sort { $a <=> $b } @eig;
-  if (@eig[0] != 0) {
-    $all{cond_nr} = @eig[-1]/@eig[0];
-  }
   $all{etabar} = \@etabar;
   $all{etabar_se} = \@etabar_se;
   $all{etabar_p} = \@etabar_p;
@@ -1102,11 +1142,15 @@ sub output_results_HTML {
   print HTML "</STYLE></HEAD><BODY>&nbsp;<BR>\n";
   print HTML "<TABLE border=0 cellpadding=2 cellspacing=0 CLASS='stats' width=600>\n";
   print HTML "<TR><TD bgcolor='#550000' colspan=3><B><FONT color='#FFFFFF'>Run statistics:</FONT></B></TD></TR>\n";
-  print HTML "<TR><TD>Run number</TD><TD><FONT FACE=verdana,arial size=2 color='darkred'><B>".$mod{mod}."</B></FONT></TD></TR>\n";
+  print HTML "<TR><TD width=200>Run number</TD><TD><FONT FACE=verdana,arial size=2 color='darkred'><B>".$mod{mod}."</B></FONT></TD></TR>\n";
   print HTML "<TR><TD>Nonmem output file</TD><TD><A href='".$file."'>".$file."</A></TD><TD></TD></TR>\n";
   if ($include_html{basic_run_info} == 1 ) {
       print HTML "<TR><TD>Reference model</TD><TD><FONT FACE=verdana,arial size=2>".$mod{refmod}."</FONT></TD></TR>\n";
       print HTML "<TR><TD>Description</TD><TD><FONT FACE=verdana,arial size=2>".$mod{description}."</FONT></TD></TR>\n";
+      print HTML "<TR><TD>NONMEM version:</TD><TD><FONT FACE=verdana,arial size=2>".$res{nm_ver}."</FONT></TD></TR>\n";
+      print HTML "<TR><TD>Dataset</TD><TD><FONT FACE=verdana,arial size=2>".$mod{dataset}."</FONT></TD></TR>\n";
+      print HTML "<TR><TD># Individuals</TD><TD><FONT FACE=verdana,arial size=2>".$res{tot_id}."</FONT></TD></TR>\n";
+      print HTML "<TR><TD># Observation records</TD><TD><FONT FACE=verdana,arial size=2>".$res{obs_rec}."</FONT></TD></TR>\n";
       print HTML "<TR><TD>Output file date</TD><TD>".($year+1900)."-".($mon+1)."-".$mday.", $hour:$min:$sec</TD><TD></TD></TR>\n";
       print HTML "<TR><TD valign=top>Table files:</TD><TD>";
       my $tables_ref = $mod{tab_files};
@@ -1145,7 +1189,7 @@ sub output_results_HTML {
 
 # Estimation specific info and Parameter estimates
   if (($include_html{param_est_all} == 1) || ($include_html{param_est_last}==1) ) {
-      my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofvs_ref) = get_estimates_from_lst ($file);
+      my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofvs_ref, $cov_mat_ref, $est_times_ref, $bnd_ref, $grad_zero_ref, $cond_nr_ref) = get_estimates_from_lst ($file);
       my @methods = @$methods_ref;
       if ($include_html{param_est_last} == 1) {
 	  @methods = @methods[(@methods-1)];
@@ -1155,6 +1199,11 @@ sub output_results_HTML {
       my %term_res = %$term_ref;
       my %ofvs = %$ofvs_ref;
       my $meth_descr;
+      my %cov_mat = %$cov_mat_ref;
+      my %est_times = %$est_times_ref;
+      my %bnd = %$bnd_ref;
+      my %grad_zero = %$grad_zero_ref;
+      my %cond_nr = %$cond_nr_ref;
       foreach my $meth (@methods) {
 	  if ($meth eq "NA") {
 	      $meth_descr = $mod{method}  # NM 6
@@ -1163,8 +1212,8 @@ sub output_results_HTML {
 	  }
 #	  print $meth.$est{$meth}."\n";
 	  print HTML "<TABLE width=600 border=0 cellpadding=2 cellspacing=0 CLASS='theta'>\n";
-	  print HTML "<TR bgcolor='#000055'><TD colspan=9><B><FONT color='#FFFFFF'>".$meth_descr."</FONT></B></TD></TR>";
-	  generate_HTML_run_specific_info (\%res, \%mod, $term_res{$meth}, $ofvs{$meth});
+	  print HTML "<TR bgcolor='#000055'><TD colspan=2><B><FONT color='#FFFFFF'>".$meth_descr."</FONT></B></TD></TR>";
+	  generate_HTML_run_specific_info ($meth, \%res, \%mod, $term_res{$meth}, $ofvs{$meth}, $est_times{$meth}, $bnd{$meth}, $grad_zero{$meth}, $cond_nr{$meth});
 	  generate_HTML_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
       }
   print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements<BR>";
@@ -1179,20 +1228,50 @@ sub output_results_HTML {
 }
 
 sub generate_HTML_run_specific_info {
-  my ($res_ref, $mod_ref, $term_ref, $ofv) = @_;
+  my ($meth, $res_ref, $mod_ref, $term_ref, $ofv, $est_time_ref, $bnd, $grad_zero, $cond_nr) = @_;
   my %res = %$res_ref;
   my %mod = %$mod_ref;
   my @term;
+  my @times = @$est_time_ref;
   if ($term_ref =~ m/ARRAY/) {
       my @term = @$term_ref;
   }
   my $term_message_ref = @term[5];
   $$term_message_ref =~ s/\n/\<BR\>/g;
-  print HTML "<TR><TD colspan=2>Objective function value:</TD><TD colspan=5>".$ofv."</TD></TR>";
-  print HTML "<TR><TD colspan=2 valign='top'>Termination message:</TD><TD colspan=5>".$$term_message_ref."</TD></TR>";
-  print HTML "<TR><TD colspan=2></TD><TD colspan=5></TD></TR>";
+  print HTML "<TR><TD colspan=1 width=200>Objective function value:</TD><TD colspan=1>".$ofv."</TD></TR>";
+  print HTML "<TR><TD colspan=1 valign='top'>Termination message:</TD><TD colspan=1>".$$term_message_ref."</TD></TR>";
+  if (@times[0] != 0) {
+      my $dur = time_format (@times[0]);
+      print HTML "<TR><TD colspan=1 valign='top'>Estimation time:</TD><TD colspan=1>".$dur."</TD></TR>";
+  }
+  if (@times[1] ne "") {
+      my $dur_cov = time_format (@times[1]);
+      print HTML "<TR><TD colspan=1 valign='top'>Covariance step time:</TD><TD colspan=1>".$dur_cov."</TD></TR>";
+  }
+  print HTML "<TR><TD colspan=1 valign='top'>Checks:</TD><TD>" ;
+  if ($bnd eq "Y") {
+      print HTML "<FONT color='#770000'><B>Boundary problem reported by NONMEM!</B><FONT></TD></TR>";
+  } else {
+      print HTML "<FONT color='#007700'>No boundary problems reported by NONMEM</FONT></TD></TR>";
+  }
+  if (($meth =~ m/first order/i )||($meth =~ m/cond/i)) { # FO or FOCE methods
+      if ($grad_zero == 1) {
+	  print HTML "<TR><TD colspan=1 valign='top'></TD><TD><FONT color='#770000'><B>Zero gradients encountered during estimation!</B></FONT></TD></TR>";
+      } else {
+	  print HTML "<TR><TD colspan=1 valign='top'></TD><TD><FONT color='#007700'>All gradients non-zero during estimation</FONT></TD></TR>";
+      }
+      # for gradient methods, also print cond.number when available
+      print HTML "<TR><TD colspan=1 valign='top'>Condition number:</TD><TD colspan=1>";
+      if ($cond_nr eq "") {
+	  print HTML "NA";
+      } else {
+	  print HTML rnd($cond_nr,2)
+      }
+      print HTML "</TD></TR>\n";
+  }
+  print HTML "<TR><TD colspan=1></TD><TD colspan=1></TD></TR>";
   if ($mod{msf_file} ne "") {
-      print HTML "<TR><TD colspan=2>MSF file:</TD><TD colspan=5>";
+      print HTML "<TR><TD colspan=1>MSF file:</TD><TD colspan=1>";
       print HTML $mod{msf_file};
       print HTML "</TD></TR>\n";
   }
