@@ -46,9 +46,9 @@ sub create_output_summary_csv {
 	    my @time = @{localtime($mtime)};
 	    $model_date = sprintf ("%4d-%02d-%02d %02d:%02d:%02d", @time[5]+1900,@time[4]+1,@time[3],@time[2],@time[1],@time[0]);
 	}
-	my $mtime; my $res_date;
+	my $res_date;
 	if (-e $file) {
-	    my $mtime = localtime(stat($file)->mtime);
+	    $mtime = localtime(stat($file)->mtime);
 	    my @time = @{localtime($mtime)};
 	    $res_date = sprintf ("%4d-%02d-%02d %02d:%02d:%02d", @time[5]+1900,@time[4]+1,@time[3],@time[2],@time[1],@time[0]);
 	}
