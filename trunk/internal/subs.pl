@@ -4791,7 +4791,7 @@ sub build_psn_run_command {
 	}
     }
     $psn_command_line = $ssh_add.$psn_command_line.$ssh_add2 ;
-    print $psn_command_line."\n";
+#    print $psn_command_line."\n";
     return( $psn_command_line );
 }
 
