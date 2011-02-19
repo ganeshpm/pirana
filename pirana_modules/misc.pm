@@ -416,13 +416,7 @@ sub linux_start {
 }
 sub darwin_start {
     my $curr_dir = cwd();
-  #  @_[0] =~ s/\s/\\ /g;
-    if (-e @_[0]) {
-#	print (@_[0]." ".@_[1]." &");
-	system (@_[0]." ".@_[1]." &");
-    } else {
-	system ("open -a '".@_[1]."' &");
-    }
+    system ("open -a '".@_[0]."' ".@_[1]." &");
 }
 
 sub start_command {
