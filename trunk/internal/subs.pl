@@ -3382,6 +3382,7 @@ sub initialize {
     %project_dir = %$project_dir_ref; %project_descr = %$project_descr_ref;
     $pr_dir_err=0;
     while(($key, $value) = each(%project_dir)) {
+	rm_spaces ($value);
 	unless (-d $value) {$pr_dir_err++; print LOG "Error: folder for project ".$value." not found!\n"};
     }
     unless ($pr_dir_err==0) {print LOG $pr_dir_err." project(s) not found. Check projects.ini!\n"; close LOG;

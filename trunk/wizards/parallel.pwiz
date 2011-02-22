@@ -52,7 +52,7 @@
 [S] Communication
 
 [Q] [transfer_type] Transfer type 
-[O] [transfer_type, ("0 (MPI): Use MPICH communication", "1 (FPI): Use file transfer ")] 0 [/O]
+[O] [transfer_type, ("0 (MPI): Use MPICH communication", "1 (FPI): Use file transfer")] 0 [/O]
 [/Q]
 
 [/S]
@@ -69,33 +69,35 @@
 
 [OUT] ; Starts output
 $GENERAL
-NODES=[[n_nodes]] PARSE_TYPE=[[parse_type,1]] TIMEOUTI=20 TIMEOUT=500 PARAPRINT=[[paraprint]] TRANSFER_TYPE=[[transfer_type]]
+NODES=[[n_nodes_use]] PARSE_TYPE=[[parse_type,1]] TIMEOUTI=20 TIMEOUT=500 PARAPRINT=1 TRANSFER_TYPE=[[transfer_type,1]]
 
 ;THE EXCLUDE/INCLUDE may be used to selectively use certain nodes, out of a large list.
 ;$EXCLUDE 5-7 ; exclude nodes 5-7
 ;$EXCLUDE ALL 
 ;$INCLUDE 1,4-6
 
-[IF,transfer_type,MPI]
-[/IF]
-[IF,transfer_type,FPI]
-[/IF]
+[[IF,transfer_type,0]]
+Implement MPI
+[[/IF]]
+[[IF,transfer_type,1]]   ; If-block, implemented if the first character of <transfer_type> is "1"
+Implement FPI
+[[/IF]]
 
 $NAMES ; Worker names 
 1:MANAGER
-[LOOP, 2:n_nodes] ; Use [[%i]] as counter
+[[LOOP, 2:n_nodes_use]] ; Use [[%i]] as counter
 [[%i]]:WORKER[[%i]] 
-[/LOOP]
+[[/LOOP]]
 
 $COMMANDS ; command line for each node
 1:NONE
-[LOOP, 2:n_nodes] 
+[[LOOP, 2:n_nodes_use]] 
 [[%i]]:./beolaunch.sh worker[[%i]]/ ./nonmem model_file [[lic_file]] >worker[[%i]].out 
-[/LOOP]
+[[/LOOP]]
 
-[IF,os,linux] ; Files need to be touched on Linux
+[[IF,transfer_type,1]] ; Files need to be touched on Linux
 $CONTROL
-[LOOP, 2:n_nodes] 
+[[LOOP, 2:n_nodes_use]] 
 [[%i]]: MTOUCH=1 WSlEEP=1 WTOUCH=0 MSLEEP=0
-[/LOOP]
-[/IF]
+[[/LOOP]]
+[[/IF]]

@@ -2,6 +2,7 @@ use Tk;
 use Cwd;
 use Text::ParseWords;
 
+my @args = ("linux", "/opt/NONMEM/nmvi");
 my $variables_ref = wizard_read_pwiz_file ("parallel.pwiz", \@args);
 my %var = %$variables_ref;
 our $mw = MainWindow -> new (-title => "Pirana wizard: ".$var{wiz_type}, -background=>$bgcol);
@@ -22,8 +23,8 @@ our $font_fixed = $font_fixed_family.' '.$setting{font_size};
 our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 my $base_dir = "~/svn/pirana";
 
-my @args = ("linux", "/opt/NONMEM/nmvi");
 wizard_build_dialog ($mw, $variables_ref);
+# wizard_write_outputfile ($variables_ref);
 $mw -> raise;
 
 MainLoop();
@@ -50,8 +51,10 @@ sub clean_string {
 
 sub get_key {
     my $line = shift;
-    $line =~ m/\[(.*?)\]/i; 
-    return ($1);
+    $line =~ m/\[(.*?)\]/i;
+    my ($key, $rest) = split (",", $line);
+    $key = clean_string($key);
+    return ($key);
 }
 
 sub wizard_read_pwiz_file {
@@ -59,8 +62,8 @@ sub wizard_read_pwiz_file {
     open (WIZ, "<".$wiz_file);
     my @lines = <WIZ>;
     close WIZ;
-    my $s_area; my $q_area; my $screen_name; my $wiz_area = 0;
-    my @screens; my %wiz_variables; my $q_key;
+    my $s_area; my $q_area; my $screen_name; my $wiz_area = 0; my $out_area = 0;
+    my @screens; my %wiz_variables; my $q_key; my @out_text = ();
     my %questions; our @question_keys; my %screen_questions;
     my @answer_keys; my @answers; my %question_answers; my %answer_defaults; 
     my %optionmenu_options;
@@ -124,6 +127,15 @@ sub wizard_read_pwiz_file {
 	    @question_keys = ();
 	    $s_area = 0
 	}
+	if (substr($line,0,6) =~ m/\[\/OUT\]/i) {
+	    $out_area = 0;
+	}
+	if ($out_area == 1) {
+	    push (@out_text, $line);
+	}
+	if (substr($line,0,5) =~ m/\[OUT\]/i) {
+	    $out_area = 1;
+	}
     }
     $wiz_variables{screens} = \@screens;
     $wiz_variables{screen_questions} = \%screen_questions;
@@ -136,6 +148,7 @@ sub wizard_read_pwiz_file {
     $wiz_variables{answer_defaults} = \%answer_defaults;
     $wiz_variables{optionmenu_options} = \%optionmenu_options;
     $wiz_variables{total_screens} = int(@screens);
+    $wiz_variables{out_text} = \@out_text;
     return (\%wiz_variables)
 }
 
@@ -154,6 +167,7 @@ sub wizard_build_dialog {
     my %answer_widths = %{$var{answer_widths}};
     my %answer_defaults = %{$var{answer_defaults}};
     my %optionmenu_options = %{$var{optionmenu_options}};
+    my $out_text_ref = $var{out_text};
 
     # create new hashes to collect the information entered
     my %entry_values = %$entry_values_ref;
@@ -184,7 +198,7 @@ sub wizard_build_dialog {
 	foreach my $a (@curr_answers) {
 	    $entry_values{$a} = $answer_defaults{$a};
 	    unless ($answer_widths{$a} eq "") { # test, if no value here, than the key does not refer to an entry
-		$frame -> Entry (-width=> $answer_widths{$a}, -font=>$font_normal, -textvariable => $entry_values{$a}, -border=>$bbw, -background=>$white
+		$frame -> Entry (-width=> $answer_widths{$a}, -font=>$font_normal, -textvariable => \$entry_values{$a}, -border=>$bbw, -background=>$white
 		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw");	       
 	    };
 	    unless ($optionmenu_options{$a} eq "") { # test, if options specified, implement optionmenu
@@ -210,6 +224,20 @@ sub wizard_build_dialog {
 	wizard_build_dialog($window, \%var, \%entry_values);
     }) -> grid(-row=>1, -column=>2,-sticky=>"nwse"); 
     my $finish_button = $button_frame -> Button (-text=> "Finish", -background => $bgcol, -font=>$font_normal, -state=>'disabled', -command => sub {
+	my @keys = keys(%entry_values);
+	my %values;
+	foreach my $a (@keys) {
+	    unless ($answer_widths{$a} eq "") {
+#		print $a. " = " .$entry_values{$a}."\n";
+		$values{$a} = $entry_values{$a};
+	    }
+	    unless ($optionmenu_options{$a} eq "") {
+		my @opt = quotewords(",", 0, $optionmenu_options{$a});
+#		print $a. " => ". @opt[$entry_values{$a}] ."\n";
+		$values{$a} = @opt[$entry_values{$a}];
+	    }
+	}
+	wizard_write_output ($out_text_ref, \%values);
 	$mw -> destroy();
     }) -> grid(-row=>1, -column=>3,-sticky=>"nwse"); 
     if ($var{i_screen} == 0) {
@@ -219,12 +247,114 @@ sub wizard_build_dialog {
 	$finish_button -> configure (-state=>'normal');
 	$next_button -> configure (-state=>'disabled');
     }
-    wizard_write_output(\%var);
     return(1);
 }
 
+
 sub wizard_write_output {
-    my $variables_ref = shift;
-    my %var = %$variables_ref;
+    my ($out_text_ref, $values_ref)  = @_;
+    my @out_text = @$out_text_ref;
+    my @all = ();
+    my $all_ref = parse_lines ($out_text_ref, $values_ref);
+    print @$all_ref;
+    open (OUT, ">out.txt" ); 
+    my @lines;
+    close OUT;
+    
     return(1);
+}
+
+sub parse_lines {
+    # this is done in a subroutine to be able to make it recursive 
+    my ($text_ref, $values_ref) = @_;
+    my @text = @$text_ref; my %values = %$values_ref; my $n;
+    my $if_area = 0; my @if_text; my $if_key = ""; my $if_print = 0;
+    my $for_area = 0; my @for_text; my $for_start; my $for_stop; my $i;
+    my @all;
+    foreach my $line (@text) {
+	my $skip_line = 0;
+
+	# parse if-routines
+	if ($line =~ m/\[\[\/IF/i) { 
+	    $skip_line = 1;
+	    if ($if_print == 1) { 
+		my $if_ref = parse_lines (\@if_text, $values_ref);
+		push (@all, @$if_ref) 
+	    }; 
+	    $if_print = 0;
+	    $if_area = 0; 
+	}
+	if ($if_area == 1) {
+	    $skip_line = 1;
+	}	
+	if ($if_print == 1) {
+	    push (@if_text, $line);	
+	}
+	if ($line =~ m/\[\[IF(.*?)\]\]/i) {
+	    $skip_line = 1;
+	    @if_text = ();
+	    my $newline = clean_string ($1);
+	    my ($if_str, $if_key, $if_answer, $rest) = split (",", $newline);
+	    my $answer = rm_spaces($if_answer);
+	    my $l = length($answer);
+	    my $value = substr(rm_spaces($values{$if_key}),0,$l);
+ 	    $if_area = 1;
+	    $if_print = 0;
+	    if ($value eq $answer) {
+		$if_print = 1;
+	    } 
+	}	
+
+	# parse for-routines
+ 	if ($line =~ m/\[\[\/LOOP/i) { 
+	    $skip_line = 1;
+	    $for_area = 0;
+	    for ($i = $for_start; $i <= $for_stop; $i++) {
+		my @for_text_copy = @for_text;
+		foreach my $text (@for_text_copy) {
+		    $text =~ s/\[\[\%i\]\]/$i/g;
+		}
+		my $for_ref = parse_lines(\@for_text_copy, $values_ref); 
+		push (@all, @$for_ref);
+	    }
+	}
+	if (($if_area == 0)&&($for_area == 1)) {
+	    $skip_line = 1;
+	    push (@for_text, $line);
+	}
+	if ($line =~ m/\[\[LOOP(.*?)\]\]/i) {
+	    $skip_line = 1;
+	    $for_area = 1;
+	    @for_text = ();
+	    my $text = $1;
+	    $text =~ s/LOOP//i;
+	    $text =~ s/\,//;
+	    ($for_start, $for_stop) = split ("\:",rm_spaces($text));
+	    unless ($for_start =~ /^(\d+)$/) {$for_start = rm_spaces($values{$for_start})}; 
+	    unless ($for_stop =~ /^(\d+)$/) {$for_stop = rm_spaces($values{$for_stop})};
+	}
+
+	# print to file
+	if ($skip_line == 0) {
+	    while ( $line =~ m/(\[\[(.*?)\]\])/ ) {
+		my $key = clean_string($1);
+		my $value;
+		if ($key =~ m/\,/) {
+		    ($key, $n) = split (",", $key);
+		    $value = substr(rm_spaces($values{$key}),0,$n);
+		} else {
+		    $value = rm_spaces($values{$key});
+		}
+		$line =~ s/(\[\[(.*?)\]\])/$value/;		
+	    };
+	    push(@all, $line);
+	}
+
+    }
+    return (\@all);
+}
+
+sub substitute_keys {
+    my ($line) = @_;
+    
 }
