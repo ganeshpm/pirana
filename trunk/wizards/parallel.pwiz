@@ -20,11 +20,17 @@
 ; [C] = Checkbox
 ; ##########################################################################
 
+
+; ##########################################################################
+; Note: some variables are required: output_file
+; Note: some variables are reserved: os
+; ##########################################################################
+
 [WIZ]
 [S] Basic information
 
-[Q] [filename] Filename for parallelization file: 
-[E] [filename, 40] nm.pnm [/E]
+[Q] [output_file] Filename for parallelization file: 
+[E] [output_file,40] nm.pnm [/E]
 [/Q]
 
 [/S]
@@ -44,7 +50,7 @@
 [/Q]
 
 [Q] [parse_num] Number of subjects for each node:\n(parse type 3 only) 
-[E] [parse_num, 3] 3
+[E] [parse_num,3] 3
 [/Q]
 
 [/S]
@@ -53,6 +59,10 @@
 
 [Q] [transfer_type] Transfer type 
 [O] [transfer_type, ("0 (MPI): Use MPICH communication", "1 (FPI): Use file transfer")] 0 [/O]
+[/Q]
+
+[Q] [dummy] Include dummy options:
+[C] [dummy,("Option 1","Option2","Option3")] (2,3) [/C]
 [/Q]
 
 [/S]
@@ -76,28 +86,31 @@ NODES=[[n_nodes_use]] PARSE_TYPE=[[parse_type,1]] TIMEOUTI=20 TIMEOUT=500 PARAPR
 ;$EXCLUDE ALL 
 ;$INCLUDE 1,4-6
 
-[[IF,transfer_type,0]]
+[IF,transfer_type,0]
 Implement MPI
-[[/IF]]
-[[IF,transfer_type,1]]   ; If-block, implemented if the first character of <transfer_type> is "1"
+[/IF]
+[IF,transfer_type,1]   ; If-block, implemented if the first character of <transfer_type> is "1"
 Implement FPI
-[[/IF]]
+[/IF]
 
 $NAMES ; Worker names 
 1:MANAGER
-[[LOOP, 2:n_nodes_use]] ; Use [[%i]] as counter
+[LOOP, 2:n_nodes_use] ; Use [[%i]] as counter
 [[%i]]:WORKER[[%i]] 
-[[/LOOP]]
+[/LOOP]
 
 $COMMANDS ; command line for each node
 1:NONE
-[[LOOP, 2:n_nodes_use]] 
+[LOOP, 2:n_nodes_use] 
 [[%i]]:./beolaunch.sh worker[[%i]]/ ./nonmem model_file [[lic_file]] >worker[[%i]].out 
-[[/LOOP]]
+[/LOOP]
 
-[[IF,transfer_type,1]] ; Files need to be touched on Linux
+[IF,transfer_type,1] ; Files need to be touched on Linux
 $CONTROL
-[[LOOP, 2:n_nodes_use]] 
+[LOOP, 2:n_nodes_use]] 
 [[%i]]: MTOUCH=1 WSlEEP=1 WTOUCH=0 MSLEEP=0
-[[/LOOP]]
-[[/IF]]
+[/LOOP]]
+[/IF]
+
+[[dummy_2]]
+[[output_file]]

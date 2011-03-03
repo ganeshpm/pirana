@@ -5,6 +5,7 @@ use Text::ParseWords;
 my @args = ("linux", "/opt/NONMEM/nmvi");
 my $variables_ref = wizard_read_pwiz_file ("parallel.pwiz", \@args);
 my %var = %$variables_ref;
+
 our $mw = MainWindow -> new (-title => "Pirana wizard: ".$var{wiz_type}, -background=>$bgcol);
 our $bgcol          = "#efebe7";
 our $button         = "#dad7d3";
@@ -24,7 +25,6 @@ our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 my $base_dir = "~/svn/pirana";
 
 wizard_build_dialog ($mw, $variables_ref);
-# wizard_write_outputfile ($variables_ref);
 $mw -> raise;
 
 MainLoop();
@@ -41,7 +41,7 @@ sub rm_spaces {
 sub clean_string {
     my $str = shift;
     $str = rm_spaces($str);
-    $str =~ s/\/(E|O|A|Q|S)//g; 
+    $str =~ s/\/(E|O|A|Q|S|C)//g; 
     $str =~ s/\[//g; 
     $str =~ s/\]//g;
     $str =~ s/\"//g;
@@ -66,7 +66,7 @@ sub wizard_read_pwiz_file {
     my @screens; my %wiz_variables; my $q_key; my @out_text = ();
     my %questions; our @question_keys; my %screen_questions;
     my @answer_keys; my @answers; my %question_answers; my %answer_defaults; 
-    my %optionmenu_options;
+    my %optionmenu_options; my %checkboxes;
     foreach my $line (@lines) {
 	if (substr($line, 0, 5) =~ m/\[WIZ\]/i) {
 	    $wiz_area = 1;
@@ -92,10 +92,10 @@ sub wizard_read_pwiz_file {
 	    $questions{$q_key} = rm_spaces (@q[1]);
 	    push (@question_keys, $q_key);
 	}
-	if ((substr($line, 0, 3) =~ m/\[(E|O)\]/i)&&($wiz_area == 1)) {
+	if ((substr($line, 0, 3) =~ m/\[(E|O|C)\]/i)&&($wiz_area == 1)) {
 	    my $type = substr($line,0,3); # widget type to make (E/O)
 	    $type =~ s/(\[|\]|\s)//g;
-	    $line =~ s/\[(E|O)\]//i;
+	    $line =~ s/\[(E|O|C)\]//i;
 	    $line = rm_spaces($line);
 	    my $a_key = get_key ($line);
 	    my @l = split ("]", $line); # get key information
@@ -109,11 +109,31 @@ sub wizard_read_pwiz_file {
 		$answer_widths{$a_key} = rm_spaces ($width);
 	    }
 	    if ($type eq "O") { # Optionmenu	
-		my @a = split (",", @l[0]); # get key, extra info
+		@l[0] =~ s/(\(|\)|\[|\])//g;
+		my @a = quotewords (",", 0, @l[0]); # get key, extra info
 		$answers{$a_key} = rm_spaces (@a[0]);
 		shift(@a);
 		$optionmenu_options{$a_key} = rm_spaces(join (",", @a));
-		if (substr($optionmenu_options{$a_key},0,1) eq "(") { $optionmenu_options{$a_key} = substr($optionmenu_options{$a_key}, 1, -1) }
+	    }
+	    if ($type eq "C") { # Checkbox	
+		@l[0] =~ s/(\(|\)|\[|\])//g;
+		my @a = quotewords (",", 0, @l[0]); # get key, extra info
+		$answers{$a_key} = rm_spaces (@a[0]);
+		shift(@a);
+		$checkboxes{$a_key} = rm_spaces(join (",", @a));
+		# put answers in hash
+		$answer_defaults{$a_key} =~ m/\((.*?)\)/;
+		my @answ = split (",",$1);
+		my $j = 1;
+		foreach (@a) { # set defaults to 0
+		    my $key = $a_key . "_" . $j ;
+		    $answer_defaults{$key} = 0;
+		    $j++;
+		}
+		for (my $j = 0; $j <= length(@answ); $j++) { # put some checkboxes back on
+		    my $key = $a_key . "_" . @answ[$j];
+		    $answer_defaults{$key} = 1;		    
+		}
 	    }
 	}
 	if ((substr($line, 0, 4) =~ m/\[\/Q\]/i)&&($wiz_area == 1)) {
@@ -147,6 +167,7 @@ sub wizard_read_pwiz_file {
     $wiz_variables{answer_widths} = \%answer_widths;
     $wiz_variables{answer_defaults} = \%answer_defaults;
     $wiz_variables{optionmenu_options} = \%optionmenu_options;
+    $wiz_variables{checkboxes} = \%checkboxes;
     $wiz_variables{total_screens} = int(@screens);
     $wiz_variables{out_text} = \@out_text;
     return (\%wiz_variables)
@@ -167,6 +188,7 @@ sub wizard_build_dialog {
     my %answer_widths = %{$var{answer_widths}};
     my %answer_defaults = %{$var{answer_defaults}};
     my %optionmenu_options = %{$var{optionmenu_options}};
+    my %checkboxes = %{$var{checkboxes}};
     my $out_text_ref = $var{out_text};
 
     # create new hashes to collect the information entered
@@ -207,6 +229,21 @@ sub wizard_build_dialog {
 		my $optionmenu = $frame -> Optionmenu (-options => \@opt, -justify=>"left", -font=>$font_normal, -border=>$bbw
 		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw"); 
 		$optionmenu -> configure (-textvariable => \$opt[$entry_values{$a}]);
+	    }
+	    unless ($checkboxes{$a} eq "") { # test, if options specified, implement checkbox
+		my @chkboxes = quotewords (",", 0, $checkboxes{$a});
+		my %checkbox_checked;
+		my $j = 1;
+		foreach my $box (@chkboxes) {
+		    my $ref = $a."_".$j;
+		    $entry_values{$ref} = $answer_defaults{$ref};
+		    $frame ->  Checkbutton (-text => $box, -variable=> \$entry_values{$ref}, -font=>$font_normal, -justify=>"left", -background=>$bgcol, -border=>$bbw, -command => sub{
+			print $ref;		    
+                    }
+		    ) -> grid (-row=> (3+($i_row*2)+$j), -column=>2, -sticky => "nw");
+		    $j++;
+		}
+		$i_row = $i_row + $j;
 	    } 
 	}
 	$i_row++;
@@ -225,15 +262,10 @@ sub wizard_build_dialog {
     }) -> grid(-row=>1, -column=>2,-sticky=>"nwse"); 
     my $finish_button = $button_frame -> Button (-text=> "Finish", -background => $bgcol, -font=>$font_normal, -state=>'disabled', -command => sub {
 	my @keys = keys(%entry_values);
-	my %values;
+	my %values = %entry_values;
 	foreach my $a (@keys) {
-	    unless ($answer_widths{$a} eq "") {
-#		print $a. " = " .$entry_values{$a}."\n";
-		$values{$a} = $entry_values{$a};
-	    }
 	    unless ($optionmenu_options{$a} eq "") {
 		my @opt = quotewords(",", 0, $optionmenu_options{$a});
-#		print $a. " => ". @opt[$entry_values{$a}] ."\n";
 		$values{$a} = @opt[$entry_values{$a}];
 	    }
 	}
@@ -256,9 +288,11 @@ sub wizard_write_output {
     my @out_text = @$out_text_ref;
     my @all = ();
     my $all_ref = parse_lines ($out_text_ref, $values_ref);
+    my %values = %$values_ref;
+    my $output_file = $values{output_file};
+
+    open (OUT, ">".$output_file ); 
     print @$all_ref;
-    open (OUT, ">out.txt" ); 
-    my @lines;
     close OUT;
     
     return(1);
@@ -273,9 +307,8 @@ sub parse_lines {
     my @all;
     foreach my $line (@text) {
 	my $skip_line = 0;
-
 	# parse if-routines
-	if ($line =~ m/\[\[\/IF/i) { 
+	if ($line =~ m/\[\/IF/i) { 
 	    $skip_line = 1;
 	    if ($if_print == 1) { 
 		my $if_ref = parse_lines (\@if_text, $values_ref);
@@ -290,7 +323,7 @@ sub parse_lines {
 	if ($if_print == 1) {
 	    push (@if_text, $line);	
 	}
-	if ($line =~ m/\[\[IF(.*?)\]\]/i) {
+	if ($line =~ m/\[IF(.*?)\]/i) {
 	    $skip_line = 1;
 	    @if_text = ();
 	    my $newline = clean_string ($1);
@@ -306,7 +339,7 @@ sub parse_lines {
 	}	
 
 	# parse for-routines
- 	if ($line =~ m/\[\[\/LOOP/i) { 
+ 	if ($line =~ m/\[\/LOOP/i) { 
 	    $skip_line = 1;
 	    $for_area = 0;
 	    for ($i = $for_start; $i <= $for_stop; $i++) {
@@ -322,7 +355,7 @@ sub parse_lines {
 	    $skip_line = 1;
 	    push (@for_text, $line);
 	}
-	if ($line =~ m/\[\[LOOP(.*?)\]\]/i) {
+	if ($line =~ m/\[LOOP(.*?)\]/i) {
 	    $skip_line = 1;
 	    $for_area = 1;
 	    @for_text = ();
