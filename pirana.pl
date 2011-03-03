@@ -63,7 +63,7 @@ use POSIX qw(ceil floor);   # some basic functions
 use DBI;                    # database connection to sqlite
 
 #*** Some parameter initalisation **********************************************
-our $version = "2.3.3b";
+our $version = "2.4.0b";
 our $os      = $^O;
 if ($os =~ m/MSWin/i) {
   pirana_debug ($debug_mode, "3b. Loading Windows-based modules.");

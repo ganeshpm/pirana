@@ -40,15 +40,15 @@ sub create_output_summary_csv {
         $models_descr{$model} =~ s/,/;/g;
 	my $model_file = $model.".".$setting{ext_ctl};
 
-	my $mtime; my $model_date;
+        my $model_date;
 	if (-e $model_file) {
-	    $mtime = stat($model_file) -> mtime;
+	    my $mtime = stat($model_file) -> mtime;
 	    my @time = @{localtime($mtime)};
 	    $model_date = sprintf ("%4d-%02d-%02d %02d:%02d:%02d", @time[5]+1900,@time[4]+1,@time[3],@time[2],@time[1],@time[0]);
 	}
 	my $res_date;
 	if (-e $file) {
-	    $mtime = localtime(stat($file)->mtime);
+	    my $mtime = stat($file) -> mtime;
 	    my @time = @{localtime($mtime)};
 	    $res_date = sprintf ("%4d-%02d-%02d %02d:%02d:%02d", @time[5]+1900,@time[4]+1,@time[3],@time[2],@time[1],@time[0]);
 	}
