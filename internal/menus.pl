@@ -292,9 +292,16 @@ sub create_menu_bar {
  #   });
   $mbar_view -> command (-label => "    Show parameter estimates", -font=>$font,-image=>$gif{estim}, -compound=>'left', -background=>$bgcol, -command=>sub {
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
-        my $lst = @lst[0].".".$setting{ext_res};
-        show_estim_window ($lst);
+	if (int(@lst) > 1) { 
+	    show_estim_multiple (\@lst); 
+	} else {
+	    show_estim_window (\@lst);
+	}
         $estim_window -> raise();
+    });
+  $mbar_view -> command (-label => "    SGE monitor", -font=>$font,-image=>$gif{cluster}, -compound=>'left', -background=>$bgcol, -command=>sub {
+      sge_monitor_window();
+      $estim_window -> raise();
     });
   $mbar_view -> command (-label => "    Intermediate results of active runs", -font=>$font, -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol, -command=>sub {
     $cwd = $dir_entry -> get();

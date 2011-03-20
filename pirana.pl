@@ -227,18 +227,18 @@ our $font_fixed = $font_fixed_family.' '.$setting{font_size};
 our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
-$mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
+#$mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
 
-our $nrows = 24;
-if ($setting{n_rows} > 24) {
-  our $nrows = 24;
+our $nrows = 28;
+if ($setting{n_rows} > 28) {
+  our $nrows = 28;
 }
 our $models_hlist_width=112;
 our $help = $mw->Balloon();
 
 #*** Load Icons (from http://sourceforge.net/projects/icon-collection **********
 pirana_debug ($debug_mode, "9. Loading icons to memory.");
-our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>1,-column=>1, -columnspan=>1, -ipadx=>5,-ipady=>0,-sticky=>'nws', -rowspan=>1);
+our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>1,-column=>1, -rowspan=>2, -columnspan=>2, -ipadx=>5,-ipady=>0,-sticky=>'nws');
 chdir ($base_dir."/images");
 my @images = <*.gif>;
 chdir ($cwd);
