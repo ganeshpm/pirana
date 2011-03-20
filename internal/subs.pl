@@ -23,14 +23,60 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
+sub wizard_window {
+### Purpose : Wizard Dialog 
+### Compat  : W+L+
+    my $wizard_dialog = $mw -> Toplevel(-title=>'Wizards');
+    no_resize ($wizard_dialog);  
+    my $wizard_frame = $wizard_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+    center_window($wizard_dialog); # center after adding frame 
+    $wizard_frame -> Label (-text=>'Wizards: ',  -font=>$font_normal)-> grid(-column=>1, -row=>1,-sticky=>'ne');
+    my $wizard_listbox = $wizard_frame -> Scrolled('Listbox',
+        -selectmode => "single", -highlightthickness => 0,
+        -scrollbars => 'se', -width => 26, -height     => 6,
+        -border     => 1, -background => "#FFFFFF", -selectbackground => $pirana_orange,
+        -font       => $font_normal
+	)->grid(-column => 2, -columnspan=>2, -row => 1, -sticky=>'nswe', -ipady=>0);
+    my @wizards = dir( $base_dir."/wizards/", "pwiz");
+    my @wiz_descr;
+    foreach my $pwiz_file (@wizards) {
+	my $pwiz_descr = get_pwiz_description ($base_dir."/wizards/".$pwiz_file);
+	push (@wiz_descr, $pwiz_descr);
+    }
+    $wizard_listbox -> insert(0, @wiz_descr);
+    $wizard_frame -> Button (-text=>'Run wizard',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
+
+     }) -> grid(-row=> 3, -column=>3, -sticky=>"nwse");
+    $wizard_frame -> Button (-text=>'Cancel',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
+	$wizard_dialog -> destroy();
+     }) -> grid(-row=> 3, -column=>2, -sticky=>"nwse");
+
+}
+
+sub get_pwiz_description {
+    my $pwiz_file = shift;
+    open (WIZ, "<".$pwiz_file);
+    my @wiz_all = <WIZ>;
+    close WIZ;
+    my $descr;
+    foreach (@wiz_all) {
+	if ($_ =~ m/\[TYPE\]/) {
+	    $descr = $_;
+	    $descr =~ s/\[TYPE\]//;
+	    $descr =~ s/\[\/TYPE\]//;
+	}
+    }
+    return ($descr);
+}
+
 sub new_scm_file {
 ### Purpose : Dialog for creating a new scm config file
 ### Compat  : W+L+
     my $new_scm_name = shift;
     my $overwrite_bool=1;
-    $new_scm_dialog = $mw -> Toplevel(-title=>'New scm config file');
+    my $new_scm_dialog = $mw -> Toplevel(-title=>'New scm config file');
     no_resize ($new_scm_dialog);  
-    $new_scm_frame = $new_scm_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+    my $new_scm_frame = $new_scm_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
     center_window($new_scm_dialog); # center after adding frame (redhat)
     $new_scm_frame -> Label (-text=>'scm config file: ',  -font=>$font_normal)-> grid(-column=>1, -row=>1,-sticky=>'nse');
     $new_scm_frame -> Entry ( -background=>$white,-width=>10, -border=>2, -relief=>'groove', -textvariable=>\$new_scm_name)->grid(-column=>2,-row=>1, -sticky=>'w');
@@ -52,7 +98,6 @@ sub new_scm_file {
     $menu = $new_scm_frame -> Optionmenu(-options => [@templates_descr], -border=>$bbw,
 					 -variable=>\$template_chosen,-background=>$lightblue,-activebackground=>$darkblue,-foreground=>$white, -activeforeground=>$white, -justify=>'left', -border=>$bbw
         )-> grid(-column=>2,-row=>2);
-
     $new_scm_frame -> Button (-text=>'Create file',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
 	if (-e $cwd."/".$new_scm_name.".".$setting{ext_ctl}) {  # check if control stream already exists;
 	    $overwrite_bool = message_yesno ("SCM file with name ".$new_scm_name.".".$setting{ext_ctl}." already exists.\n Do you want to overwrite?", $mw, $bgcol, $font_normal);
@@ -183,8 +228,6 @@ sub retrieve_nm_help {
 	    my $write_to_db = 0;
 	    if (((@lines[$i] =~ m/\-\-\-\-/)||(@lines[$i] =~ m/____/))&&(@lines[($i+1)] =~ m/\|/)){
 		$write_to_db = 1;
-		$header_flag = 1;
-		$header = @lines[($i + 2)];
 	    }
 	    if ($write_to_db == 1) {
 		$nm_help =~ s/\"/\'/g;
@@ -197,6 +240,10 @@ sub retrieve_nm_help {
 		$nm_help = "";
 		$header = "";
     	    } 
+	    if (((@lines[$i] =~ m/\-\-\-\-/)||(@lines[$i] =~ m/____/))&&(@lines[($i+1)] =~ m/\|/)){
+		$header_flag = 1;
+		$header = @lines[($i + 2)];
+	    }
 	    if ($header_flag == 0) {
 		unless( $line =~ m/(\<HTML|\<BODY|\<PRE|\<\/BODY|\<I\>|\<\/I>|\<HR)/i  ) {
 		    $nm_help .= $line;
@@ -4948,7 +4995,7 @@ sub text_window_nm_help {
 	no_resize($text_window_keywords);
     }
 
-    my $text_no_help = "The NONMEM help files can be searched with this interface.\n\nThe help files first need to be imported into Pirana. Please go to:\n    Tools --> NONMEM --> Import / update NM help files" ;
+    my $text_no_help = "The NONMEM helpfiles can be searched with this interface.\n\nThe help files first need to be imported into Pirana. Please go to:\n    Tools --> NONMEM --> Import / update NM help files" ;
 
     my $text_window_keywords_frame = $text_window_keywords -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
     $text_window_keywords_frame -> Label (-text=> "Keyword:", -font=>$font_normal) -> grid(-row=>0, -column=>1, -sticky=>"nw");
@@ -4973,31 +5020,35 @@ sub text_window_nm_help {
 	my @nm = values (%nm_dirs);
 	$keywords_list -> bind('<Button>', sub{
 	    my @x_sel = $keywords_list -> curselection;
-	    my $keyword = ($keywords_list -> get (@x_sel[0]));
-	    my $nm_help_text_ref = get_nm_help_text ($doc_loc, $keyword);
-	    my $nm_help_text = $$nm_help_text_ref;
-	    $text_text -> delete("0.0", "end");
-	    $text_text -> insert("0.0", $nm_help_text);
-	    $nm_help_filename -> configure (-text => $keyword);
-			       });
+	    if (@x_sel >0) {
+		my $keyword = ($keywords_list -> get (@x_sel[0]));
+		my $nm_help_text_ref = get_nm_help_text ($doc_loc, $keyword);
+		my $nm_help_text = $$nm_help_text_ref;
+		$text_text -> delete("0.0", "end");
+		$text_text -> insert("0.0", $nm_help_text);
+		$nm_help_filename -> configure (-text => $keyword);
+	    } });
 	$keywords_list -> bind('<Down>', sub{
 	    my @x_sel = $keywords_list -> curselection;
-	    my $keyword = ($keywords_list -> get (@x_sel[0]));
-	    my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
-	    my $nm_help_text = $$nm_help_text_ref;
-	    $text_text -> delete("0.0", "end");
-	    $text_text -> insert("0.0", $nm_help_text);
-	    $nm_help_filename -> configure (-text => $keyword);
-			       });
+	    if (@x_sel >0) {
+		my $keyword = ($keywords_list -> get (@x_sel[0]));
+		my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
+		my $nm_help_text = $$nm_help_text_ref;
+		$text_text -> delete("0.0", "end");
+		$text_text -> insert("0.0", $nm_help_text);
+		$nm_help_filename -> configure (-text => $keyword);
+	    } });
 	$keywords_list->bind('<Up>', sub{
 	    my @x_sel = $keywords_list -> curselection;
-	    my $keyword = ($keywords_list -> get (@x_sel[0]));
-	    my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
-	    my $nm_help_text = $$nm_help_text_ref;
-	    $text_text -> delete("0.0", "end");
-	    $text_text -> insert("0.0", $nm_help_text);
-	    $nm_help_filename -> configure (-text => $keyword);
-			     });
+	    if (@x_sel >0) {
+		my $keyword = ($keywords_list -> get (@x_sel[0]));
+		my $nm_help_text = get_nm_help_text ($doc_loc, $keyword);
+		my $nm_help_text = $$nm_help_text_ref;
+		$text_text -> delete("0.0", "end");
+		$text_text -> insert("0.0", $nm_help_text);
+		$nm_help_filename -> configure (-text => $keyword);
+	    } });
+	shift (@keywords);
 	$keywords_list -> insert(0, @keywords);
 	my $nm_help_search_keys = "";
 	my $nm_help_entry = $text_window_keywords_frame -> Entry(-width=>12,-textvariable=>\$nm_help_search_keys, -background=>$white,-border=>2, -relief=>'groove' )
@@ -5712,8 +5763,7 @@ sub bind_tab_menu {
           } else {
             message("PDF Viewer application not found. Please check settings.")
           };
-       }],     
- 
+       }],
        [Button => " Convert CSV <--> TAB",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{convert},-compound=>"left", -state=>@tab_menu_enabled[2],-command => sub{
 	   my $tabsel = $tab_hlist -> selectionGet ();
 	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
@@ -7075,10 +7125,10 @@ sub create_mod_buttons {
     ->grid(-row=>2,-column=>3,-sticky=>'wens');
   $help->attach($new_button, -msg => "New model");
 
-  $cleanup_dir_button = $mod_buttons->Button(-image=>$gif{clean_dir},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-      cleanup_runtime_files_window();
+  $wizard_button = $mod_buttons->Button(-image=>$gif{wizard},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      wizard_window();
   })->grid(-row=>2,-column=>4,-sticky=>'wens');
-  $help->attach($cleanup_dir_button, -msg => "Clean up runtime files in current folder");
+  $help->attach($wizard_button, -msg => "Open Wizards");
 
   our $sum_list_button = $mod_buttons -> Button(-image=>$gif{compare}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
 #      my $save_file = $mw -> getSaveFile (-defaultextension=>".csv", -filetypes=>$types, -title=>"Save R script as", -initialdir => $cwd);
@@ -7090,6 +7140,10 @@ sub create_mod_buttons {
   }) ->grid(-row=>2,-column=>5,-columnspan=>1,-sticky=>'wens');
   $help->attach($sum_list_button, -msg => "Generate summary (csv-file) of all NONMEM output files");
 
+  $cleanup_dir_button = $mod_buttons->Button(-image=>$gif{clean_dir},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      cleanup_runtime_files_window();
+  })->grid(-row=>2,-column=>6,-sticky=>'wens');
+  $help->attach($cleanup_dir_button, -msg => "Clean up runtime files in current folder");
 
 ### removed temporarily. Probably not very much-used functionality.
 #  our $tree_txt_button = $mod_buttons -> Button(-image=>$gif{treeview2}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
@@ -7117,10 +7171,10 @@ sub create_mod_buttons {
       })->grid(-row=>1,-column=>6,-sticky=>'wens');
   $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
 
-  our $sge_monitor_button = $mod_buttons -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub {sge_monitor_window();
-      })->grid(-row=>1,-column=>7,-columnspan=>1,-sticky=>'wens');
-  $help->attach($sge_monitor_button, -msg => "SGE montitor");
-  if ($^O =~ m/MSWin/) { $sge_monitor_button -> configure(-state=>'disabled');}
+#  our $sge_monitor_button = $mod_buttons -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub {sge_monitor_window();
+#      })->grid(-row=>1,-column=>7,-columnspan=>1,-sticky=>'wens');
+#  $help->attach($sge_monitor_button, -msg => "SGE montitor");
+#  if ($^O =~ m/MSWin/) { $sge_monitor_button -> configure(-state=>'disabled');}
 
 ### functionality removed temporarily. Too unstable, due to buggy Statistics::R module
 #  our $piranaR_button = $mod_buttons -> Button(-image=>$gif{pirana_r}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{

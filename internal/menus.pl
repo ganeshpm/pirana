@@ -204,11 +204,11 @@ sub create_menu_bar {
        message ($m);
     });
   }
-  $mbar_tools_NM -> command(-label => "Search NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
-	  text_window_nm_help ( \@nm_help_keywords, "NONMEM Help files");
+  $mbar_tools_NM -> command(-label => "Search NONMEM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+      text_window_nm_help ( \@nm_help_keywords, "NONMEM Help files");
    });
   $mbar_tools_NM -> command(-label => "Import / update NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
-	  retrieve_nm_help_window ();
+      retrieve_nm_help_window ();
    });
  
   pirana_debug ($debug_mode, "Declare PSN options.");
@@ -253,6 +253,10 @@ sub create_menu_bar {
 
 #  $mbar_tools -> command(-label => "PiranaR interface",-image=>$gif{pirana_r}, -font=>$font,-compound=>'left', -background=>$bgcol,-underline=>0,
 #		  -command=>sub {create_window_piranaR ($mw, "", 0);});
+
+  $mbar_tools -> command(-label => "Wizards",-font=>$font, ,-image=>$gif{wizard}, -compound=>"left", -background=>$bgcol,-underline=>1, -command=> sub {
+      wizard_window ();
+   });
 
   $mbar_tools -> command(-label => "Covariance calculator",-image=>$gif{calc_cov}, -font=>$font,-compound=>'left', -background=>$bgcol,-underline=>0, -command=>sub {cov_calc_window()});
   $mbar_tools -> command(-label => "Generate summary (csv) of all output", -font=>$font, -image=>$gif{compare}, -compound=>'left',-background=>$bgcol,-underline=>1, -command=> sub {
@@ -320,7 +324,7 @@ sub create_menu_bar {
   });
   $mbar_help -> command(-label => "Piraña website", -font=>$font, -background=>$bgcol,-underline=>0,-command=>sub {start_command($software{browser},"http://pirana.sf.net")});
   
-  $mbar_help -> command(-label => "Search NM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+  $mbar_help -> command(-label => "NONMEM help files",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
 	  text_window_nm_help ( \@nm_help_keywords, "NONMEM Help files");
    });
 
@@ -342,9 +346,9 @@ sub create_menu_bar {
 
   $mbar_help -> command(-label => "Xpose", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://xpose.sourceforge.net")});
   $mbar_help -> command(-label => "WFN", -font=>$font, -background=>$bgcol,-command=>sub {start_command($software{browser},"http://wfn.sourceforge.net")});
-  $mbar_help -> command(-label => "About Piraña", -font=>$font, -background=>$bgcol, -command=>sub {
-      my $about_text = "Piraña (version ".$version.")\n\n Development team:\nRon Keizer (2007-2010)\nCoen van Hasselt(2010)\n\nDepartment of Pharmacy & Pharmacology,\n   Slotervaart Hospital / The Netherlands Cancer Institute.\n\nAcknowledgments to the people in my modeling group for testing.\nValuable feedback was also provided by various modelers from around the world.\n\nhttp://pirana.sf.net\n";
-      message ($about_text);
+  $mbar_help -> command(-label => "About Piraña ".$version, -font=>$font, -background=>$bgcol, -command=>sub {
+      my $about_text = "Piraña (version ".$version.")\n\nDevelopment team:\n  Ron Keizer (2007-2011)\n  Coen van Hasselt (2010-2011)\n\nhttp://www.pirana-software.com\n";
+      message ($about_text, " ");
   });
   return($mbar);
 }
