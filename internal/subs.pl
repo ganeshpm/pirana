@@ -5346,7 +5346,7 @@ sub frame_tab_show {
         }
       )->grid(-column => 3, -columnspan=>1, -row => 3, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
     $help->attach($tab_hlist, -msg => "Data files\n*\\ = in alternate directory");
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal);
+    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   
   our $show_data="tab";
@@ -5363,7 +5363,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal);
+    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
   $b++;
@@ -5373,7 +5373,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal);
+    my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
   $b++;
@@ -5383,7 +5383,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal);
+    my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -columnspan=>2, -ipady=>0, -sticky => 'nswe');
   $help->attach($show_xpose_button, -msg => "Show XPose data");
@@ -5393,7 +5393,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal);
+    my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -columnspan=>1, -ipady=>0, -sticky => 'nswe');
   $help->attach($show_r_button, -msg => "Show R/S scripts");
@@ -5403,7 +5403,7 @@ sub frame_tab_show {
     configure_tab_buttons($show_data);
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled normal disabled normal disabled disabled disabled disabled normal);
+    my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
     bind_tab_menu(\@tab_menu_enabled);
   })-> grid(-row=>1,-column=>$b, -ipady=>0, -sticky => 'nswe');
   $b++;
@@ -5699,6 +5699,21 @@ sub bind_tab_menu {
 	   }
 	   edit_model(unix_path(win_path($tab_file)));
        }],
+      [Button => " Open in PDF Reader", -background=>$bgcol, -font=>$font_normal, -image=>$gif{pdf_viewer}, -compound=>"left", , -state=>@tab_menu_enabled[9], -command => sub{
+         if ((-e $software{pdf_viewer})||$^O =~ m/darwin/i) {
+             my $tabsel = $tab_hlist -> selectionGet ();
+             my $pdf_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+             if ($^O =~ m/MSWin/i) {
+                 $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
+                 } else {
+                 $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+             }
+             start_command($software{pdf_viewer}, '"'.$tab_file.'"');
+          } else {
+            message("PDF Viewer application not found. Please check settings.")
+          };
+       }],     
+ 
        [Button => " Convert CSV <--> TAB",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{convert},-compound=>"left", -state=>@tab_menu_enabled[2],-command => sub{
 	   my $tabsel = $tab_hlist -> selectionGet ();
 	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
