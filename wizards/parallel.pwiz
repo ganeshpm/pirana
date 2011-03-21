@@ -2,10 +2,10 @@
 [TYPE]NM parallelization file[/TYPE]
  
 ; ##########################################################################
-; Arguments can be supplied to the wizard script from Pirana, which can be 
+; Arguments are supplied to the wizard script from Pirana, which can be 
 ; used in both the building of the wizard and the construction of the 
 ; output text file 
-[ARG] os, nonmem_dir [/ARG]
+; [ARG] os [/ARG]
 ; ##########################################################################
 
 
@@ -111,6 +111,3 @@ $CONTROL
 [[%i]]: MTOUCH=1 WSlEEP=1 WTOUCH=0 MSLEEP=0
 [/LOOP]]
 [/IF]
-
-[[dummy_2]]
-[[output_file]]

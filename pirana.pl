@@ -61,6 +61,7 @@ use HTTP::Date;             # Date and time functions
 use List::Util qw(max maxstr min minstr reduce); # some basic functions
 use POSIX qw(ceil floor);   # some basic functions
 use DBI;                    # database connection to sqlite
+use Text::ParseWords;       # needed for wizards
 
 #*** Some parameter initalisation **********************************************
 our $version = "2.4.0b";
@@ -144,6 +145,7 @@ use pirana_modules::misc      qw(rm_spaces text_to_file file_to_text block_size 
 use pirana_modules::misc_tk   qw(no_resize text_window message_yesno center_window);
 use pirana_modules::PsN       qw(get_psn_info get_psn_help get_psn_nm_versions);
 use pirana_modules::data_inspector qw(create_plot_window read_table);
+use pirana_modules::wizards   qw(clean_string get_key wizard_read_pwiz_file wizard_write_output parse_lines);
 if ($^O =~ m/MSWin32/) {
   require pirana_modules::windows_specific ; #qw(nonmem_priority get_processes);
 }
@@ -227,7 +229,7 @@ our $font_fixed = $font_fixed_family.' '.$setting{font_size};
 our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
-#$mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
+$mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
 
 our $nrows = 28;
 if ($setting{n_rows} > 28) {

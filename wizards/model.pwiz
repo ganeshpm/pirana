@@ -1,0 +1,227 @@
+; Pirana wizard-file for the creation of text files
+[TYPE]NONMEM model[/TYPE]
+ 
+; ##########################################################################
+; Arguments are supplied to the wizard script from Pirana, which can be 
+; used in both the building of the wizard and the construction of the 
+; output text file 
+; [ARG] os [/ARG]
+; ##########################################################################
+
+
+; ##########################################################################
+; In the first part, the questions for the Wizard are implemented.
+; Basically, here you start to collect all information in variables,
+; which are then stored in a hash, and can be used afterwards.
+; [S] = create new screen in wizard
+; [M] = Message (plain text)
+; [Q] = Question 
+; [E] = Entry [key_name, width of entry-widget]
+; [F] = File-entry [key_name, width of entry-widget] (also implements browse button)
+; [O] = Optionmenu [key_name, options]
+; [C] = Checkbox
+; ##########################################################################
+
+; ##########################################################################
+; Note: some variables are required: output_file
+; Note: some variables are reserved: os
+; ##########################################################################
+
+[WIZ]
+[S] Basic information
+
+[M] [basic_msg] This wizard helps you to quickly create a NONMEM model file. It does however\nnot guarantee that the resulting file will be a valid NONMEM control stream.\nThe resulting model file is constructed with the most common options, and it is left\n to the user to update the model file according the specific needs.
+[/M]
+
+[Q] [output_file] Model filename: 
+[E] [output_file,40] 001.mod [/E]
+[/Q]
+[Q] [model_desc] Model description: 
+[E] [model_desc,40] NONMEM model [/E]
+[/Q]
+
+[/S]
+
+[S] Model implementation
+
+[Q] [model_type] Model implementation:
+[O] [model_type, ("ADVAN1","ADVAN2","ADVAN3","ADVAN4","ADVAN5","ADVAN6","ADVAN7","ADVAN8","ADVAN9","ADVAN10","ADVAN11","ADVAN12","ADVAN13","PRED")] 2 [/O]
+[/Q]
+
+[Q] [error_model] Error model:
+[O] [error_model, ("Additve","Proportional","Combined additive & proportional","Exponential","Log-transform both sides")] 2 [/O]
+[/Q]
+
+[/S]
+
+[S] Model estimation
+
+[Q] [est_method] Implement estimation methods: 
+[C] [est_method,("FO","FOCE","SAEM","MCMC Bayes","Importance sampling")] (2,5) [/C]
+[/Q]
+
+[Q] [cov_step] Covariance step:
+[C] [cov_step, ("Implement $COVARIANCE record")] (1) [/C]
+[/Q]
+
+[/S]
+
+[S] Input / Output
+
+[Q] [datafile] Input data file
+[F] [datafile, 40] data_1.csv [/F]
+[/Q]
+
+[Q] [tables] Tables
+[C] [tables, ("Table with most common parameters", "Xpose tables")] (1) [/C]
+[/Q]
+
+[/S]
+
+[S] Numbers of parameters
+
+[Q] [n_thetas] Number of theta's:
+[E] [n_thetas,5] 3 [/E]
+[/Q]
+
+[Q] [n_omegas] Number of omega's:
+[E] [n_omegas,5] 2 [/E]
+[/Q]
+
+[Q] [n_thetas] Number of sigma's:
+[E] [n_sigmas,5] 1 [/E]
+[/Q]
+
+[/S]
+
+[/WIZ]
+
+; ##########################################################################
+; In the second part, the text file is built based on the gathered data.
+; The variables can be used when put between [[...]] 
+; For string-variables, you can specify how much of the string you want to 
+; use, by putting ", n", with n specifying the number. 
+; You can also create IF / ELSE structures and FOR loops, which need to be 
+; specified between brackets. See examples.
+; ##########################################################################
+
+[OUT] ; Starts output
+\; Model desc: [[model_desc]]
+$PROBLEM [[model_desc]]
+
+$INPUT ID TIME DV AMT CMT MDV EVID
+
+$DATA [[datafile]] IGNORE=@
+[IF,model_type,PRED]
+
+[/IF]
+[IF,model_type,ADVAN1]
+$SUBROUTINES ADVAN1 TRANS2
+
+$PK
+CL = THETA(1) * EXP(ETA(1))
+V  = THETA(2) * EXP(ETA(2))
+S1 = V
+[/IF]
+
+[IF,model_type,ADVAN2]
+$SUBROUTINES ADVAN2 TRANS2
+
+$PK
+CL = THETA(1) * EXP(ETA(1))
+V  = THETA(2) * EXP(ETA(2))
+KA = THETA(3) * EXP(ETA(3))
+S1 = V
+[/IF]
+
+[IF,model_type,ADVAN3]
+$SUBROUTINES ADVAN3 TRANS2
+
+$PK
+CL = THETA(1) * EXP(ETA(1))
+V  = THETA(2) * EXP(ETA(2))
+Q  = THETA(3)
+V  = THETA(4)
+S1 = V
+[/IF]
+[IF,model_type,ADVAN4]
+$SUBROUTINES ADVAN4 TRANS2
+[/IF]
+[IF,model_type,ADVAN5]
+$SUBROUTINES ADVAN5 TRANS2
+[/IF]
+[IF,model_type,ADVAN6]
+$SUBROUTINES ADVAN6 TRANS2
+[/IF]
+[IF,model_type,ADVAN7]
+$SUBROUTINES ADVAN7 TRANS2
+[/IF]
+[IF,model_type,ADVAN8]
+$SUBROUTINES ADVAN8 TRANS2
+[/IF]
+[IF,model_type,ADVAN9]
+$SUBROUTINES ADVAN9 TRANS2
+[/IF]
+[IF,model_type,ADVAN10]
+$SUBROUTINES ADVAN10 TRANS2
+[/IF]
+[IF,model_type,ADVAN11]
+$SUBROUTINES ADVAN11 TRANS2
+[/IF]
+[IF,model_type,ADVAN12]
+$SUBROUTINES ADVAN12 TRANS2
+[/IF]
+[IF,model_type,ADVAN13]
+$SUBROUTINES ADVAN13 TRANS2
+[/IF]
+
+$ERROR
+IPRED = F
+    Y = IPRED + EPS(1) 
+    W = 1
+  RES = DV-IPRED
+IWRES = RES/W
+
+$THETA
+[LOOP, 1:n_thetas]
+(1, 5, 50) ; [[%i]] 
+[/LOOP]
+
+$OMEGA
+[LOOP, 1:n_omegas]
+(.1) ; [[%i]] 
+[/LOOP]
+
+$SIGMA
+[LOOP, 1:n_sigmas]
+(1 FIX) ; [[%i]] 
+[/LOOP]
+
+[IF,est_method_1,1]
+$EST METHOD=0 INTER MAXEVAL=2000 NOABORT SIG=3 PRINT=1 POSTHOC
+[/IF]
+[IF,est_method_2,1]
+$EST METHOD=COND INTER MAXEVAL=2000 NOABORT SIG=3 PRINT=1 POSTHOC
+[/IF]
+[IF,est_method_3,1]
+$EST METHOD=SAEM INTER NBURN= 
+[/IF]
+[IF,est_method_4,1]
+$EST METHOD=BAYES
+[/IF]
+[IF,est_method_5,1]
+$EST METHOD=
+[/IF]
+[IF,cov_step_1,1]
+$COV PRINT=E UNCONDITIONAL
+[/IF]
+
+[IF,tables_1,1]
+$TABLE ID TIME DV MDV EVID IPRED IWRES FILE=sdtab001
+[/IF]
+[IF,tables_2,1]
+; Xpose
+$TABLE CL V FIRSTONLY FILE=patab001
+[/IF]
+
+[/OUT]
