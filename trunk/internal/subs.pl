@@ -45,12 +45,19 @@ sub wizard_window {
     }
     $wizard_listbox -> insert(0, @wiz_descr);
     $wizard_frame -> Button (-text=>'Run wizard',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
-
+	my @sel = $wizard_listbox -> curselection ();
+	my $sel_wizard = @wizards[@sel[0]];
+	my @args = ($^O);
+	my $variables_ref = wizard_read_pwiz_file ($base_dir."/wizards/".$sel_wizard, \@args);
+	my %var = %$variables_ref;
+	my $wizard_run_dialog = $mw -> Toplevel(-title=>'Wizards');
+	wizard_build_dialog ($wizard_run_dialog, $variables_ref);
+	$wizard_run_dialog -> raise;
+	$wizard_dialog -> destroy();
      }) -> grid(-row=> 3, -column=>3, -sticky=>"nwse");
     $wizard_frame -> Button (-text=>'Cancel',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
 	$wizard_dialog -> destroy();
      }) -> grid(-row=> 3, -column=>2, -sticky=>"nwse");
-
 }
 
 sub get_pwiz_description {
@@ -67,6 +74,134 @@ sub get_pwiz_description {
 	}
     }
     return ($descr);
+}
+
+sub wizard_build_dialog {
+    my ($window, $variables_ref, $entry_values_ref) = @_;
+    center_window($window); # center after adding frame 
+    my %var = %$variables_ref;
+
+    # put all variables in correct hashes and arrays again;
+    my @screens = @{$var{screens}};
+    my %screen_questions = %{$var{screen_questions}};
+    my %messages =  %{$var{messages}};
+    my %questions = %{$var{questions}};
+    my @question_keys = @{$var{question_keys}};
+    my %question_answers = %{$var{question_answers}};
+    my %answers = %{$var{answers}};
+    my @answer_keys = @{$var{answer_keys}};
+    my %file_entries = %{$var{file_entries}};
+    my %answer_widths = %{$var{answer_widths}};
+    my %answer_defaults = %{$var{answer_defaults}};
+    my %optionmenu_options = %{$var{optionmenu_options}};
+    my %checkboxes = %{$var{checkboxes}};
+    my $out_text_ref = $var{out_text};
+
+    # create new hashes to collect the information entered
+    my %entry_values = %$entry_values_ref;
+
+    my $i_row = 0;
+    if ($var{i_screen} == 0 ) {
+	$var{i_screen} = 0;
+    }
+    my $button_text = "Finish";
+    if (@screens > 1) {
+	$button_text = "Next";
+    }
+    my $frame = $window -> Frame (-background => $bgcol) -> grid(-ipadx => 10, -ipady => 10); 
+    for ($i = 0; $i < 16; $i++) {
+	$frame -> Label (-background=>$bgcol, -font=>$font_normal, -width=>80, -text=> "  "
+	    ) -> grid (-row=>$i, -column=>1, -rowspan=>1, -columnspan=>2);
+    }
+    $frame -> Label (-text=> "Step ".($var{i_screen} + 1)." of ".$var{total_screens}.": ".@screens[$var{i_screen}], -background => $bgcol, -font=>$font_bold
+	) -> grid(-row=>1, -column=>1,-sticky=>"nws"); 
+
+    my @curr_questions = @{$screen_questions{@screens[$var{i_screen}]}};
+    my $types = [
+	['CSV files','.csv'],
+	['TAB files','.tab'],
+	['All Files','*',  ], ];
+    foreach my $q_key (@curr_questions) {
+	if (exists $messages{$q_key}) {
+	   $frame -> Label (-text=> $messages{$q_key}, -font=>$font_normal, -background=>$bgcol, -justify=>"left"
+	    ) -> grid (-row=> (3+($i_row*2)), -column=>1, -columnspan=>2, -sticky=> "nw");	       
+	} else {
+	$frame -> Label (-text => $questions{$q_key}, -justify=> "right", -font=>$font_normal, -background=>$bgcol
+	    ) -> grid (-row=> (3+($i_row*2)), -column=>1, -sticky => "nes");
+	$frame -> Label (-text => " ", -font=>$font_normal, -background=>$bgcol  # SPACER
+	    ) -> grid (-row=> (4+($i_row*2)), -column=>1, -sticky => "nws");
+	my @curr_answers = @{$question_answers{$q_key}};
+	foreach my $a (@curr_answers) {
+	    $entry_values{$a} = $answer_defaults{$a};
+	    unless ($answer_widths{$a} eq "") { # test, if no value here, than the key does not refer to an entry
+		$frame -> Entry (-width=> $answer_widths{$a}, -font=>$font_normal, -textvariable => \$entry_values{$a}, -border=>$bbw, -background=>$white
+		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nwe");	       
+	    };
+	    unless ($file_entries{$a} eq "") { # test, if no value here, than the key does not refer to an entry
+		$frame -> Button (-image=> $gif{browse}, -font=>$font_normal, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
+		    $entry_values{$a} = extract_file_name ($mw-> getOpenFile(-defaultextension => "*", -initialdir=> $cwd , -filetypes=> $types));
+		    $window -> raise();
+                }) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "ne");	       
+	    };
+	    unless ($optionmenu_options{$a} eq "") { # test, if options specified, implement optionmenu
+		my @opt = quotewords(",", 0, $optionmenu_options{$a});
+		$entry_values{$a} = int($entry_values{$a});
+		my $optionmenu = $frame -> Optionmenu (-background=>$darkblue, -activebackground=>$darkblue2, -foreground=>$white, -activeforeground=>$white, -options => \@opt, -justify=>"left", -font=>$font_normal, -border=>$bbw
+		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw"); 
+		$optionmenu -> configure (-textvariable => \$opt[$entry_values{$a}]);
+	    }
+	    unless ($checkboxes{$a} eq "") { # test, if options specified, implement checkbox
+		my @chkboxes = quotewords (",", 0, $checkboxes{$a});
+		my %checkbox_checked;
+		my $j = 1;
+		foreach my $box (@chkboxes) {
+		    my $ref = $a."_".$j;
+		    $entry_values{$ref} = $answer_defaults{$ref};
+		    $frame ->  Checkbutton (-background=>$bgcol, -text => $box, -variable=> \$entry_values{$ref}, -font=>$font_normal, -justify=>"left", -border=>1, -command => sub{
+                    }
+		    ) -> grid (-row=> (2+($i_row*2)+$j), -column=>2, -sticky => "nw");
+		    $j++;
+		}
+		$i_row = $i_row + rnd(($j/2), 0) ;
+	    } 
+	}
+	}
+	$i_row++;
+    }
+
+    my $button_frame = $frame -> Frame (-background=>$bgcol) -> grid (-row => 25, -column => 2, -columnspan=>2, -sticky=>"nse");
+    my $prv_button = $button_frame -> Button (-text=> "Previous", -background => $bgcol, -font=>$font_normal,  -command => sub {
+	$var{i_screen} = $var{i_screen} - 1;    
+	$frame -> destroy();
+	wizard_build_dialog($window, \%var, \%entry_values);
+    }) -> grid(-row=>1, -column=>1,-sticky=>"nwse"); 
+    my $next_button = $button_frame -> Button (-text=> "Next", -background => $bgcol, -font=>$font_normal,  -command => sub {
+	$var{i_screen}++;
+	$frame -> destroy();
+	wizard_build_dialog($window, \%var, \%entry_values);
+    }) -> grid(-row=>1, -column=>2,-sticky=>"nwse"); 
+    my $finish_button = $button_frame -> Button (-text=> "Finish", -background => $bgcol, -font=>$font_normal, -state=>'disabled', -command => sub {
+	my @keys = keys(%entry_values);
+	my %values = %entry_values;
+	foreach my $a (@keys) {
+	    unless ($optionmenu_options{$a} eq "") {
+		my @opt = quotewords(",", 0, $optionmenu_options{$a});
+		$values{$a} = @opt[$entry_values{$a}];
+	    }
+	}
+	$values{output_file} = rm_spaces($values{output_file});
+	wizard_write_output ($out_text_ref, \%values);
+	edit_model (os_specific_path($cwd."/".$values{output_file}));
+	$window -> destroy();
+    }) -> grid(-row=>1, -column=>3,-sticky=>"nwse"); 
+    if ($var{i_screen} == 0) {
+	$prv_button -> configure (-state=>'disabled');
+    }
+    if ($var{i_screen} >= ($var{total_screens}-1)) {
+	$finish_button -> configure (-state=>'normal');
+	$next_button -> configure (-state=>'disabled');
+    }
+    return(1);
 }
 
 sub new_scm_file {
@@ -5851,6 +5986,24 @@ sub bind_tab_menu {
     });
 
     # bind to right mouse button
+    $tab_hlist -> bind("<Delete>" => [ sub {
+	   my $tabsel = $tab_hlist -> selectionGet ();
+	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+	   my $tab_id = @tabcsv_files[@$tabsel[0]];
+	   if ($^O =~ m/MSWin/i) {
+	       $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
+	   }
+	   my $delete = message_yesno ( "Do you really want to delete ".$tab_file."?", $mw, $bgcol, $font_normal);
+	   if( $delete ==1 ) {
+	       unless( unlink ( os_specific_path ($tab_file) )) {
+		   message("For some reason, ".$tab_id." could not be deleted.\nCheck file/folder permissions.");
+	       } else {
+		   db_remove_table_info ($tab_id, "pirana.dir");
+		   refresh_pirana($cwd, $filter,1)
+	       }
+	   };
+       } ]);
+
     $tab_hlist -> bind("<Button-3>" => [ sub {
        $tab_hlist -> focus; # focus on listbox widget
        my($w, $x, $y) = @_;
