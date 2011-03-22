@@ -2196,9 +2196,9 @@ sub show_estim_window {
     }
     our $estim_window_frame = $estim_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>10)->grid(-row=>1,-column=>1, -sticky=>'nwse');
 
-    @estim_grid_headers = ("Parameter", "Description", "Value");
+    @estim_grid_headers = ("Parameter", "Description", "Value", "RSE");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
-						     -columns    => $cols+2, -scrollbars => 'se',-highlightthickness => 0,
+						     -columns    => $cols+3, -scrollbars => 'se',-highlightthickness => 0,
 						     -height     => 25, -width      => 90,
 						     -border     => 0, -indicator=>0,
 						     -background => 'white',
@@ -2220,6 +2220,13 @@ sub show_estim_window {
 	    );
     }
     $estim_grid -> update();
+    $estim_window_frame -> Button (-text=>"Export as CSV", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	my $types = [
+	    ['CSV files','.csv'],
+	    ['All Files','*',  ], ];
+	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
+	grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2) );
+    })->grid(-column=>1, -row=>3, -sticky=>"nwse");
 
     $i = 1; $j=1; my $max_i = 1;
     if (@th>0) {
@@ -2239,7 +2246,6 @@ sub show_estim_window {
 	    $i++;
 	}
 	if ($max_i > $i) {$i = $max_i};
-	$i++;
 	$estim_grid -> add($i);
 	$estim_grid -> itemCreate($i, 0, -text => " ", -style=>$header_right);
 	$i++; my $flag=$i; $cnt=1;
@@ -2264,7 +2270,6 @@ sub show_estim_window {
 	    }
 	    $i++; $cnt++;
 	}
-	$i++;
 	$estim_grid -> add($i);
 	$estim_grid -> itemCreate($i, 0, -text => " ", -style=>$header_right);
 	$i++; my $flag=$i; $cnt=1;
@@ -2289,6 +2294,34 @@ sub show_estim_window {
 	    $i++; $cnt++;
 	}
     }
+}
+
+sub grid_to_csv {
+    my ($grid, $csv_file, $headers_ref, $nrow) = @_;
+    my @headers = @$headers_ref;
+    my $ncol = int(@headers);
+    open (OUT, ">".$csv_file);
+    print OUT join(",", @headers)."\n";
+    for ($j = 1; $j <= $nrow; $j++) {
+	if ($grid -> infoExists($j)) {
+	for ($i = 0; $i < $ncol; $i++) {
+	    if ($grid -> itemExists($j, $i)) {
+		my $value = $grid -> itemCget($j, $i, "text");
+		chomp($value);
+		$value =~ s/\,/;/g;
+		print OUT $value;
+	    } 
+	    unless(($ncol-$i) ==1) {
+		print OUT ",";
+	    }
+	}
+	}
+	print OUT "\n";
+    }
+    close OUT;
+    if (-e $software{spreadsheet}) {
+	start_command($software{spreadsheet},'"'.$csv_file.'"');
+    } else {message("Spreadsheet application not found. Please check settings.")};
 }
 
 sub show_estim_multiple {
@@ -2376,7 +2409,14 @@ sub show_estim_multiple {
 	    );
     }
     $estim_grid -> update();
-
+    $estim_window_frame -> Button (-text=>"Export as CSV", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	my $types = [
+	    ['CSV files','.csv'],
+	    ['All Files','*',  ], ];
+	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
+	grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2) );
+    })->grid(-column=>1, -row=>3, -sticky=>"nwse");
+    
 # First create the correct number of entries for theta/om/si
 # create CSV
     
