@@ -41,6 +41,7 @@ sub wizard_window {
     my @wiz_descr;
     foreach my $pwiz_file (@wizards) {
 	my $pwiz_descr = get_pwiz_description ($base_dir."/wizards/".$pwiz_file);
+	chomp ($pwiz_descr);
 	push (@wiz_descr, $pwiz_descr);
     }
     $wizard_listbox -> insert(0, @wiz_descr);
@@ -7114,7 +7115,7 @@ sub frame_models_show {
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>300);
 $mw -> gridColumnconfigure(2, -weight => 100, -minsize=>300);
 $mw -> gridColumnconfigure(3, -weight => 1, -minsize=>150);
-$mw -> gridRowconfigure(1, -weight => 1, -minsize=>20);
+$mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
 $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
 $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
