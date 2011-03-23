@@ -226,6 +226,7 @@ our $font = $font_family.' '.$setting{font_size};
 our $font_normal =  $font_family.' '.$setting{font_size};
 our $font_small =  $font_family.' '.$font_small_size;
 our $font_fixed = $font_fixed_family.' '.$setting{font_size};
+our $font_fixed_small = $font_fixed_family.' '.$font_small_size;
 our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...

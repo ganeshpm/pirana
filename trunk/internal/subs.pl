@@ -2225,7 +2225,9 @@ sub show_estim_window {
 	    ['CSV files','.csv'],
 	    ['All Files','*',  ], ];
 	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
-	grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2) );
+	unless ($csv_file_choose eq "") {
+	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2) );
+	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
 
     $i = 1; $j=1; my $max_i = 1;
@@ -2319,9 +2321,11 @@ sub grid_to_csv {
 	print OUT "\n";
     }
     close OUT;
-    if (-e $software{spreadsheet}) {
-	start_command($software{spreadsheet},'"'.$csv_file.'"');
-    } else {message("Spreadsheet application not found. Please check settings.")};
+    if (-e $csv_file) {
+	if (-e $software{spreadsheet}) {
+	    start_command($software{spreadsheet},'"'.$csv_file.'"');
+	} else {message("Spreadsheet application not found. Please check settings.")};
+    }
 }
 
 sub show_estim_multiple {
@@ -2414,7 +2418,9 @@ sub show_estim_multiple {
 	    ['CSV files','.csv'],
 	    ['All Files','*',  ], ];
 	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
-	grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2) );
+	unless ($csv_file_choose eq "") {
+	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2) );
+	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
     
 # First create the correct number of entries for theta/om/si
@@ -5562,14 +5568,16 @@ sub frame_tab_show {
         -browsecmd   => sub{
             my $tabsel = $tab_hlist -> selectionGet ();
             my $tab_file = win_path(@tabcsv_files[@$tabsel[0]]);
-            #update_text_box(\$tab_file_text, $tab_file);
-            update_text_box(\$tab_file_size, (-s $tab_file)." kB");
             my $mod_time;
             if (-e $cwd."/".$tab_file) {$mod_time = localtime(@{stat $cwd."/".$tab_file}[9])};
-            update_text_box(\$tab_file_mod, $mod_time);
             my $note = $table_note{$tab_file};
             $note =~ s/\n/ /g;
-            update_text_box(\$tab_file_note, $note);
+	    my $update_text = (-s $tab_file)." kB\n";
+	    $update_text .= substr($mod_time,4)."\n";
+	    $update_text .= $note;
+            update_text_box(\$tab_file_info, $update_text);
+#            update_text_box(\$tab_file_info, (-s $tab_file)." kB");
+#            update_text_box(\$tab_file_mod, $mod_time);
         }
       )->grid(-column => 3, -columnspan=>1, -row => 3, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
     $help->attach($tab_hlist, -msg => "Data files\n*\\ = in alternate directory");
@@ -5638,25 +5646,44 @@ sub frame_tab_show {
 
   $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>3,-sticky=>"nw");
   #$tab_frame_info -> Label(-text=>"  File:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
-  $tab_frame_info -> Label(-text=>"  Size:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
-  $tab_frame_info -> Label(-text=>"  Crtd:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"nw");
-  $tab_frame_info -> Label(-text=>"  Note:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"nw");
+#  $tab_frame_info -> Label(-text=>"  Size:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
+#  $tab_frame_info -> Label(-text=>"  Crtd:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"nw");
+#  $tab_frame_info -> Label(-text=>"  Note:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"nw");
  #our $tab_file_text = $tab_frame_info -> Text (
  #    -width=>17, -relief=>'sunken', -border=>0, -height=>1,
  #    -font=>$font_small, -background=>"#f6f6e6", -state=>'normal'
  #)->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
-  our $tab_file_size = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
-  our $tab_file_mod = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>2, -row=>2,-sticky=>'nw', -ipadx=>0);
-  our $tab_file_note = $tab_frame_info -> Text (
-      -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>2, -row=>3,-sticky=>'nw', -ipadx=>0);
+  our $tab_file_info = $tab_frame_info -> Text (
+      -width=>22, -relief=>'sunken', -border=>2, -height=>4,
+      -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
+  )->grid(-column=>1, -row=>1, -rowspan=>3, -sticky=>'nwes', -ipadx=>0);
+  our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
+      my $tabsel = $tab_hlist -> selectionGet ();
+      my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
+      if (-e $tab_file) {
+	  table_info_window($tab_file);
+      }
+    })->grid(-column=>2,-row=>1, -sticky => 'en');
+  $help->attach($edit_tab_info_button, -msg => "Edit project details");
+  # our $new_file_button = $tab_frame_info -> Button(-image=>$gif{new}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
+  # 	new_data_file_window ($show_data);
+  # })->grid(-column=>2,-row=>2, -sticky => 'ens');
+  # $help->attach($new_file_button, -msg => "Create new file...");
+  #   $tab_menu -> command (-label=> " Create new file..", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{new}, -compound=>"left", -command => sub{
+  #   });
+
+  # our $tab_file_size = $tab_frame_info -> Text (
+  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
+  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+  # )->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
+  # our $tab_file_mod = $tab_frame_info -> Text (
+  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
+  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+  # )->grid(-column=>2, -row=>2,-sticky=>'nw', -ipadx=>0);
+  # our $tab_file_note = $tab_frame_info -> Text (
+  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
+  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+  # )->grid(-column=>2, -row=>3,-sticky=>'nw', -ipadx=>0);
 
   $show_ofv=0;
   $show_successful=0;
@@ -6000,17 +6027,14 @@ sub bind_tab_menu {
 # 	       }
 # 	   }
 #         }],
-        [Button => " Show/edit table or file info", -background=>$bgcol, -font=>$font_normal, -image=>$gif{edit_info_green},-compound=>"left", -state=>@tab_menu_enabled[8],-command => sub{
-	    my $tabsel = $tab_hlist -> selectionGet ();
-	    my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
-	    if (-e $tab_file) {
-		table_info_window($tab_file);
-	    }
-        }],
+        # [Button => " Show/edit table or file info", -background=>$bgcol, -font=>$font_normal, -image=>$gif{edit_info_green},-compound=>"left", -state=>@tab_menu_enabled[8],-command => sub{
+	#     my $tabsel = $tab_hlist -> selectionGet ();
+	#     my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
+	#     if (-e $tab_file) {
+	# 	table_info_window($tab_file);
+	#     }
+        # }],
     ]);
-    $tab_menu -> command (-label=> " Create new file..", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{new}, -compound=>"left", -command => sub{
-	new_data_file_window ($show_data);
-    });
     $tab_menu -> separator ( -background=>$bgcol) ;
     $tab_menu -> command (-label=> " Close this menu", -font=>$font, -image=>$gif{close}, -compound=>'left', -background=>$bgcol, -command => sub{
        $tab_menu -> unpost();
@@ -6124,6 +6148,16 @@ sub show_links {
   if ($os =~ m/MSWin/i) {
     $frame_command -> Label(-text=>'', -font=>'Arial 1', -width=>40, -background=>$bgcol)->grid(-row=>1, -column=>15, -sticky => 'ens');
   }
+  # Filter
+  our $filter = "";
+  $frame_command -> Label(-text=>"   Filter:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -sticky=>'ew');
+  $filter_entry = $frame_command -> Entry(-width=>12,-textvariable=>\$filter, -background=>$white, -border=>2, -relief=>'groove' )
+    -> grid(-row=>1,-column=>6,-columnspan=>2, -sticky => 'we',-ipadx=>1);
+  $filter_entry -> bind('<Any-KeyPress>' => sub {
+     if (length($filter)>0) {$filter_entry -> configure(-background=>$lightyellow )} else {$filter_entry -> configure(-background=>$white)};
+     read_curr_dir($cwd, $filter, 0);
+  });
+  $help->attach($filter_entry, -msg => "Filter model files");
 
   $i=1;
   $software{tty} =~ m/\.exe/i;
@@ -6220,7 +6254,7 @@ sub show_links {
 
   #$frame_links -> Label(-text=>"Command: ",-font => $font_normal)
   #  ->grid(-row=>2,-column=>1,-sticky=>'nse');
-  $command_entry = $frame_command -> Entry(-textvariable=>\$run_command, -border=>1, -relief=>"groove", -width=>24, -font => $font_normal,-background=>$white)
+  $command_entry = $frame_command -> Entry(-textvariable=>\$run_command, -border=>2, -relief=>"groove", -width=>24, -font => $font_normal,-background=>$white)
    ->grid(-row=>1,-columnspan=>1,-column=>2,-sticky=>'we');  #i-3
   if (($cluster_active==1)&&($setting{cluster_type}!=0)) {$gif_shell=$gif{shell_linux}} else {$gif_shell=$gif{shell}};
   $command_button = $frame_command -> Button(-image=> $gif_shell,-border=>$bbw,-background=>$button,-activebackground=>$abutton, -command=> sub{
@@ -7244,47 +7278,34 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
 
 
    our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>2, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
-   $filter_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nse');
+   $show_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nse');
    our $psn_dir_filter = 0;
-   $filter_buttons -> Label(-text=>"   Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'e');
-  $filter_psn_button = $filter_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+   $show_buttons -> Label(-text=>"   Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'w');
+   $show_buttons -> Label(-text=>"    ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -columnspan=>1, -sticky=>'e');
+  $filter_psn_button = $show_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
      status();
   })->grid(-row=>1,-column=>2,-sticky=>'w', -ipady=>0, -ipadx=>0);
   $help->attach($filter_psn_button, -msg => "Filter out PsN-generated directories");
   our $nmfe_dir_filter = 0;
-  $filter_nmfe_button = $filter_buttons ->Checkbutton(-text=>"nmfe",-background=>$bgcol, -font=>$font_normal, -variable=>\$nmfe_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+  $filter_nmfe_button = $show_buttons ->Checkbutton(-text=>"nmfe",-background=>$bgcol, -font=>$font_normal, -variable=>\$nmfe_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
      status();
   })->grid(-row=>1,-column=>3,-sticky=>'w', -ipady=>0, -ipadx=>0);
   $help->attach($filter_nmfe_button, -msg => "Filter out nmfe run directories");
 
-  # Filter
-  our $filter = "";
-  $filter_buttons -> Label(-text=>"       Filter:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>5, -sticky=>'ew');
-  $filter_entry = $filter_buttons -> Entry(-width=>12,-textvariable=>\$filter, -background=>$white, -border=>1, -relief=>'groove' )
-    -> grid(-row=>1,-column=>6,-columnspan=>2, -sticky => 'we',-ipadx=>1);
-  $filter_entry -> bind('<Any-KeyPress>' => sub {
-     if (length($filter)>0) {$filter_entry -> configure(-background=>$lightyellow )} else {$filter_entry -> configure(-background=>$white)};
-     read_curr_dir($cwd, $filter, 0);
-  });
-
-  $help->attach($filter_entry, -msg => "Filter model files");
-}
-
-sub create_mod_buttons {
-  $mod_buttons = $run_frame -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>1,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nw');
-  our $condensed_view_button = $mod_buttons -> Button (
+  our $show_buttons_sub = $show_buttons -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>5,-rowspan=>2,-ipadx=>'0', -ipady=>'0',-sticky=>'nw');
+  our $condensed_view_button = $show_buttons_sub -> Button (
        -image=>$gif{binocular}, -background => $button, -border=>$bbw, -activebackground=>$abutton,
        -width=>26, -height=>22,
        -command=>sub{
            $condensed_model_list = 1 - $condensed_model_list;
   	   populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
-      })->grid(-row=>1,-column=>2,-sticky=>'wens');
+      })->grid(-row=>1,-column=>1,-sticky=>'wens');
   $help->attach($condensed_view_button, -msg => "Show condensed or expanded view of models");
 
   if ($setting_internal{models_view} eq "tree") {$listimage = $gif{treeview}} else {$listimage = $gif{listview}};
-  our $sort_button = $mod_buttons->Button(-image=>$listimage, -width=>26, -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
+  our $sort_button = $show_buttons_sub->Button(-image=>$listimage, -width=>26, -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     if ($setting_internal{models_view} eq "tree") {
        $setting_internal{models_view} = "list";
        $listimage = $gif{listview};
@@ -7295,10 +7316,23 @@ sub create_mod_buttons {
     }
     $sort_button -> configure (-image=>$listimage);
     populate_models_hlist($setting_internal{models_view}, $condensed_model_list);
-  })->grid(-row=>1,-column=>3,-sticky=>'wens');
+  })->grid(-row=>1,-column=>2,-sticky=>'wens');
   $help->attach($sort_button, -msg => "Show models as list or as tree structure, based on their reference model");
 
-  our $show_estim_button = $mod_buttons->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+  my $show_execution_log = $show_buttons_sub -> Button (-image=>$gif{log}, -background=>$button,-activebackground=>$abutton, -border=>0,
+	  -command=>sub {
+      show_exec_runs_window();
+    })->grid(-row=>1,-column=>3,-sticky=>'wens');
+  $help->attach($show_execution_log, -msg => "Show model execution log");
+
+  our $show_inter_button = $show_buttons_sub->Button(-image=>$gif{edit_inter},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $cwd = $dir_entry -> get();
+      chdir($cwd);
+      show_inter_window($cwd);
+      if ($inter_window) {$inter_window -> focus();}
+      })->grid(-row=>1,-column=>4,-sticky=>'wens');
+  $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
+  our $show_estim_button = $show_buttons_sub->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
 	if (int(@lst) > 1) { 
 	    show_estim_multiple (\@lst); 
@@ -7306,23 +7340,28 @@ sub create_mod_buttons {
 	    show_estim_window (\@lst);
 	}
         $estim_window -> raise();
-      })->grid(-row=>1,-column=>4,-sticky=>'wens');
+      })->grid(-row=>1,-column=>5,-sticky=>'wens');
   $help->attach($show_estim_button, -msg => "Show parameter estimates from runs");
+
+}
+
+sub create_mod_buttons {
+  our $mod_buttons = $run_frame -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>1,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nw');
 
   our $new_button = $mod_buttons->Button(-image=>$gif{newfolder}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     new_dir();})
-    ->grid(-row=>2,-column=>2,-sticky=>'wens');
+    ->grid(-row=>1,-column=>1,-sticky=>'wens');
   $help->attach($new_button, -msg => "New folder");
 
   our $new_button = $mod_buttons->Button(-image=>$gif{new}, -width=>26,  -height=>22, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     new_ctl();})
-    ->grid(-row=>2,-column=>3,-sticky=>'wens');
+    ->grid(-row=>1,-column=>2,-sticky=>'wens');
   $help->attach($new_button, -msg => "New model");
 
-  $wizard_button = $mod_buttons->Button(-image=>$gif{wizard},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+  our $wizard_button = $mod_buttons->Button(-image=>$gif{wizard},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       wizard_window();
-  })->grid(-row=>2,-column=>4,-sticky=>'wens');
-  $help->attach($wizard_button, -msg => "Open Wizards");
+  })->grid(-row=>1,-column=>3,-sticky=>'wens');
+  $help->attach($wizard_button, -msg => "Wizards...");
 
   our $sum_list_button = $mod_buttons -> Button(-image=>$gif{compare}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
 #      my $save_file = $mw -> getSaveFile (-defaultextension=>".csv", -filetypes=>$types, -title=>"Save R script as", -initialdir => $cwd);
@@ -7331,13 +7370,18 @@ sub create_mod_buttons {
 	  start_command($software{spreadsheet},'"pirana_run_summary.csv"');
       } else {message("Spreadsheet application not found. Please check settings.")};
       status ();
-  }) ->grid(-row=>2,-column=>5,-columnspan=>1,-sticky=>'wens');
+  }) ->grid(-row=>2,-column=>1,-columnspan=>1,-sticky=>'wens');
   $help->attach($sum_list_button, -msg => "Generate summary (csv-file) of all NONMEM output files");
 
-  $cleanup_dir_button = $mod_buttons->Button(-image=>$gif{clean_dir},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+  our $cleanup_dir_button = $mod_buttons->Button(-image=>$gif{clean_dir},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       cleanup_runtime_files_window();
-  })->grid(-row=>2,-column=>6,-sticky=>'wens');
+  })->grid(-row=>2,-column=>2,-sticky=>'wens');
   $help->attach($cleanup_dir_button, -msg => "Clean up runtime files in current folder");
+
+  our $cov_calc_button = $mod_buttons->Button(-image=>$gif{calc_cov},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      cov_calc_window();
+  })->grid(-row=>2,-column=>3,-sticky=>'wens');
+  $help->attach($cov_calc_button, -msg => "Covariance / correlation calculator");
 
 ### removed temporarily. Probably not very much-used functionality.
 #  our $tree_txt_button = $mod_buttons -> Button(-image=>$gif{treeview2}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
@@ -7350,20 +7394,6 @@ sub create_mod_buttons {
 #   ->grid(-row=>1,-column=>1,-sticky=>'wens');
 #  $mod_buttons -> Label (-text=>"       Runs: ", -font=>$font_normal, -background=>$bgcol)
 #   ->grid(-row=>2,-column=>1,-sticky=>'wens');
-
-  my $show_execution_log = $mod_buttons -> Button (-image=>$gif{log}, -background=>$button,-activebackground=>$abutton, -border=>0,
-	  -command=>sub {
-      show_exec_runs_window();
-    })->grid(-row=>1,-column=>5,-sticky=>'wens');
-  $help->attach($show_execution_log, -msg => "Show model execution log");
-
-  our $show_inter_button = $mod_buttons->Button(-image=>$gif{edit_inter},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-      $cwd = $dir_entry -> get();
-      chdir($cwd);
-      show_inter_window($cwd);
-      if ($inter_window) {$inter_window -> focus();}
-      })->grid(-row=>1,-column=>6,-sticky=>'wens');
-  $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
 
 #  our $sge_monitor_button = $mod_buttons -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub {sge_monitor_window();
 #      })->grid(-row=>1,-column=>7,-columnspan=>1,-sticky=>'wens');
@@ -7386,7 +7416,6 @@ sub show_run_frame {
   }
 
   # spacer
-  # $run_frame -> Label(-text=>" ", -font=>'Verdana 1', -width=>10) -> grid(-sticky=>'we',-row=>3,-column=>1,-ipady=>0);
   our $run_color=$lightblue; our $arun_color=$darkblue;
 
   if ($setting{default_method} =~ m/nmq/gi) {$run_method = "NONMEM"};
@@ -7407,7 +7436,7 @@ sub show_run_frame {
   if ($setting{font_size} == 2) {$note_width=40} else {$note_width = 29};
   if ($full_screen==0) {$entry_width = 72};
   our $notes_text = $run_frame -> Scrolled ('Text', -scrollbars=>'e',
-      -width=>$entry_width, -relief=>'groove', -border=>1, -height=>4,
+      -width=>$entry_width, -relief=>'groove', -border=>2, -height=>4,
       -font=>$font_small, -background=>$entry_color, -state=>'normal'
   )->grid(-column=>2, -row=>1, -rowspan=>2, -columnspan=>2, -sticky=>'nwse', -ipadx=>0, -ipady=>0);
 
@@ -7418,32 +7447,32 @@ sub show_run_frame {
     status("Saving color information...");
     note_color ($lightred);
     status();
-  })->grid(-column=>2, -row=>1,-rowspan=>1,-sticky=>'nw');
+  })->grid(-column=>2, -row=>2,-rowspan=>1,-sticky=>'nw');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$lighterblue, -activebackground=>$lightestblue, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lighterblue);
     status();
-  })->grid(-column=>3, -row=>1,-rowspan=>1,-sticky=>'nw');
+  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nw');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$darkgreen, -activebackground=>$lightgreen, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightgreen);
     status();
-  })->grid(-column=>4, -row=>1,-rowspan=>1,-sticky=>'nw');
+  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nw');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>'white', -activebackground=>'white', -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ("#FFFFFF");
     status();
-  })->grid(-column=>2, -row=>2,-rowspan=>1,-sticky=>'nw');
+  })->grid(-column=>2, -row=>3,-rowspan=>1,-sticky=>'nw');
     $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>1,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($button);
     status();
-  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nw');
+  })->grid(-column=>3, -row=>3,-rowspan=>1,-sticky=>'nw');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$darkyellow, -activebackground=>$lightyellow, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightyellow);
     status();
-  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nwes');
+  })->grid(-column=>4, -row=>3,-rowspan=>1,-sticky=>'nwes');
   $colors_frame -> Button (-text => "Save note", -border=>$bbw, -background=>$button,
     -activebackground=>$abutton, -font=>$font_normal, -command=> sub{
 	my @sel = $models_hlist -> selectionGet ();
@@ -7465,7 +7494,7 @@ sub show_run_frame {
 	$models_hlist -> itemConfigure(@sel[0], 12, -text => $note_strip);
 	$models_hlist -> update();
 	return(1);
-  }) -> grid (-column=>2, -columnspan=>3,-row=>3, -sticky=>"news");
+  }) -> grid (-column=>2, -columnspan=>3,-row=>1, -sticky=>"news");
 
   }
 }
@@ -7503,9 +7532,14 @@ sub table_info_window {
     $table_descr{$file} = $file_descr;
     $table_creator{$file} = $creator;
     $table_note{$file} = $file_notes;
+    my $mod_time;
+    if (-e $cwd."/".$file) {$mod_time = localtime(@{stat $cwd."/".$tab_file}[9])};
     my $note = $table_note{$file};
     $note =~ s/\n/ /g;
-    update_text_box(\$tab_file_note, $note);
+    my $update_text = (-s $file)." kB\n";
+    $update_text .= substr($mod_time,4)."\n";
+    $update_text .= $note;
+    update_text_box(\$tab_file_info, $update_text);
     $table_info_window -> destroy();
     return();
   }) -> grid(-row=>10, -column=>2, -sticky=>"wn");
@@ -7811,7 +7845,7 @@ sub project_buttons_show {
   $frame_dir -> Label(-text=>'Project:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>1,-column=>1, -sticky => 'e');
   $frame_dir -> Label(-text=>'Folder:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>2,-column=>1, -sticky => 'e');
 #  $frame_dir -> Label(-text=>'   ', -background=>$bgcol)-> grid(-row=>3,-column=>1, -sticky => 'we');
-  $dir_entry = $frame_dir -> Entry(-width=>44, -textvariable=>\$cwd, -border=>1, -relief=>'groove', -background=>$white,-font=>$font_normal)
+  $dir_entry = $frame_dir -> Entry(-width=>44, -textvariable=>\$cwd, -border=>2, -relief=>'groove', -background=>$white,-font=>$font_normal)
     -> grid(-row=>2,-column=>2, -sticky => 'wens',-columnspan=>4);
   $dir_entry->bind("<Return>", sub {
      $cwd = $dir_entry -> get();
