@@ -1162,10 +1162,12 @@ sub create_nm_start_script {
 
   push (@script, $drive);
   if ($ssh{connect_ssh}==1) {
-      unless ( $run_dir =~ s/$ssh{local_folder}/$ssh{remote_folder}/i ){
+      my $loc = unix_path($ssh{local_folder});
+      my $rem = unix_path($ssh{remote_folder});
+      $run_dir = unix_path($run_dir);
+      unless ( $run_dir =~ s/$loc/$rem/i ){
           $run_dir .= "\n"."echo *** Error: Current folder not located at remote cluster. Check preferences!";
       }
-      $run_dir = unix_path($run_dir);
   }
   push (@script, "cd '".$run_dir."'\n");
   foreach my $model (@mod) {
@@ -6415,7 +6417,7 @@ sub nmfe_run_window {
     ) -> grid(-row=>16,-column=>2,-columnspan=>2,-sticky=>"nwe");
     $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
 
-    my @pnm_files = ["doris.pnm"];
+    my @pnm_files = ["x.pnm"];
     my $pnm_menu = $nmfe_run_frame -> Optionmenu(-options=>\@pnm_files,
       -border=>$bbw,
       -background=>$run_color,-activebackground=>$arun_color,
@@ -6425,7 +6427,7 @@ sub nmfe_run_window {
 
     my $parallelization = 0;
     my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallellization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
-    }) -> grid(-row=>12,-column=>2,-columnspan=>2,-sticky=>"nw");
+    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
     my $nm_version_chosen;
     my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
       -variable => \$nm_version_chosen,
