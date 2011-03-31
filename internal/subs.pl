@@ -6519,6 +6519,11 @@ sub nmfe_run_window {
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
     $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
+	my $ext = "sh";
+	if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
+	    $ext = "bat";
+	}
+	my $script_file = "pirana_start_".$rand_str.".".$ext;
 	if ($ssh{connect_ssh} == 0) {
 	    @nm_installations = keys(%nm_dirs);
 	} else {
