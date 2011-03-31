@@ -672,7 +672,7 @@ sub refresh_sge_monitor_ssh {
 
     $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; 
-    unless ($ssh{login} =~ m/plink/i) {
+    unless ($ssh{login} =~ m/(plink|putty)/i) {
 	    my $ssh_post = "'";
     }
     if ($ssh{connect_ssh} == 1) {
@@ -680,7 +680,7 @@ sub refresh_sge_monitor_ssh {
 	if ($ssh{parameters} ne "") {
 	    $ssh_pre .= $ssh{parameters}.' ';
 	}
-	unless ($ssh{login} =~ m/plink/i) {
+	unless ($ssh{login} =~ m/(plink|putty)/i) {
 	    $ssh_pre .= "'";
 	}
 	if ($ssh{execute_before} ne "") {
@@ -2635,7 +2635,7 @@ sub remove_nm_inst {
     delete $nm_dirs{$nm_name};
     delete $nm_vers{$nm_name};
     save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
-    ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+    my ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
     %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
     chdir($cwd);
     refresh_pirana($cwd);
@@ -3271,6 +3271,7 @@ sub manage_nm_window {
 	  my ($nm_dirs_cluster_ref,$nm_vers_clusters_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
 	  our %nm_dirs = %$nm_dirs_ref;
 	  our %nm_vers = %$nm_vers_ref;
+	  our %nm_vers_cluster = %$nm_vers_cluster_ref;
 	  our %nm_dirs_cluster = %$nm_dirs_cluster_ref;
 	  our %nm_vers_cluster = %$nm_vers_cluster_ref;
 	  chdir($cwd);
@@ -4973,22 +4974,24 @@ sub build_nmfe_run_command {
     my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_inst, os_specific_path($cwd), \@files, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref);
     if (@nm_installations > 0) {
 	my $command;
-	my $ssh = "";
+	my $ssh_com = "";
 	if ($ssh{connect_ssh} == 1) { # through SSH
-	    $ssh = $ssh{login}." ";
+	    $ssh_com = $ssh{login}." ";
 	    if ($ssh{parameters} ne "") {
-		$ssh .= $ssh{parameters};
+		$ssh_com .= $ssh{parameters};
 	    }
-            $ssh .= "'";
+	    unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
+		$ssh_com .= "'";
+	    }
 	    if ($ssh{execute_before} ne "") {
-		$ssh .= $ssh{execute_before}."; ";
+		$ssh_com .= $ssh{execute_before}."; ";
 	    }
 	    $dir = $dir_entry -> get();
 	    $dir =~ s/$ssh{local_folder}//gi;
             my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
 	    $dir_new =~ s/\s/\\ /g; # put in an escape character before each space
-	    $ssh .= "cd ".$dir_new."; ";
-	    $command = $ssh;
+	    $ssh_com .= "cd ".$dir_new."; ";
+	    $command = $ssh_com;
 	    $cwd = $dir_entry -> get();
 	    my $l = length($cwd);
 	    unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
@@ -5004,11 +5007,15 @@ sub build_nmfe_run_command {
 	    }
 	} else {
             if (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==1)) {
-                $command .= 'dos2unix '.$run_script.'; ';  #only on Win+SSH-->Linux
+                $command .= 'dos2unix '.$run_script.'; chmod 755 '.$run_script.'; ';  #only on Win+SSH-->Linux
             }
             $command .= './'.$run_script; #only on linux
         }
-	if ($ssh{connect_ssh}==1) { $command .= "'"};
+	if ($ssh{connect_ssh}==1) { 
+	    unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
+		$ssh_com .= "'";
+	    }
+	};
 	unless (($os =~ m/MSWin/ )||($run_in_background==0)) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
@@ -5139,14 +5146,14 @@ sub build_psn_run_command {
 	}
 	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
-	unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
+	unless ($ssh{login} =~ m/(plink|putty)/i) { # plink (PuTTY) doesn't like the quotes
 	    $ssh_add .= "'";
 	}
 	if ($ssh{execute_before} ne "") {
 	    $ssh_add .= $ssh{execute_before}."; ";
 	}
         $ssh_add .= "cd ".unix_path($ssh{remote_folder}."/".$dir)."; ";
-	unless ($ssh{login} =~ m/plink/i) {
+	unless ($ssh{login} =~ m/(plink|putty)/i) {
 	    $ssh_add2 = "'";
 	}
 	$cwd = $dir_entry -> get();
@@ -6399,14 +6406,26 @@ sub nmfe_run_window {
 	center_window($nmfe_run_window); # center after adding frame (redhat)
    # my $nmfe_notebook = $nmfe_frame ->NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
    # my $nmfe_run_frame = $nmfe_notebook -> add("general", -label=>"General");
-    my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>15,-sticky=>'nws');
+    my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>16,-sticky=>'nws');
     my $command_area = $nmfe_run_frame -> Text (
       -width=>60, -height=>8, -yscrollcommand => ['set' => $command_area_scrollbar],
       -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none',
       -border=>1, -font=>$font_normal, -relief=>'groove',
       -selectbackground=>'#606060', -highlightthickness =>0
-    ) -> grid(-row=>15,-column=>2,-columnspan=>2,-sticky=>"nwe");
+    ) -> grid(-row=>16,-column=>2,-columnspan=>2,-sticky=>"nwe");
     $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
+
+    my @pnm_files = ["doris.pnm"];
+    my $pnm_menu = $nmfe_run_frame -> Optionmenu(-options=>\@pnm_files,
+      -border=>$bbw,
+      -background=>$run_color,-activebackground=>$arun_color,
+      -font=>$font_normal, -background=>"#c0c0c0",
+      -activebackground=>"#a0a0a0", -command=> sub{
+    }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wns');
+
+    my $parallelization = 0;
+    my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallellization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+    }) -> grid(-row=>12,-column=>2,-columnspan=>2,-sticky=>"nw");
     my $nm_version_chosen;
     my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
       -variable => \$nm_version_chosen,
@@ -6418,6 +6437,19 @@ sub nmfe_run_window {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
+	my $nm_ver;
+	if ($ssh{connect_ssh} == 0) {
+	    $nm_ver = $nm_vers{$nm_version_chosen};
+	} else {
+	    $nm_ver = $nm_vers_cluster{$nm_version_chosen};
+	}
+	if ($nm_ver >= 72) {
+	    $pnm_menu -> configure (-state=>"normal");
+	    $pnm_choose -> configure (-state=>"normal");
+	} else {
+	    $pnm_menu -> configure (-state=>"disabled");
+	    $pnm_choose -> configure (-state=>"disabled");
+	}
     }) -> grid(-row=>3,-column=>2,-columnspan=>1,-sticky => 'wens');
 
     $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"e");
@@ -6438,12 +6470,12 @@ sub nmfe_run_window {
 
     ### Run command and start script
     $nmfe_run_frame -> Label (-text=>"Script contents:\n", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>15,-column=>1,-sticky=>"ne");
+    ) -> grid(-row=>16,-column=>1,-sticky=>"ne");
     my $nmfe_run_script = $nmfe_run_frame -> Entry (-textvariable=> \$nmfe_run_command,
        -background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
-    ) -> grid(-row=>13,-column=>2,-columnspan=>2,-sticky=>"nwe");
+    ) -> grid(-row=>14,-column=>2,-columnspan=>2,-sticky=>"nwe");
     $nmfe_run_frame -> Label (-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>13,-column=>1,-sticky=>"ne");
+    ) -> grid(-row=>14,-column=>1,-sticky=>"ne");
 
     $nmfe_run_frame -> Checkbutton (-text=>"Run in background",-font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_background,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
 	 my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
@@ -6465,12 +6497,14 @@ sub nmfe_run_window {
     $nmfe_run_frame -> Label (-text=>" ", -width=>40, -font=>$font_normal, -background=>$bgcol	) -> grid(-row=>1,-column=>3,-sticky=>"e");
     
     delete $nm_dirs{""};
-    my $nm_dirs_ref; my $nm_vers_ref ;
+    my $nm_dirs_ref; my $nm_vers_ref ; my @nm_vers;
     my @nm_installations; my @nm_installations_checked;
     if ($ssh{connect_ssh} == 0) {
 	@nm_installations = keys(%nm_dirs);
+	@nm_vers = keys (%nm_vers);
     } else {
 	@nm_installations = keys(%nm_dirs_cluster);
+	@nm_vers = keys (%nm_vers_cluster);
     }
     if ($nm_versions_menu) { 
 	$nm_versions_menu -> configure (-options => [@nm_installations] );
@@ -6523,16 +6557,16 @@ sub nmfe_run_window {
         }) -> grid(-row=>11,-column=>2,-columnspan=>2,-sticky=>"nw");
     }
 
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>12,-column=>1,-sticky=>"w");
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>14,-column=>1,-sticky=>"w");
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>16,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>13,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>15,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>17,-column=>1,-sticky=>"w");
 
     $close_prv = $setting_internal{quit_dialog};
     $nmfe_run_frame -> Checkbutton (-text=>"Close this window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
 	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	}
-    }) -> grid(-row=>17,-column=>2,-columnspan=>2,-sticky=>"nw");
+    }) -> grid(-row=>18,-column=>2,-columnspan=>2,-sticky=>"nw");
 
      my $nmfe_run_button = $nmfe_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>40,-height=>40, -activebackground=>$abutton, -border=>$bbw, -command=> sub {
 	 my $nmfe_run_command_out = $nmfe_run_command;
@@ -6589,7 +6623,7 @@ sub nmfe_run_window {
 	if ($setting_internal{quit_dialog} == 1) {
 	    $nmfe_run_window -> destroy();
 	}
-    })-> grid(-row=>18, -column=>2,-columnspan=>2,-sticky=>"wns");
+    })-> grid(-row=>19, -column=>2,-columnspan=>2,-sticky=>"wns");
     if (keys(%nm_dirs)+keys(%nm_dirs_cluster) == 0) {
 	$nmfe_run_button -> configure (-state => "disabled");
     }
@@ -7341,7 +7375,7 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
 	}
         $estim_window -> raise();
       })->grid(-row=>1,-column=>5,-sticky=>'wens');
-  $help->attach($show_estim_button, -msg => "Show parameter estimates from runs");
+  $help->attach($show_estim_button, -msg => "Show/compare parameter estimates from runs");
 
 }
 
@@ -7409,7 +7443,7 @@ sub create_mod_buttons {
 }
 
 sub show_run_frame {
-  ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+  ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
   %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
   if (-e $home_dir."/log/pirana.log") {  # read last used NM installation
           read_log();
