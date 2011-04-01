@@ -1,4 +1,4 @@
-# Subroutines that perform actions on NM modelfiles or NM results files
+# Subroutines that perform actions on NM modelfiles or NM results files, or anything related to NONMEM
 
 package pirana_modules::nm;
 
@@ -11,7 +11,71 @@ use pirana_modules::misc qw(time_format rm_spaces block_size generate_random_str
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R);
+our @EXPORT_OK = qw(extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R);
+
+our @collect_nm;
+
+sub extract_name_from_nm_loc {
+    my $loc = shift;
+    my ($part1, $rest) = split ("\/util\/", unix_path ($loc));
+    my @spl = split ("\/", $part1);
+    return (@spl[(@spl-1)]);
+}
+
+sub nm_smart_search {
+# Do a smart search for NONMEM installations on a system
+    our @collect_nm;
+    my @loc_dir;
+    my @dirs;
+    if ($^O =~ m/MSWin/) {
+	@dirs = ("C:/Program Files", "C:/");
+    } else {
+	@dirs = ("/opt", "/usr");
+    }
+
+    #1. In the allocated locations, find subfolders that start with nm or nonmem
+    my @loc = ("nm", "nonmem");
+    foreach my $main_dir (@dirs) {
+	my $loc_ref = find_nm_possibles ($main_dir, \@loc);
+	push (@loc_dir, @$loc_ref);
+    }
+
+    #2. within the located folders, look if a nmfex file or nmfex.bat can be found
+    File::Find::find ( \&wanted, '/opt/NONMEM');
+    my @nm_found;
+    foreach (@collect_nm) { 
+	if (unix_path($_) =~ m/\/util\//i) {
+	    push (@nm_found, $_);
+	}
+    }
+    return (\@nm_found);
+}
+
+sub wanted {
+    /^nmfe.?\z/s 
+    && push(@collect_nm, $File::Find::name);
+}
+
+sub find_nm_possibles {
+### Purpose : Find folders in a given folder which start with nm or nonmem
+### Compat  : W+L+
+    my ($main_dir, $loc_ref) = @_;
+    my @dir = <$main_dir/*>;
+    my @loc_dir;   
+    my @loc = @$loc_ref;
+    foreach my $f (@dir) {
+	if (-d $f) {
+	    my $added = 0;
+	    foreach (@loc) {
+		if (($f =~ m/$_/i)&&($added == 0)) { 
+		    push (@loc_dir, $f); 
+		    $added = 1 
+		};
+	    }
+	}
+    }
+    return (\@loc_dir);
+}
 
 sub create_output_summary_csv {
 ### Purpose : Loop over all NM results files, and put the resutls in a csv file
@@ -154,10 +218,16 @@ sub get_nm_help_text {
 
 sub get_nm_help_keywords {
     my $db_name = shift; 
+    my $all;
     if (-s $db_name > 500000) {
 	my $dbargs = {AutoCommit => 0, PrintError => 1};
-	my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-	my $all = $db -> selectall_arrayref("SELECT nm_key FROM nm_help");
+	my $db = DBI-> connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
+	if ($db -> err()) { 
+	    print "Error connecting to NM help files database: $DBI::errstr\n";
+	    return(0);
+	} else {
+	    $all = $db -> selectall_arrayref("SELECT nm_key FROM nm_help");
+	}
 	return ($all);
     } else {
 	return(0);

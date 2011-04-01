@@ -183,6 +183,7 @@ sub create_menu_bar {
 #  if ($^O =~ m/MSWin/) {
       $mbar_tools_NM -> command(-label => "Manage NM installations",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub { manage_nm_window() });
 #  }
+  $mbar_tools_NM -> command(-label => "Quick search for NM installations",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub { smart_nm_search_dialog() });
   $mbar_tools_NM -> command(-label => "Environment variables",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub { nm_env_var_window(); });
   if ($^O =~ m/MSWin/) {
       $mbar_tools_NM -> command(-label => "Install NM6/7 using NMQual", -font=>$font,-background=>$bgcol,-underline=>1, -command=> sub { install_nonmem_nmq_window() });
