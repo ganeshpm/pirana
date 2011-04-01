@@ -23,6 +23,59 @@
 # These are mainly the subs that build parts of the GUI and dialogs.
 # As much as possible, subs are located in separate module
 
+sub smart_nm_search_dialog {
+### Purpose : Do a smart search for NM installations on the local system
+### Compat  : W+L+
+    my $smart_nm_search_dialog = $mw -> Toplevel(-title=>'Quick search for NM installations on local system');
+    no_resize ($smart_nm_search_dialog);  
+    my $smart_nm_search_frame = $smart_nm_search_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+    center_window($smart_nm_search_dialog); # center after adding frame 
+ 
+    $nm_found_hlist = $smart_nm_search_frame -> Scrolled('HList',
+        -head       => 1, -selectmode => "single",
+        -highlightthickness => 0,
+        -columns    => 2,
+        -scrollbars => 'se', -width => 80, -height => 10, -border => 1,
+        -background => '#ffffff', -selectbackground => $pirana_orange,
+        -font       => $font,
+        -command    => sub {
+	    my $nm_sel = $nm_found_hlist -> selectionGet ();
+        }
+     )->grid(-column => 1, -columnspan=>4, -row => 2, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
+
+    $nm_found_hlist -> header('create', 0, -text=> "Nmfe scripts found:", -headerbackground => 'gray');
+    $nm_found_hlist -> columnWidth(0, 350);
+    $nm_found_hlist -> header('create', 1, -text=> "Suggested name in Pirana:", -headerbackground => 'gray');
+    $nm_found_hlist -> columnWidth(1, 200);
+
+    my $nm_found_ref = nm_smart_search();
+    $nm_found_ref = unique ($nm_found_ref);
+    my $i = 0;
+    foreach my $loc (@$nm_found_ref) {
+	$nm_found_hlist -> add($i);
+	$nm_found_hlist -> itemCreate($i, 0, -text => $loc, -style=>$style);
+	$nm_found_hlist -> itemCreate($i, 1, -text => extract_name_from_nm_loc ($loc), -style=>$style);
+	$i++;
+    }
+
+    my $text = "From the NONMEM installations that were found, select those that you would like to be\navailable from within Pirana. Double-click on a NONMEM installation to change the name\nto be used in Pirana.";
+
+    $smart_nm_search_frame -> Label (-text=> $text, -font=>$font, -justify=>"left", -background=>$bgcol
+	)-> grid (-row=>3, -column=>1, -columnspan=>4, -sticky => "nsw");
+    $smart_nm_search_frame -> Button (-text=>"Add selected to Pirana", -font=>$font, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command => sub {
+	my $nm_sel = $nm_found_hlist -> selectionGet ();
+	if (@$nm_sel == 0) {
+	    message ("Please select at least one NONMEM installation to be added.");
+	}
+    }
+    )-> grid (-row=>4, -column=>4, -sticky => "nwse");
+    $smart_nm_search_frame -> Button (-text=>"Cancel", -font=>$font, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command => sub {
+	$smart_nm_search_dialog -> destroy();
+    }
+    )-> grid (-row=>4, -column=>3, -sticky => "nwse");
+    
+}
+
 sub wizard_window {
 ### Purpose : Wizard Dialog 
 ### Compat  : W+L+
@@ -2530,12 +2583,12 @@ sub add_nm_inst {
   $nm_inst_frame -> Entry (-textvariable=>\$nm_name,  -background=>$white, -border=>$bbw,-width=>16,-border=>2, -relief=>'groove')
          ->grid(-column=>2,-row=>2,-sticky=>"w");
   $nm_inst_frame -> Entry (-textvariable=>\$nm_dir, -background=>$white, -border=>$bbw,-width=>40,-border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>3,-sticky=>"w");
+         ->grid(-column=>2,-row=>3, -columnspan=>2, -sticky=>"w");
   my $browse_button = $nm_inst_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0, -command=> sub{
       $nm_dir = $mw-> chooseDirectory();
       if($nm_dir eq "") {$nm_dir = "C:\\nmvi"};
       $nm_inst_w -> focus();
-  })->grid(-row=>3, -column=>2, -rowspan=>1, -sticky => 'nse');
+  })->grid(-row=>3, -column=>3, -rowspan=>1, -sticky => 'nse');
   $help->attach($browse_button, -msg => "Browse filesystem");
   my $nm_inst_type_menu = $nm_inst_frame -> Optionmenu (-options=>["Local","Remote (SSH)"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
     -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white)
@@ -2605,10 +2658,16 @@ sub add_nm_inst {
     } else {
 	message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
     };
-  })-> grid(-row=>6,-column=>2,-sticky=>"w");
+  })-> grid(-row=>6,-column=>2,-sticky=>"nwse");
+  my $quick_search_button = $nm_inst_frame -> Button (-text=>"Quick search",  -font=>$font,-width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+      $nm_inst_w -> destroy();
+      smart_nm_search_dialog();
+  })-> grid(-row=>6,-column=>3,-sticky=>"nwse");
+  $help -> attach($quick_search_button, -msg => "Perform a quick search for NM installations on the local system");
+
   $nm_inst_frame -> Button (-text=>"Cancel", -font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
     $nm_inst_w->destroy;
-  })-> grid(-row=>6,-column=>1,-sticky=>"e");
+  })-> grid(-row=>6,-column=>1,-sticky=>"nwse");
 }
 
 sub remove_nm_inst {
@@ -3234,22 +3293,24 @@ sub manage_nm_window {
       $compile_nm -> destroy;
       $sizes_w -> destroy;
       message("SIZES saved.\nRecompile started in separate window.");
-    })->grid(-row=>4,-column=>2,-sticky=>"nw",-ipadx=>10);
+    })->grid(-row=>4,-column=>2,-sticky=>"nwse",-ipadx=>10);
     $compile_nm_frame-> Button (-text=>'Cancel',  -font=>$font,-background=>$button, -activebackground=>$abutton, -border=>0, -command=>sub{
       $compile_nm -> destroy;
-    })->grid(-column=>2,-row=>4,-sticky=>"e",-ipadx=>10);
+    })->grid(-column=>2,-row=>4,-sticky=>"nwse",-ipadx=>10);
   }) -> grid(-row=>10,-column=>3);
+
   $nm_manage_frame -> Button (-text=>"Cancel",  -font=>$font,-width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
      $sizes_w->destroy;
-  })-> grid(-row=>10,-column=>1);
+  })-> grid(-row=>10,-column=>1,-sticky=>"nwse");
 
   my $nm_dir_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_dirs{$nm_chosen}, -font=>$font, -background=>$white,-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>2,-sticky=>"we");
+         ->grid(-column=>2,-row=>2, -columnspan=>2, -sticky=>"we");
   my $nm_ver_entry = $nm_manage_frame -> Entry (-textvariable=>\$nm_vers{$nm_chosen}, -font=>$font, -background=>$white,-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>3,-sticky=>"w");
+         ->grid(-column=>2,-row=>3,  -columnspan=>2, -sticky=>"w");
 
   my $nm_chosen;
-  my $button_frame = $nm_manage_frame -> Frame (-background=>$bgcol)->grid(-row=>1, -column=>3,-sticky=>"wns");
+  my $button_frame = $nm_manage_frame -> Frame (-background=>$bgcol
+  )->grid(-row=>1, -column=>4,-sticky=>"wns");
   $del_nm_button = $button_frame -> Button (-image=>$gif{trash},  -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{
       my $delete = message_yesno ("Do you really want to delete this NONMEM installation?\nNB. The actual installation will not be removed, only the link from Piraña.", $mw, $bgcol, $font_normal);
       if( $delete == 1) {
@@ -3306,7 +3367,7 @@ sub manage_nm_window {
 	    if ($nm_type_chosen =~ m/nmq/i) { $nm_save->configure(-state=>"disabled")} else { $nm_save -> configure(-state=>"normal") };
 	    $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_chosen});
 	    $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_chosen});
-    })->grid(-row=>1,-column=>2, -sticky => 'wens');
+    })->grid(-row=>1,-column=>2,  -columnspan=>2, -sticky => 'wens');
 
 
   # get NM installations and fill in Optionmenu
