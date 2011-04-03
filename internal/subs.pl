@@ -26,7 +26,8 @@
 sub smart_nm_search_dialog {
 ### Purpose : Do a smart search for NM installations on the local system
 ### Compat  : W+L+
-    my $smart_nm_search_dialog = $mw -> Toplevel(-title=>'Quick search for NM installations on local system');
+    my ($nm_local_hlist, $nm_remote_hlist) = @_;
+    my $smart_nm_search_dialog = $mw -> Toplevel(-title=>'Quick search for NONMEM installations on local system');
     no_resize ($smart_nm_search_dialog);  
     my $smart_nm_search_frame = $smart_nm_search_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
     center_window($smart_nm_search_dialog); # center after adding frame 
@@ -57,20 +58,31 @@ sub smart_nm_search_dialog {
 	$nm_found_hlist -> itemCreate($i, 1, -text => extract_name_from_nm_loc ($loc), -style=>$style);
 	$i++;
     }
-
-    my $text = "From the NONMEM installations that were found, select those that you would like to be\navailable from within Pirana. Double-click on a NONMEM installation to change the name\nto be used in Pirana.";
-
+    
+    my $text = "From the NONMEM installations that were found below, select those that you would like to be\navailable from within Pirana. Double-click on a NONMEM installation to change the name\nto be used in Pirana.";
     $smart_nm_search_frame -> Label (-text=> $text, -font=>$font, -justify=>"left", -background=>$bgcol
-	)-> grid (-row=>3, -column=>1, -columnspan=>4, -sticky => "nsw");
+	)-> grid (-row=>0, -column=>1, -columnspan=>4, -sticky => "nsw");
     $smart_nm_search_frame -> Button (-text=>"Add selected to Pirana", -font=>$font, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command => sub {
 	my $nm_sel = $nm_found_hlist -> selectionGet ();
 	if (@$nm_sel == 0) {
 	    message ("Please select at least one NONMEM installation to be added.");
+	} else {
+	    foreach my $sel (@$nm_sel) {
+		my $nm = $nm_found_hlist -> itemCget($sel, 1, "text");
+		my $dir = $nm_found_hlist -> itemCget($sel, 0, "text");
+		$nm_vers{$nm} = 7;
+		$nm_dirs{$nm} = $dir;
+	    }
+	    save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini", 1);
+	    populate_manage_nm_hlist ($nm_local_hlist, $nm_remote_hlist);	
+	    $smart_nm_search_dialog -> destroy();
+	    return(\%nm_new_dirs);
 	}
     }
     )-> grid (-row=>4, -column=>4, -sticky => "nwse");
     $smart_nm_search_frame -> Button (-text=>"Cancel", -font=>$font, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command => sub {
 	$smart_nm_search_dialog -> destroy();
+	return (0);
     }
     )-> grid (-row=>4, -column=>3, -sticky => "nwse");
     
@@ -2565,250 +2577,214 @@ sub save_log {
 sub add_nm_inst {
 ### Purpose : Add a local NM installation to Pirana
 ### Compat  : W+L+
-  my $nm_inst_w = $mw -> Toplevel(-title=>"Add NONMEM installation to Piraña");
-  no_resize ( $nm_inst_w ) ;
-  my $nm_inst_frame = $nm_inst_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-  center_window($nm_inst_w); # center after adding frame (redhat)
-  $nm_inst_frame -> Label (-text=>"Local/remote: ",-font=>$font, -background=>$bgcol)->grid(-row=>1,-column=>1,-sticky=>"e");
-  $nm_inst_frame -> Label (-text=>"Name in Piraña: ",-font=>$font,-background=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>"e");
-  $nm_inst_frame -> Label (-text=>"NM Location: ",-font=>$font,-background=>$bgcol)->grid(-row=>3,-column=>1,-sticky=>"e");
-  $nm_inst_frame -> Label (-text=>"NM version: ",-font=>$font,-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e");
-  my $nm_name="nmvi";
-  my $nm_dir ="C:\\nmvi";
-  unless ($os =~ m/MSWin/i) {
-    $nm_dir = "/opt/nmvi";
-  }
-  my $nm_type = "regular";
-  my $nm_locality = "Local";
-  $nm_inst_frame -> Entry (-textvariable=>\$nm_name,  -background=>$white, -border=>$bbw,-width=>16,-border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>2,-sticky=>"w");
-  $nm_inst_frame -> Entry (-textvariable=>\$nm_dir, -background=>$white, -border=>$bbw,-width=>40,-border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>3, -columnspan=>2, -sticky=>"w");
-  my $browse_button = $nm_inst_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0, -command=> sub{
-      $nm_dir = $mw-> chooseDirectory();
-      if($nm_dir eq "") {$nm_dir = "C:\\nmvi"};
-      $nm_inst_w -> focus();
-  })->grid(-row=>3, -column=>3, -rowspan=>1, -sticky => 'nse');
-  $help->attach($browse_button, -msg => "Browse filesystem");
-  my $nm_inst_type_menu = $nm_inst_frame -> Optionmenu (-options=>["Local","Remote (SSH)"], -width=>16, -variable=>\$nm_locality,-border=>$bbw,
-    -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white)
-         ->grid(-column=>2,-row=>1,-sticky=>"w");
-  $nm_inst_type_menu -> configure (-command => sub {
-      if ($nm_locality eq "Remote (SSH)") {
-          $nm_dir = "/opt/nmvi";
-      }
-      if (($nm_locality eq "Local")&&($os =~ m/MSWin/i)) {
-          $nm_dir = "C:/nmvi";
-      }
-  } );
-  $nm_inst_frame -> Optionmenu (-options=>["5","6","7", "7.2"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
-    -background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white,-activeforeground=>$white)
-         ->grid(-column=>2,-row=>4,-sticky=>"w");
-  $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
-  my $nm_ini_file;
-  $nm_inst_frame -> Button (-text=>"Add",-font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    if ($nm_dirs{$nm_name}) {
-      message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
-    } else {
-	$nm_ver =~ s/7\.2/72/; # the command is nmfe72
-	$valid_nm = 0;
-	if ($nm_locality eq "Local") {
-	    my $add_base_drive = "";
-	    if (($^O =~ m/MSWin/g)&!(substr($nm_dir, 0, 2) =~ m/.:/))  {
-		$add_base_drive = $base_drive."/"; # if no drive is specified, add the base_drive (from which pirana is started)
-	    }
-	    $nm_ini_file = "nm_inst_local.ini";
-	    # look if it is maybe an NMQual NM isntallation
-	    $nmq_name = get_nmq_name($nm_dir);
-	    if (-e unix_path($add_base_drive.$nm_dir."/test/".$nmq_name.".pl")) {
-		$nm_type = "nmqual";
-		$valid_nm = 1;
-	    }
-	  # regular installation
-	    if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
-		$nm_type = "regular";
-		$valid_nm = 1;
-	    }
-	} else { # SSH, just assume it is the correct location and regular installation
-	  $nm_ini_file = "nm_inst_cluster.ini";
-	  $valid_nm = 1;
-	  $nm_type = "regular";
-      }
+    my ($nm_locality, $nm_local_hlist, $nm_remote_hlist) = @_;
+    my $nm_inst_w = $mw -> Toplevel(-title=>"Manually add NONMEM installation to Piraña");
+    no_resize ( $nm_inst_w ) ;
+    my $nm_inst_frame = $nm_inst_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
+    center_window($nm_inst_w); # center after adding frame (redhat)
+
+    $nm_inst_frame -> Label (-text=>"Name in Piraña: ",-font=>$font,-background=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>"e");
+    $nm_inst_frame -> Label (-text=>"NM Location: ",-font=>$font,-background=>$bgcol)->grid(-row=>3,-column=>1,-sticky=>"e");
+    $nm_inst_frame -> Label (-text=>"NM version: ",-font=>$font,-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e");
+
+    my $nm_name = "nm7";
+    my $nm_dir  = "C:\\NONMEM\\nm7";
+    unless ($os =~ m/MSWin/i) {
+	$nm_dir = "/opt/NONMEM/nm7";
     }
-    if ($valid_nm==1) {
-	if ($nm_locality eq "Local") {
-	    $nm_dirs{$nm_name} = $nm_dir;
-	    $nm_vers{$nm_name} = $nm_ver;
-	    $nm_types{$nm_name} = $nm_type;
-	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/".$nm_ini_file, 1);
-	    chdir($cwd);
-	    unless ($nm_type eq "regular") {
-		nmqual_compile_script ($nm_dir, $nmq_name);
-	    };
+
+    my $nm_type = "regular";
+    $nm_inst_frame -> Entry (-textvariable=>\$nm_name,  -background=>$white, -border=>$bbw,-width=>16,-border=>2, -relief=>'groove')
+	->grid(-column=>2,-row=>2,-sticky=>"w");
+    $nm_inst_frame -> Entry (-textvariable=>\$nm_dir, -background=>$white, -border=>$bbw,-width=>40,-border=>2, -relief=>'groove')
+	->grid(-column=>2,-row=>3, -columnspan=>2, -sticky=>"w");
+    my $browse_button = $nm_inst_frame -> Button(-image=>$gif{browse}, -width=>28, -border=>0, -command=> sub{
+	$nm_dir = $mw-> chooseDirectory();
+	if($nm_dir eq "") {$nm_dir = "C:\\nmvi"};
+	$nm_inst_w -> focus();
+						 })->grid(-row=>3, -column=>3, -rowspan=>1, -sticky => 'nse');
+    $help -> attach($browse_button, -msg => "Browse filesystem");
+    $nm_inst_frame -> Optionmenu (-options=>["5","6","7", "7.2"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
+				  -background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white,-activeforeground=>$white)
+	->grid(-column=>2,-row=>4,-sticky=>"w");
+    $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
+    my $nm_ini_file;
+    $nm_inst_frame -> Button (-text=>"Add",-font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	my $exists = 0;
+	if ($nm_locality eq "local") {
+	    if ($nm_dirs{$nm_name}) {
+		$exists = 1;
+	    }
 	} else {
-	    $nm_dirs_cluster{$nm_name} = $nm_dir;
-	    $nm_vers_cluster{$nm_name} = $nm_ver;
-	    $nm_types_cluster{$nm_name} = $nm_type;
-	    save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs_cluster, \%nm_vers_cluster, $base_dir."/ini_defaults/".$nm_ini_file, 1);
+	    if ($nm_dirs_cluster{$nm_name}) {
+		$exists = 1;
+	    }
 	}
-	undef $nm_versions_menu;
+	if ($exists == 1) {
+	    message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
+	} else {
+	    $nm_ver =~ s/7\.2/72/; # the command is nmfe72
+	    $valid_nm = 0;
+	    if ($nm_locality eq "local") {
+		my $add_base_drive = "";
+		if (($^O =~ m/MSWin/g)&!(substr($nm_dir, 0, 2) =~ m/.:/))  {
+		    $add_base_drive = $base_drive."/"; # if no drive is specified, add the base_drive (from which pirana is started)
+		}
+		$nm_ini_file = "nm_inst_local.ini";
+		# look if it is maybe an NMQual NM isntallation
+		$nmq_name = get_nmq_name($nm_dir);
+		if (-e unix_path($add_base_drive.$nm_dir."/test/".$nmq_name.".pl")) {
+		    $nm_type = "nmqual";
+		    $valid_nm = 1;
+		}
+		# regular installation
+		if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
+		    $nm_type = "regular";
+		    $valid_nm = 1;
+		}
+	    } else { # SSH, just assume it is the correct location and regular installation
+		$nm_ini_file = "nm_inst_cluster.ini";
+		$valid_nm = 1;
+		$nm_type = "regular";
+	    }
+    }
+	if ($valid_nm==1) {
+	    if ($nm_locality eq "local") {
+		$nm_dirs{$nm_name} = $nm_dir;
+		$nm_vers{$nm_name} = $nm_ver;
+		$nm_types{$nm_name} = $nm_type;
+		save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/".$nm_ini_file, 1);
+		unless ($nm_type eq "regular") {
+		    nmqual_compile_script ($nm_dir, $nmq_name);
+		};
+	    } else {
+		$nm_dirs_cluster{$nm_name} = $nm_dir;
+		$nm_vers_cluster{$nm_name} = $nm_ver;
+		$nm_types_cluster{$nm_name} = $nm_type;
+		save_ini ($home_dir."/ini/".$nm_ini_file, \%nm_dirs_cluster, \%nm_vers_cluster, $base_dir."/ini_defaults/".$nm_ini_file, 1);
+	    }
+	    undef $nm_versions_menu;
+	    $nm_inst_w -> destroy;
+	    populate_manage_nm_hlist ($nm_local_hlist, $nm_remote_hlist);	
+	    return();
+	} else {
+	    message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
+	};
+			      })-> grid(-row=>6,-column=>2,-sticky=>"nwse");
+    # my $quick_search_button = $nm_inst_frame -> Button (-text=>"Quick search",  -font=>$font,-width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+    #     $nm_inst_w -> destroy();
+    #     smart_nm_search_dialog();
+    # })-> grid(-row=>6,-column=>3,-sticky=>"nwse");
+#  $help -> attach($quick_search_button, -msg => "Perform a quick search for NM installations on the local system");
+
+    $nm_inst_frame -> Button (-text=>"Cancel", -font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
 	$nm_inst_w -> destroy;
-	$sizes_w -> destroy;
-
-    } else {
-	message("Cannot find nmfe".$nm_ver.".bat (regular installation) or Perl-file (NMQual).\n Check if installation is valid.")
-    };
-  })-> grid(-row=>6,-column=>2,-sticky=>"nwse");
-  my $quick_search_button = $nm_inst_frame -> Button (-text=>"Quick search",  -font=>$font,-width=>20, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-      $nm_inst_w -> destroy();
-      smart_nm_search_dialog();
-  })-> grid(-row=>6,-column=>3,-sticky=>"nwse");
-  $help -> attach($quick_search_button, -msg => "Perform a quick search for NM installations on the local system");
-
-  $nm_inst_frame -> Button (-text=>"Cancel", -font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    $nm_inst_w->destroy;
-  })-> grid(-row=>6,-column=>1,-sticky=>"nwse");
-}
-
-sub remove_nm_inst {
-### Purpose : Remove an NM installation from Pirana (but don't delete the installation)
-### Compat  : W+L?
-  $nm_remove_w = $mw -> Toplevel(-title=>"Remove NONMEM installation from Piraña");
-  no_resize($nm_remove_w);
-  $nm_remove_frame = $nm_remove_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-  center_window($nm_remove_w); # center after adding frame (redhat)
-  $nm_remove_frame -> Label (-text=>"Installation: ")->grid(-row=>1,-column=>1,-sticky=>"e");
-  $nm_remove_frame -> Label (-text=>"NONMEM Location: ")->grid(-row=>2,-column=>1,-sticky=>"e");
-  $nm_remove_frame -> Label (-text=>"NONMEM version: ")->grid(-row=>3,-column=>1,-sticky=>"e");
-  ($nm_name,@dummy) = keys(%nm_dirs);
-
-  $nm_dir_entry = $nm_remove_frame -> Entry ( -background=>$white, -textvariable=>\$nm_dirs{$nm_name},-border=>$bbw,-width=>30,-state=>"disabled", -border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>2,-sticky=>"w");
-  $nm_ver_entry = $nm_remove_frame -> Entry ( -background=>$white, -textvariable=>\$nm_vers{$nm_name},-border=>$bbw,-width=>2,-state=>"disabled", -border=>2, -relief=>'groove')
-         ->grid(-column=>2,-row=>3,-sticky=>"w");
-
-  $nm_remove_frame -> Optionmenu (-options=>[keys(%nm_dirs)],-variable=>\$nm_name,-border=>$bbw,-width=>10,-font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white,-activeforeground=>$white, -command=>sub{
-      $nm_dir_entry -> configure(-textvariable=>\$nm_dirs{$nm_name});
-      $nm_ver_entry -> configure(-textvariable=>\$nm_vers{$nm_name});
-    })->grid(-column=>2,-row=>1,-sticky=>"w");
-  $nm_remove_frame -> Label (-text=>" ")->grid(-row=>4,-column=>1,-sticky=>"e");
-  $nm_remove_frame -> Button (-text=>"Remove", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    delete $nm_dirs{$nm_name};
-    delete $nm_vers{$nm_name};
-    save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers, $base_dir."/ini_defaults/nm_inst_local.ini");
-    my ($nm_dirs_ref,$nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
-    %nm_dirs = %$nm_dirs_ref; %nm_vers = %$nm_vers_ref;
-    chdir($cwd);
-    refresh_pirana($cwd);
-    $nm_remove_w -> destroy;
-  })-> grid(-row=>5,-column=>2,-sticky=>"w");
-  $nm_remove_frame -> Button (-text=>"Cancel", -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-    $nm_remove_w->destroy;
-  })-> grid(-row=>5,-column=>1,-sticky=>"e");
+	return();
+     })-> grid(-row=>6,-column=>1,-sticky=>"nwse");
 }
 
 sub save_ini {
 ### Purpose : Save Pirana settings contained in a hash to ini-file.
 ### Compat  : W+L?
-  ($ini_file, $ref_ini, $ref_ini_descr, $ini_def, $add_to_ini) = @_;
-  my %ini = %$ref_ini;
-  my %ini_descr = %$ref_ini_descr;
-  my %ini_add_1;
-  if ($ref_add_1 ne "") { %ini_add_1 = %$ref_add_1 };
-  my %cat;
-  if ($cat_ref ne "") { %cat = %$cat_ref };
+    ($ini_file, $ref_ini, $ref_ini_descr, $ini_def, $add_to_ini) = @_;
+    my %ini = %$ref_ini;
+    my %ini_descr = %$ref_ini_descr;
+    my %ini_add_1;
+    if ($ref_add_1 ne "") { %ini_add_1 = %$ref_add_1 };
+    my %cat;
+    if ($cat_ref ne "") { %cat = %$cat_ref };
 
-  open (INI, "<".unix_path($ini_def));
-  my @lines=<INI>;
-  close INI;
-  open (INI, ">".unix_path($ini_file));
-  foreach (@lines) {
-      if ((substr($_,0,1) eq "#")||(substr($_,0,1) eq "[")) {
-          print INI $_;
-      } else {
-          chomp($_);
-          my ($key, $value, $descr) = split (/,/, $_);
-          #      chomp ($ini_descr{$key}) ;# =~ s/\n/\\
-          if (exists $ini{$key}) {
-              print INI $key.",".$ini{$key}.",".$ini_descr{$key};
-              delete $ini{key};
-           } else {
-              print INI $_; # use line from default ini file
-          }
-          print INI "\n";    
-      }
-  }
-  if ($add_to_ini == 1) { # used e.g. for nm_inst_local.ini.
-      foreach my $key (keys(%ini)) {
-          print INI $key.",".$ini{$key}.",".$ini_descr{$key};
-          print INI "\n";    
-      }
-  }
-  close INI;
+    open (INI, "<".unix_path($ini_def));
+    my @lines=<INI>;
+    close INI;
+    open (INI, ">".unix_path($ini_file));
+    foreach (@lines) {
+	if ((substr($_,0,1) eq "#")||(substr($_,0,1) eq "[")) {
+	    print INI $_;
+	} else {
+	    chomp($_);
+	    my ($key, $value, $descr) = split (/,/, $_);
+	    #      chomp ($ini_descr{$key}) ;# =~ s/\n/\\
+	    if (exists $ini{$key}) {
+		print INI $key.",".$ini{$key}.",".$ini_descr{$key};
+		delete $ini{key};
+	    } else {
+		print INI $_; # use line from default ini file
+	    }
+	    print INI "\n";    
+	}
+    }
+    if ($add_to_ini == 1) { # used e.g. for nm_inst_local.ini.
+	foreach my $key (keys(%ini)) {
+	    print INI $key.",".$ini{$key}.",".$ini_descr{$key};
+	    print INI "\n";    
+	}
+    }
+    close INI;
 }
 
 
 sub show_script_params {
 ### Purpose : In the interface for scripts (currently discontinued function) show the script parameters
 ### Compat  : W+L?
-  $script = shift ;
-  if ($edit_scripts_params) {
-    $edit_scripts_params->destroy();
-    our $edit_scripts_params = $edit_scripts_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n',-column=>2,-row=>1);
-    $edit_scripts_params -> Label (-text=>"Description: ", -font=>$font_bold)->grid(-column=>1,-row=>1,-sticky=>"w");
-    $edit_scripts_params -> Label (-text=>"Parameters: ",-font=>$font_bold)->grid(-column=>1,-row=>3,-sticky=>"w");
-    $edit_scripts_params -> Label (-text=>" ", -width=>"60")->grid(-column=>2,-row=>1,-sticky=>"w");
-  }
-  ($descr_ref, $defaults_ref, $script_desc) = read_scripts($script);
-  $descr_label = $edit_scripts_params -> Label (-text=>substr($script_desc,0,65), -font=>$font_normal)->grid(-column=>1,-row=>2,-columnspan=>2,-sticky=>"w");
-  $help -> attach($descr_label, -msg => $script_desc);
-  %defaults = %$defaults_ref;
-  our %descr = %$descr_ref;
-  #print keys(%$descr_ref);
-  $i=0; %p_entry;
-  foreach (keys (%descr)) {
-    $edit_scripts_params -> Label (-text=>substr($_,0,15), -justify=>'left')->grid(-column=>1,-row=>$i+4,-sticky=>"w");
-    if (exists $vars{$_}) {$defaults{$_} = $vars{$_}};         # you can use internal pirana variables for your scripts
-    if (exists $setting{$_}) {$defaults{$_} = $setting{$_}};   # dito for settings
-    if (exists $software{$_}) {$defaults{$_} = $software{$_}}; # dito for software settings
-    $width = length($defaults{$_});
-    if($width < 10) {$width=20} else {$width=40};
-    $p_entry{$_} = $edit_scripts_params -> Entry ( -background=>$white, -textvariable=>\$defaults{$_}, -width=>$width, -border=>2, -relief=>'groove')->grid(-column=>2,-row=>$i+4,-sticky=>"w");
-    $help -> attach($p_entry{$_}  , -msg => $descr{$_});
-    $i++;
-  }
+    $script = shift ;
+    if ($edit_scripts_params) {
+	$edit_scripts_params->destroy();
+	our $edit_scripts_params = $edit_scripts_w -> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n',-column=>2,-row=>1);
+	$edit_scripts_params -> Label (-text=>"Description: ", -font=>$font_bold)->grid(-column=>1,-row=>1,-sticky=>"w");
+	$edit_scripts_params -> Label (-text=>"Parameters: ",-font=>$font_bold)->grid(-column=>1,-row=>3,-sticky=>"w");
+	$edit_scripts_params -> Label (-text=>" ", -width=>"60")->grid(-column=>2,-row=>1,-sticky=>"w");
+    }
+    ($descr_ref, $defaults_ref, $script_desc) = read_scripts($script);
+    $descr_label = $edit_scripts_params -> Label (-text=>substr($script_desc,0,65), -font=>$font_normal)->grid(-column=>1,-row=>2,-columnspan=>2,-sticky=>"w");
+    $help -> attach($descr_label, -msg => $script_desc);
+    %defaults = %$defaults_ref;
+    our %descr = %$descr_ref;
+    #print keys(%$descr_ref);
+    $i=0; %p_entry;
+    foreach (keys (%descr)) {
+	$edit_scripts_params -> Label (-text=>substr($_,0,15), -justify=>'left')->grid(-column=>1,-row=>$i+4,-sticky=>"w");
+	if (exists $vars{$_}) {$defaults{$_} = $vars{$_}};         # you can use internal pirana variables for your scripts
+	if (exists $setting{$_}) {$defaults{$_} = $setting{$_}};   # dito for settings
+	if (exists $software{$_}) {$defaults{$_} = $software{$_}}; # dito for software settings
+	$width = length($defaults{$_});
+	if($width < 10) {$width=20} else {$width=40};
+	$p_entry{$_} = $edit_scripts_params -> Entry ( -background=>$white, -textvariable=>\$defaults{$_}, -width=>$width, -border=>2, -relief=>'groove')->grid(-column=>2,-row=>$i+4,-sticky=>"w");
+	$help -> attach($p_entry{$_}  , -msg => $descr{$_});
+	$i++;
+    }
 }
 
 sub read_scripts {
 ### Purpose : Read the scripts in the current directory
 ### Compat  : W+L?
-  $script = shift;
-  open (SCRIPT, "<".$base_dir."/scripts/".$script);
-  @lines = <SCRIPT>;
-  close (SCRIPT);
-  $arg_flag=0; $descr_flag=0; $script_descr="";
-  my %arguments_descr, my %arguments_default;
-  foreach (@lines) {
-    if ($_ =~ m/<\/description>/i) {$descr_flag=0};
-    if ($_ =~ m/<\/arguments>/i) {$arg_flag=0};
-    if ($arg_flag==1) {
-      ($key,$descr,$default) = split(/,/,$_);
-      $key =~ s/\#//g;
-      $key =~ s/ //g;
-      $key =~ s/-//;
-      chomp($default);
-      $arguments_descr{$key} = $descr;
-      $arguments_default{$key} = $default;
+    $script = shift;
+    open (SCRIPT, "<".$base_dir."/scripts/".$script);
+    @lines = <SCRIPT>;
+    close (SCRIPT);
+    $arg_flag=0; $descr_flag=0; $script_descr="";
+    my %arguments_descr, my %arguments_default;
+    foreach (@lines) {
+	if ($_ =~ m/<\/description>/i) {$descr_flag=0};
+	if ($_ =~ m/<\/arguments>/i) {$arg_flag=0};
+	if ($arg_flag==1) {
+	    ($key,$descr,$default) = split(/,/,$_);
+	    $key =~ s/\#//g;
+	    $key =~ s/ //g;
+	    $key =~ s/-//;
+	    chomp($default);
+	    $arguments_descr{$key} = $descr;
+	    $arguments_default{$key} = $default;
+	}
+	if ($descr_flag==1) {
+	    $script_descr = $_;
+	    chomp($script_descr);
+	    $script_descr =~ s/\#//;
+	}
+	if ($_ =~ m/<arguments>/i) {$arg_flag=1};
+	if ($_ =~ m/<description>/i) {$descr_flag=1};
     }
-    if ($descr_flag==1) {
-      $script_descr = $_;
-      chomp($script_descr);
-      $script_descr =~ s/\#//;
-    }
-    if ($_ =~ m/<arguments>/i) {$arg_flag=1};
-    if ($_ =~ m/<description>/i) {$descr_flag=1};
-  }
-  return \%arguments_descr, \%arguments_default, $script_descr;
+    return \%arguments_descr, \%arguments_default, $script_descr;
 }
 
 sub edit_ini_window {
@@ -3220,8 +3196,8 @@ sub nm_env_var_window {
   $nm_env_var_frame -> Label ( -text =>"Before NONMEM execution:" , -font=>$font_bold, -justify=>"l", -background=>$bgcol)->grid(-column=>1, -row=>2,-sticky=>"nws");
   $nm_env_var_frame -> Label ( -text =>"After NONMEM execution:" , -font=>$font_bold, -justify=>"l", -background=>$bgcol)->grid(-column=>1, -row=>4,-sticky=>"nws");
 
-  my $before_text = $nm_env_var_frame -> Text ( -font=>$font, -background=>$white, -border=>$bbw, -width=>72, -height=>8, -border=>2, -relief=>'groove') -> grid(-row=>3,-column=>1,-sticky=>"wn");
-  my $after_text = $nm_env_var_frame -> Text ( -font=>$font, -background=>$white, -border=>$bbw, -width=>72, -height=>8, -border=>2, -relief=>'groove') -> grid(-row=>5,-column=>1,-sticky=>"wn");
+  my $before_text = $nm_env_var_frame -> Text ( -font=>$font, -background=>$white, -border=>$bbw, -width=>72, -height=>5, -border=>2, -relief=>'groove') -> grid(-row=>3,-column=>1,-sticky=>"wn");
+  my $after_text = $nm_env_var_frame -> Text ( -font=>$font, -background=>$white, -border=>$bbw, -width=>72, -height=>5, -border=>2, -relief=>'groove') -> grid(-row=>5,-column=>1,-sticky=>"wn");
 
   $nm_env_button_frame = $nm_env_var_frame -> Frame (-background=>$bgcol) -> grid(-row=>7, -column=>1, -sticky=>"nse");
 
@@ -3251,13 +3227,139 @@ sub nm_env_var_window {
   $nm_env_button_frame -> Button (-text=>"Cancel", -font=>$font, -width=>16, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
       $nm_env_var_w -> destroy;
   }) -> grid(-row=>1, -column=>1, -sticky=>"nwse");
-
-
   center_window($nm_env_var_w);
-
 }
 
 sub manage_nm_window {
+### Purpose : Do a smart search for NM installations on the local system
+### Compat  : W+L+
+    my $manage_nm_dialog = $mw -> Toplevel(-title=>'Manage NONMEM installations (for nmfe)');
+    no_resize ($manage_nm_dialog);  
+    my $manage_nm_frame = $manage_nm_dialog -> Frame () -> grid(-ipadx=>'10',-ipady=>'10');
+    center_window($manage_nm_dialog); # center after adding frame
+    $manage_nm_frame -> Label (-text => "Local NONMEM installations:", -font=>$font, -background=>$bgcol)->grid (-row=>1, -column=>1, -sticky=>"nws");
+    $manage_nm_frame -> Label (-text => "  ")->grid (-row=>3, -column=>1, -sticky=>"nws");
+    $manage_nm_frame -> Label (-text => "Remote NONMEM installations:", -font=>$font, -background=>$bgcol)->grid (-row=>4, -column=>1, -sticky=>"nws");
+    $nm_local_hlist = $manage_nm_frame -> Scrolled('HList',
+        -head       => 1, -selectmode => "single",
+        -highlightthickness => 0,
+        -columns    => 4,
+        -scrollbars => 'se', -width => 80, -height => 6, -border => 1,
+        -background => '#ffffff', -selectbackground => $pirana_orange,
+        -font       => $font,
+        -command    => sub {
+	    my $nm_sel = $nm_local_hlist -> selectionGet ();
+        }
+     )->grid(-column => 1, -columnspan=>3, -row => 2, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
+    $nm_remote_hlist = $manage_nm_frame -> Scrolled('HList',
+        -head       => 1, -selectmode => "single",
+        -highlightthickness => 0,
+        -columns    => 4,
+        -scrollbars => 'se', -width => 80, -height => 6, -border => 1,
+        -background => '#ffffff', -selectbackground => $pirana_orange,
+        -font       => $font,
+        -command    => sub {
+	    my $nm_sel = $nm_remote_hlist -> selectionGet ();
+        }
+     )->grid(-column => 1, -columnspan=>3, -row => 5, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
+
+    my @headers = ("Name", "Location", "Version");
+    my @header_widths = (100, 300, 50);
+    for ($i = 0; $i < 3; $i++) {
+	$nm_local_hlist -> header('create', $i, -text=> @headers[$i], -headerbackground => 'gray');
+	$nm_local_hlist -> columnWidth($i, @header_widths[$i]);
+	$nm_remote_hlist -> header('create', $i, -text=> @headers[$i], -headerbackground => 'gray');
+	$nm_remote_hlist -> columnWidth($i, @header_widths[$i]);
+    }
+
+    populate_manage_nm_hlist ($nm_local_hlist, $nm_remote_hlist);
+
+    my $local_button_frame = $manage_nm_frame -> Frame (-background=>$bgcol)->grid(-row=> 2, -column=>4, -sticky=>"nw");
+    my $remote_button_frame = $manage_nm_frame -> Frame (-background=>$bgcol)->grid(-row=> 5, -column=>4, -sticky=>"nw");
+
+    $new_nm_local_button = $local_button_frame -> Button (-image=>$gif{plus}, -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
+	add_nm_inst("local", $nm_local_hlist, $nm_remote_hlist);
+    })-> grid(-row=>2,-column=>1,-sticky=>"wns");
+    $help->attach($new_nm_local_button, -msg => "Manually add local NONMEM installation");
+
+    $new_nm_remote_button = $remote_button_frame -> Button (-image=>$gif{plus}, -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
+	add_nm_inst("remote", $nm_local_hlist, $nm_remote_hlist);
+    })-> grid(-row=>1,-column=>1,-sticky=>"wns");
+    $help->attach($new_nm_remote_button, -msg => "Manually add remote NONMEM installation");
+    
+    $del_nm_local_button = $local_button_frame -> Button (-image=>$gif{trash},  -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{
+	my $nm_sel = $nm_local_hlist -> selectionGet ();
+	if (@$nm_sel>0) {
+	    my $nm_name = $nm_local_hlist -> itemCget(@$nm_sel[0], 0, "text");
+	    my $delete = message_yesno ("Do you really want to remove this NONMEM installation from Pirana?\nNB. The actual installation will not be removed, only the link from Piraña.", $mw, $bgcol, $font_normal);
+	    if( $delete == 1) {
+		delete $nm_dirs{$nm_name};
+		delete $nm_vers{$nm_name};
+		save_ini ($home_dir."/ini/nm_inst_local.ini", \%nm_dirs, \%nm_vers,  $base_dir."/ini_defaults/nm_inst_local.ini", 1);
+		populate_manage_nm_hlist ($nm_local_hlist, $nm_remote_hlist);
+	    }
+	} else {message ("Please select a NONMEM installation to remove from Pirana.")}
+    })-> grid(-row=>3,-column=>1,-sticky=>"wns");
+    $help->attach($del_nm_local_button, -msg => "Remove NM installation");
+
+    $del_nm_remote_button = $remote_button_frame -> Button (-image=>$gif{trash},  -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -width=>22, -command=> sub{
+	my $nm_sel = $nm_remote_hlist -> selectionGet ();
+	if (@$nm_sel>0) {
+	    my $nm_name = $nm_remote_hlist -> itemCget(@$nm_sel[0], 0, "text");
+	    my $delete = message_yesno ("Do you really want to remove this NONMEM installation from Pirana?\nNB. The actual installation will not be removed, only the link from Piraña.", $mw, $bgcol, $font_normal);
+	    if( $delete == 1) {
+		delete $nm_dirs_cluster{$nm_name};
+		delete $nm_vers_cluster{$nm_name};
+		save_ini ($home_dir."/ini/nm_inst_cluster.ini", \%nm_dirs_cluster, \%nm_vers_cluster, $base_dir."/ini_defaults/nm_inst_cluster.ini", 1);
+		populate_manage_nm_hlist ($nm_local_hlist, $nm_remote_hlist);
+	    }
+	} else {message ("Please select a NONMEM installation to remove from Pirana.")}
+    })-> grid(-row=>2,-column=>1,-sticky=>"wns");
+    $help->attach($del_nm_remote_button, -msg => "Remove NM installation");
+
+    our $quick_search_button = $local_button_frame -> Button (
+	-image=>$gif{binocular}, -background => $button, -border=>$bbw, -activebackground=>$abutton,
+	-width=>26, -height=>22, -command=>sub{
+	    smart_nm_search_dialog($nm_local_hlist, $nm_remote_hlist);
+    })->grid(-row=>1,-column=>1,-sticky=>'wens');
+    $help->attach($quick_search_button, -msg => "Quick search for NONMEM installations on local system");
+
+    $manage_nm_frame -> Button (-text=>"Close", -font=>$font, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command => sub {
+	$manage_nm_dialog -> destroy();
+    })-> grid (-row=>6, -column=>3, -sticky => "nse");
+
+}
+
+sub populate_manage_nm_hlist {
+    my ($nm_local_hlist, $nm_remote_hlist) = @_;
+    $nm_local_hlist -> delete ("all");
+    $nm_remote_hlist -> delete ("all");
+    my $i=0;
+    # get NM installations and fill in Optionmenu
+    my ($nm_dirs_ref, $nm_vers_ref) = read_ini($home_dir."/ini/nm_inst_local.ini");
+    my %nm_dirs = %$nm_dirs_ref; my %nm_vers = %$nm_vers_ref; my %nm_types;
+    foreach my $nm (keys(%nm_dirs)) {
+	$nm_local_hlist -> add($i);
+	$nm_local_hlist -> itemCreate($i, 0, -text => $nm, -style=>$style);
+	$nm_local_hlist -> itemCreate($i, 1, -text => $nm_dirs{$nm}, -style=>$style);
+	$nm_local_hlist -> itemCreate($i, 2, -text => $nm_vers{$nm}, -style=>$style);
+	$i++;
+    }
+    
+    # remote NM versions
+    my $i=0;
+    my ($nm_dirs_remote_ref, $nm_vers_remote_ref) = read_ini($home_dir."/ini/nm_inst_cluster.ini");
+    my %nm_dirs_remote = %$nm_dirs_remote_ref; my %nm_vers_remote = %$nm_vers_remote_ref;
+    foreach my $nm (keys(%nm_dirs_remote)) {
+	$nm_remote_hlist -> add($i);
+	$nm_remote_hlist -> itemCreate($i, 0, -text => $nm, -style=>$style);
+	$nm_remote_hlist -> itemCreate($i, 1, -text => $nm_dirs_remote{$nm}, -style=>$style);
+	$nm_remote_hlist -> itemCreate($i, 2, -text => $nm_vers_remote{$nm}, -style=>$style);
+	$i++;
+    }
+}
+
+sub manage_nm_window_old {
 ### Purpose : Create the dialog for editing the NM sizes file
 ### Compat  : W+L+
   $sizes_w = $mw -> Toplevel(-title=>'Configure NM6+ installations');
@@ -3343,7 +3445,7 @@ sub manage_nm_window {
       }
   })-> grid(-row=>1,-column=>1,-sticky=>"wns");
   $help->attach($del_nm_button, -msg => "Remove NM installation");
-
+  
   $new_nm_button = $button_frame -> Button (-image=>$gif{plus}, -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
      foreach (keys(%nm_dirs)) {
 	 if (($_ =~ m/PsN:/)||($_ =~ m/Retrieving/)) {
@@ -3354,7 +3456,7 @@ sub manage_nm_window {
      }
      add_nm_inst();
   })-> grid(-row=>1,-column=>2,-sticky=>"wns");
-  $help->attach($new_nm_button, -msg => "Add new NM installation");
+  $help->attach($new_nm_button, -msg => "Manually add NONMEM installation to Pirana");
 
   my $nm_optionmenu = $nm_manage_frame -> Optionmenu (-options => ["Retrieving NM installations. Please wait..."], -border=>$bbw,
         -variable => \$nm_chosen, -width=>25, -foreground=>"#FFFFFF", -activeforeground=>$white,
