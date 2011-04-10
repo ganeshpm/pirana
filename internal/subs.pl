@@ -5308,7 +5308,12 @@ sub build_psn_run_command {
     foreach (@models) {
 	$_ .= '.'.$setting{ext_ctl}
     };
-    my $psn_command_line = $psn_command." ".$psn_parameters." ";
+    my $psn_command_line;
+    unless ($psn_command eq "custom") {
+        $psn_command_line = $psn_command." ".$psn_parameters." ";
+    } else {
+	$psn_command_line = $psn_parameters." ";
+    }
     unless ($psn_command eq "scm") { # usually specified using config file
 	if ($sge{sge_default} == 1) {
 	    unless ($psn_command_line =~ m/\-run_on_sge/i) {
@@ -5327,7 +5332,7 @@ sub build_psn_run_command {
     if ($psn_command eq "execute") {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
     };
-    if ($psn_command eq "sumo") {
+    if (($psn_command eq "sumo")||($psn_command eq "update_inits")) {
 	$psn_command_line .= " ".$outputfile;
     } else {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", "default", 0, \%ssh, \%clusters);
@@ -5927,11 +5932,20 @@ sub bind_models_menu {
     $models_menu_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("sse");
     });
+    $models_menu_psn -> command (-label=> " mcmp",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+       psn_command("mcmp");
+    });
     $models_menu_psn -> command (-label=> " scm",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("scm");
     });
+    $models_menu_psn -> command (-label=> " custom...",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+       psn_command("custom");
+    });
     $models_menu_psn -> command (-label=> " sumo", -font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
        psn_command("sumo");
+    });
+    $models_menu_psn -> command (-label=> " update_inits", -font=>$font,-compound => 'left',-image=>$gif{msf}, -background=>$bgcol, -command => sub{
+       psn_command("update_inits");
     });
   }
   my $models_menu_wfn;
@@ -7186,12 +7200,6 @@ sub psn_run_window {
 	}
                                    });
  
-# Apparently this code gives trouble on RedHat as well. 
-   # unless ($^O =~ m/(MSWin|darwin)/i) {
-   #    # on Windows, 'resizable' makes window go to background; 
-#	no_resize ($psn_run_window)x;
-#    }
-
     status ();
 }
 
