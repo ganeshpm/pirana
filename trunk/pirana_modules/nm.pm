@@ -12,7 +12,7 @@ use pirana_modules::misc qw(time_format rm_spaces block_size generate_random_str
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R);
+our @EXPORT_OK = qw(extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R detect_nm_version);
 
 our @collect_nm;
 
@@ -2410,5 +2410,24 @@ sub translate_des_to_R {
     $R_code .= "         type='l', col='lightblue' )\n";
     return($R_code);
 }
+
+sub detect_nm_version {
+ my ($nm_path) = @_;
+  
+ #INPUT variable that contains NM path
+ #my $nm_path = '/opt/nonmem/nm7_gf_reg';
+ my $nm_pathfull = $nm_path.'/util';
+
+ # search for nmfe files
+ my @nm_files = dir($nm_pathfull, "nmfe");
+ my $nm_file = shift(@nm_files);
+ 
+ # extract version number
+ my ($nm_file2) = $nm_file =~ /(\d+)/;
+
+ # output
+ return($nm_file2);
+}
+
 
 1;
