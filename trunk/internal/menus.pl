@@ -99,7 +99,7 @@ sub create_menu_bar {
   $mbar_model -> command(-label => "Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left', -background=>$bgcol,-underline=>0, -command=> sub { edit_model_command(); });
   $mbar_model -> command(-label => "Rename model", -font=>$font, -image=>$gif{rename}, -compound=>'left',-background=>$bgcol,-underline=>0, -command=> sub { rename_model_command(); });
   $mbar_model -> command(-label => "Duplicate model", -font=>$font, -image=>$gif{duplicate}, -compound=>'left',-background=>$bgcol,-underline=>0, -command=> sub { duplicate_model_command(); });
-  $mbar_model -> command(-label => "Duplicate model for MSF restart",-font=>$font,  -image=>$gif{msf}, -compound=>'left',-background=>$bgcol,-underline=>0, -command=> sub { duplicate_msf_command(); });
+  $mbar_model -> command(-label => "Duplicate model for MSF restart",-font=>$font,-image=>$gif{msf}, -compound=>'left',-background=>$bgcol,-underline=>0, -command=> sub { duplicate_msf_command(); });
   $mbar_model -> command(-label => "Delete model(s)",-font=>$font, -image=>$gif{trash}, -compound=>'left',-background=>$bgcol,-underline=>0, -command=> sub { delete_models_command(); });
 
 # Run reports
