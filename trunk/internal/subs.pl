@@ -2159,6 +2159,10 @@ sub project_info_window {
   my %proj_record;
   my @sql_fields = ("proj_name","descr","modeler","collaborators","start_date","end_date");
   my $db_results = db_get_project_info("pirana.dir");
+  if ($db_results eq "") {
+      message ("Error opening Pirana database for this folder.");
+      return();
+  }
   my $row = @{$db_results}[0];
   my @values = @$row;
   my $i=0;
@@ -2199,7 +2203,7 @@ sub project_info_window {
       $proj_record{$_} = $proj_rec_entry{$_} -> get();
     }
     $proj_record{"notes"} = $proj_notes_text -> get("0.0", "end");
-    db_insert_project_info (\%proj_record, "pirana.dir");
+    db_insert_project_info (\%proj_record, "pirana.dir");print fastgetcwd();
     $project_window -> destroy();
   })->grid(-column=>2, -row=>31,-rowspan=>1, -sticky=>"w");
   $project_window_frame -> Button (-text=>'Cancel', -font=>$font, -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
@@ -2296,6 +2300,9 @@ sub show_estim_window {
 	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2) );
 	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
+    $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2), $cols );
+    })->grid(-column=>2, -row=>3, -sticky=>"nwse");
 
     $i = 1; $j=1; my $max_i = 1;
     if (@th>0) {
@@ -2395,6 +2402,30 @@ sub grid_to_csv {
     }
 }
 
+sub grid_to_latex {
+    my ($grid, $csv_file, $headers_ref, $nrow, $ncol) = @_;
+    my @headers = @$headers_ref;
+    my $tex = "\\begin{tabular}[t]{*{".$ncol."}{l}}\n";
+    for ($j = 1; $j <= $nrow; $j++) {
+	if ($grid -> infoExists($j)) {
+	for ($i = 0; $i < $ncol; $i++) {
+	    if ($grid -> itemExists($j, $i)) {
+		my $value = $grid -> itemCget($j, $i, "text");
+		chomp($value);
+		$value =~ s/\,/;/g;
+		$tex .= $value;
+	    } 
+	    unless(($ncol-$i) <= 1) {
+		$tex .= " & ";
+	    }
+	}
+	}
+	$tex .= " \\\\ \n";
+    }
+    $tex .= "\\end{tabular}\n";
+    text_window($mw, $tex, "LaTeX code");    
+}
+
 sub show_estim_multiple {
 ### Purpose : Show window with final parameter estimates
 ### Compat  : W+L+
@@ -2437,9 +2468,9 @@ sub show_estim_multiple {
     my $omega_names_ref = $mod{om_descr}; my @omega_names = @$omega_names_ref;
     my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
 
-    my $cols = ((floor(@theta/10)+1)*3)-1; # calculate no of columns in window
-    if (int(@om) > $cols) {$cols = int(@om+1)};
-    if (int(@si) > $cols) {$cols = int(@si+1)};
+    my $cols = ((floor($max_th/10)+1)*3)-1; # calculate no of columns in window
+    if ($max_om > $cols) {$cols = int($max_om+1)};
+    if ($max_si > $cols) {$cols = int($max_si+1)};
 
     unless ($estim_window) {
 	our $estim_window = $mw -> Toplevel();
@@ -2489,10 +2520,12 @@ sub show_estim_multiple {
 	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2) );
 	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
+    $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int($max_th)+int($max_om)+int($max_si)), $cols);
+    })->grid(-column=>2, -row=>3, -sticky=>"nwse");
     
 # First create the correct number of entries for theta/om/si
 # create CSV
-    
      $i = 1; $j=1; my $max_i = 1;
      if ($max_th > 0) {
  	$estim_grid -> delete("all");
@@ -4082,7 +4115,7 @@ sub save_project {
      $project_dir{$new_project_name} = $cwd;
      rewrite_projects_ini();
      $active_project = $new_project_name;
-     project_optionmenu();
+     our $project_optionmenu = project_optionmenu();
      $project_optionmenu -> configure(-state=>"normal");
      destroy $save_dialog;
   })

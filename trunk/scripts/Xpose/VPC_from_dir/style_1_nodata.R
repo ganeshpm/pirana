@@ -12,7 +12,7 @@ dir.create ("pirana_temp")
 pdf (file = paste("pirana_temp/xpose_vpc_",names(models)[1], ".pdf", sep=""))
 for (i in 1:length(names(models))) {
     npc_dir <- names(models)[i]
-    xpose.VPC(
+    ps <- xpose.VPC(
         vpc.info = paste(npc_dir, "/vpc_results.csv", sep=""),
         vpctab = paste(npc_dir,"/vpctab",sep=""),
         type="n",
@@ -30,6 +30,7 @@ for (i in 1:length(names(models))) {
         PI.ci.area.smooth=T
     )
 }
+print (ps)
 dev.off()
 
 print (paste("#", "PIRANA_OUT ","pirana_temp/xpose_vpc_",names(models)[1], ".pdf", sep=""))
