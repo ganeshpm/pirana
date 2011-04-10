@@ -1,12 +1,20 @@
+### R script supplied with Pirana
+### by Coen van Hasselt, 2011
+###
+### Required: - Ext file from NONMEM run
+###           - Lattice library
+###
+### Description: This R-script create a plot of run information in the ext-file,
+
 library(lattice)
 
 models <- #PIRANA_IN
 model_names <- names(models)
 dir.create ("pirana_temp")
-if (file.exists (paste("pirana_temp/plot_EXT_",names(models)[1],".pdf", sep=""))){
-    file.remove (paste("pirana_temp/plot_EXT_",names(models)[1],".pdf", sep=""))
+if (file.exists (paste("pirana_temp/plot_ext_",names(models)[1],".pdf", sep=""))){
+    file.remove (paste("pirana_temp/plot_ext_",names(models)[1],".pdf", sep=""))
 }
-pdf (file = paste("pirana_temp/plot_EXT_",names(models)[1],".pdf", sep=""))
+pdf (file = paste("pirana_temp/plot_ext_",names(models)[1],".pdf", sep=""))
 for (c in model_names){
  con <- readLines(file(paste(c,".ext",sep="")))
  methodLines <- grep("TABLE",con)
@@ -27,3 +35,6 @@ for (c in model_names){
  }
 }
 dev.off()
+
+print (paste("#", "PIRANA_OUT ","pirana_temp/plot_ext_",names(models)[1],".pdf", sep=""))
+quit()

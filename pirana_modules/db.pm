@@ -34,11 +34,15 @@ sub db_get_project_info {
 ### Compat  : W+L+
     my $db_name = shift;
     my $sql = "SELECT proj_name, descr, modeler, collaborators, start_date, end_date, notes FROM project_info LIMIT 1;";
-    my $dbargs = {AutoCommit => 0, PrintError => 1};
-    my $db = DBI->connect("dbi:SQLite:dbname=".$db_name,"","",$dbargs);
-    my $db_results = $db -> selectall_arrayref($sql);
-    $db -> disconnect ();
-    return($db_results);
+    my $db_results;
+    if (-e $db_name) {
+	my $db = DBI->connect("dbi:SQLite:dbname=".$db_name, "", "", $dbargs);
+	unless ($db -> err()) { 
+	    my $db_results = $db -> selectall_arrayref($sql);
+	}
+	$db -> disconnect ();
+	return($db_results);
+    }
 }
 
 sub db_insert_project_info {

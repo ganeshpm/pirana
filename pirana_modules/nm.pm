@@ -2146,6 +2146,7 @@ sub interpret_pk_block_for_ode {
 	   $vars_decl_pk_keep{$var} = $vars_decl_pk{$var};
 	}
     }
+    print keys (%vars_decl_pk_keep);
     return (\%vars_decl_pk_keep)
 }
 
