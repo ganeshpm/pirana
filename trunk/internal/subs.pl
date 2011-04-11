@@ -2618,7 +2618,7 @@ sub add_nm_inst {
 
     $nm_inst_frame -> Label (-text=>"Name in Piraña: ",-font=>$font,-background=>$bgcol)->grid(-row=>2,-column=>1,-sticky=>"e");
     $nm_inst_frame -> Label (-text=>"NM Location: ",-font=>$font,-background=>$bgcol)->grid(-row=>3,-column=>1,-sticky=>"e");
- #   $nm_inst_frame -> Label (-text=>"NM version: ",-font=>$font,-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e");
+    if ($nm_locality ne "local"){$nm_inst_frame -> Label (-text=>"NM version: ",-font=>$font,-background=>$bgcol)->grid(-row=>4,-column=>1,-sticky=>"e")};
 
     my $nm_name = "nm7";
     my $nm_dir  = "C:\\NONMEM\\nm7";
@@ -2637,6 +2637,10 @@ sub add_nm_inst {
 	$nm_inst_w -> focus();
 						 })->grid(-row=>3, -column=>3, -rowspan=>1, -sticky => 'nse');
     $help -> attach($browse_button, -msg => "Browse filesystem");
+	 if($nm_locality ne "local"){$nm_inst_frame -> Optionmenu (-options=>["5","6","7", "7.2"],-variable=>\$nm_ver,-border=>$bbw,-font=>$font_normal,
+				  -background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white,-activeforeground=>$white)
+	->grid(-column=>2,-row=>4,-sticky=>"w")};
+    $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
     my $nm_ini_file;
     $nm_inst_frame -> Button (-text=>"Add",-font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
 	my $exists = 0;
@@ -2712,6 +2716,7 @@ sub add_nm_inst {
 	return();
      })-> grid(-row=>6,-column=>1,-sticky=>"nwse");
 }
+
 
 sub save_ini {
 ### Purpose : Save Pirana settings contained in a hash to ini-file.
