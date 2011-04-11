@@ -1364,7 +1364,7 @@ sub generate_HTML_parameter_estimates {
   } else {return();}
 
   print HTML "</TABLE><TABLE border=0 cellpadding=2 cellspacing=0 CLASS='theta'>\n";
-  print HTML "<TR class='head1'><TD colspan=2><B>Theta</B></TD><TD align=left><B>Estimate*</B></TD><TD width=50></TD><TD width=80 align=RIGHT><B>SE</B></TD><TD width=80 align=RIGHT><B>RSE**</B></TD><TD align='left'>[ lower, </TD><TD align='center'>init,</TD><TD> upper]</TD><TR>\n";
+  print HTML "<TR class='head1'><TD colspan=2><B>Theta</B></TD><TD align=left><B>Estimate*</B></TD><TD width=50></TD><TD width=80 align=RIGHT><B>SE</B></TD><TD width=80 align=RIGHT><B>RSE</B></TD><TD width=80 align=RIGHT><B>95% CI**</B></TD><TD align='left'>[ lower, </TD><TD align='center'>init,</TD><TD> upper]</TD><TR>\n";
 
   my $theta_ref = @est[0]; my @theta = @$theta_ref;
   my $theta_init_ref = $res{theta_init};  my @theta_init = @$theta_init_ref;
@@ -1411,13 +1411,23 @@ sub generate_HTML_parameter_estimates {
     if (@theta[$i] ne "") {print HTML "<TD class='head2' align='right'><FONT size=-2>".($i+1)."</FONT></TD>".
        "<TD>".@theta_names[$i]."</TD><TD ALIGN=left bgcolor='#EAEAEA'><FONT color='".$col."'><B>".rnd(@theta[$i],5)."</B></TD>"};
     print HTML "<TD bgcolor='#EAEAEA'>".@theta_fix[$i]."</TD>";
+
     my $rse = "";
     unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,1)) };
-    if (@theta_se[$i] ne "") {print HTML "<TD align=RIGHT>".rnd(@theta_se[$i],4)."</TD><TD align=RIGHT bgcolor='#EAEAEA'>".$rse."%</TD>"}
-      else {print HTML "<TD>&nbsp;</TD><TD bgcolor='#EAEAEA'>&nbsp;</TD>"};
+    if (@theta_se[$i]) {
+	my $up = rnd((@theta[$i] + @theta_se[$i]),3);
+	my $low = rnd((@theta[$i] - @theta_se[$i]),3);
+	print HTML "<TD align=RIGHT>".rnd(@theta_se[$i],4)."</TD>";
+	print HTML "<TD align=RIGHT bgcolor='#EAEAEA'>".$rse."%</TD>";
+	print HTML "<TD align=RIGHT bgcolor='#EAEAEA'>".$low." - ".$up."</TD>";
+    } else {
+	print HTML "<TD>&nbsp;</TD>";
+	print HTML "<TD bgcolor='#EAEAEA'>&nbsp;</TD>";
+	print HTML "<TD bgcolor='#EAEAEA'>&nbsp;</TD>";
+    };
+
     my $low = $theta_bnd_low[$i];
     my $up = $theta_bnd_up[$i];
-
     if ($low <= -10000) {$low = "-Inf"} else {$low = rnd($theta_bnd_low[$i],3)};
     if ($up >= 10000) {$up = "+Inf"} else {$up = rnd($theta_bnd_up[$i],3)};
 
@@ -1889,9 +1899,9 @@ sub generate_LaTeX_parameter_estimates {
 
   my $latex;
   $latex .= "\\begin{table}[!h] \\rowcolors{1}{Grey1}{Grey2}\n";
-  $latex .= "\\begin{tabular}{l l c c c c c c c}\n";
+  $latex .= "\\begin{tabular}{l l c c c c c c c c}\n";
   # Parameter estimates
-  $latex .= "\\textbf{\$\\Theta\$} & \\textbf{Parameter} & \\textbf{Estimate} & & \\textbf{SE} & \\textbf{RSE} & \\textbf{lower} & \\textbf{init} & \\textbf{upper} \\tabularnewline \n";
+  $latex .= "\\textbf{\$\\Theta\$} & \\textbf{Parameter} & \\textbf{Estimate} & & \\textbf{SE} & \\textbf{RSE} & \\textbf{95\\% CI} & \\textbf{lower} & \\textbf{init} & \\textbf{upper} \\tabularnewline \n";
 
   my $theta_ref = @est[0];  my @theta = @$theta_ref;
   my $theta_init_ref = $res{theta_init};  my @theta_init = @$theta_init_ref;
@@ -1940,7 +1950,11 @@ sub generate_LaTeX_parameter_estimates {
 	  $latex .= ($i+1)." & ".@theta_names[$i]." & ".rnd(@theta[$i],5)." & ".@theta_fix[$i];
 	  my $rse = "";
 	  unless (@theta[$i] == 0) {$rse = abs(rnd(@theta_se[$i]/@theta[$i]*100,1)) };
-	  if (@theta_se[$i] ne "") {$latex .= " & ".rnd(@theta_se[$i],3)." & ".$rse." & "}
+	  if (@theta_se[$i] ne "") {
+	      my $up = rnd((@theta[$i] + @theta_se[$i]),3);
+	      my $low = rnd((@theta[$i] - @theta_se[$i]),3);
+	      $latex .= " & ".rnd(@theta_se[$i],3)." & ".$rse." & ".$up." - ".$low." & "; 
+	  }
 	  else {$latex .= " & "};
 	  my $low = $theta_bnd_low[$i];
 	  my $up = $theta_bnd_up[$i];
