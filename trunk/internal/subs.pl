@@ -5964,16 +5964,17 @@ sub bind_models_menu {
     $models_menu -> command (-label=>" Model properties...",-font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
            properties_command ();
          });
-    $models_menu -> command (-label=>" Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left',  -background=>$bgcol, -command => sub{
+    my $models_menu_misc = $models_menu -> cascade (-label=> " Model changes", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
+    $models_menu_misc -> command (-label=>" Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left',  -background=>$bgcol, -command => sub{
            edit_model_command();
          });
-     $models_menu -> command (-label=> " Rename model", -font=>$font, -image=>$gif{rename}, -compound=>'left', -background=>$bgcol, -command => sub{
+     $models_menu_misc -> command (-label=> " Rename model", -font=>$font, -image=>$gif{rename}, -compound=>'left', -background=>$bgcol, -command => sub{
            rename_model_command();
          });
-    $models_menu -> command (-label=> " Duplicate model",-font=>$font, -image=>$gif{duplicate}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu_misc -> command (-label=> " Duplicate model",-font=>$font, -image=>$gif{duplicate}, -compound=>'left', -background=>$bgcol, -command => sub{
            duplicate_model_command();
          });
-    $models_menu -> command (-label=> " Duplicate model for MSF restart", -font=>$font, -image=>$gif{msf}, -compound=>'left', -background=>$bgcol, -command => sub{
+    $models_menu_misc -> command (-label=> " Duplicate model for MSF restart", -font=>$font, -image=>$gif{msf}, -compound=>'left', -background=>$bgcol, -command => sub{
            duplicate_msf_command();
           });
     $models_menu_des = $models_menu -> cascade (-label=> " Translate \$DES", -font=>$font, -image=>$gif{desolve}, -compound=>'left', -background=>$bgcol, -tearoff=>0);
@@ -6003,16 +6004,17 @@ sub bind_models_menu {
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
   }
 
-    $models_menu -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -font=>$font,-compound=>'left', -background=>$bgcol, -command => sub{
-           generate_report_command(\%run_reports);
-         });
+  my $models_menu_reports = $models_menu -> cascade (-label=>" Reports", -font=>$font,-compound => 'left',-image=>$gif{notepad}, -background=>$bgcol, -tearoff=>0);
+  $models_menu_reports -> command (-label=> " Generate HTML report(s)", -image=>$gif{HTML}, -font=>$font,-compound=>'left', -background=>$bgcol, -command => sub{
+      generate_report_command(\%run_reports);
+  });
 
-    $models_menu -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
-           generate_LaTeX_command(\%run_reports);
-         });
-    $models_menu -> command (-label=> " View NM output file",  -image=>$gif{notepad},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
-           view_outputfile_command();
-         });
+  $models_menu_reports -> command (-label=> " LaTeX tables of parameter estimates", -image=>$gif{latex},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
+      generate_LaTeX_command(\%run_reports);
+  });
+  $models_menu_reports -> command (-label=> " View NM output file",  -image=>$gif{notepad},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
+      view_outputfile_command();
+  });
 
     $models_menu -> separator ( -background=>$bgcol) ;
     $models_menu -> command (-label=> " Close this menu", -font=>$font, -image=>$gif{close},-font=>$font, -compound=>'left', -background=>$bgcol, -command => sub{
