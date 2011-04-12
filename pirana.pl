@@ -42,6 +42,7 @@ use Cwd qw (fastgetcwd cwd realpath); # Basic functions
 pirana_debug ($debug_mode, "2. Loading Tk modules.");
 use Tk;                     # Tk
 use Tk::NoteBook;
+use Tk::BrowseEntry;
 use Tk::Balloon;            # Help balloon widget
 use Tk::HList;              # HList widget
 use Tk::ItemStyle;          # ..
