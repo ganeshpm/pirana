@@ -2297,7 +2297,7 @@ sub show_estim_window {
 	    ['All Files','*',  ], ];
 	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
 	unless ($csv_file_choose eq "") {
-	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2) );
+	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2), $cols );
 	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
     $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
@@ -2373,9 +2373,8 @@ sub show_estim_window {
 }
 
 sub grid_to_csv {
-    my ($grid, $csv_file, $headers_ref, $nrow) = @_;
+    my ($grid, $csv_file, $headers_ref, $nrow, $ncol) = @_;
     my @headers = @$headers_ref;
-    my $ncol = int(@headers);
     open (OUT, ">".$csv_file);
     print OUT join(",", @headers)."\n";
     for ($j = 1; $j <= $nrow; $j++) {
@@ -2517,7 +2516,7 @@ sub show_estim_multiple {
 	    ['All Files','*',  ], ];
 	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
 	unless ($csv_file_choose eq "") {
-	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2) );
+	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2), $cols );
 	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
     $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
