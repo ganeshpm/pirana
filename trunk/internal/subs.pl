@@ -5019,23 +5019,6 @@ sub read_tab_files {
     }
 }
 
-sub configure_tab_buttons {
-### Purpose : Activate/deactive the correct buttons for the table-overview listbox
-### Compat  : W+L+
-    my $show_data = shift;
-    # first deactivate all buttons
-    $show_tab_button->configure(-background=>$button);
-    $show_csv_button->configure(-background=>$button);
-    $show_xpose_button->configure(-background=>$button);
-    $show_r_button->configure(-background=>$button);
-    $show_all_button->configure(-background=>$button);
-    if ($show_data eq "tab") {$show_tab_button->configure(-background=>$abutton);}
-    if ($show_data eq "csv") {$show_csv_button->configure(-background=>$abutton);}
-    if ($show_data eq "xpose") {$show_xpose_button->configure(-background=>$abutton);}
-    if ($show_data eq "R") {$show_r_button->configure(-background=>$abutton);}
-    if ($show_data eq "*") {$show_all_button->configure(-background=>$abutton);}
-}
-
 sub tab_dir {
 ### Purpose : Read tab/csv/r files for the current dir
 ### Compat  : W+
@@ -5805,56 +5788,23 @@ sub frame_tab_show {
   $b=1;
  
   my $tab_frame = $mw -> Frame ()-> grid (-row=>2, -column=>3, -sticky=>"swe",-ipadx=>0,-ipady=>0);
-  $show_tab_button = $tab_frame-> Button(-text=>'TAB',-width=>@tab_button_widths[0],-background=>$abutton,-font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
-    our $show_data="tab";
-    configure_tab_buttons($show_data);
-    tab_dir($cwd);
-    populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled);
-    bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
-  $b++;
-  $help->attach($show_tab_button, -msg => "Show .".$setting{ext_tab}." files");
-  $show_csv_button = $tab_frame -> Button(-text=>'CSV', -width=>@tab_button_widths[1],-background=>$button, -font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
-    our $show_data="csv";
-    configure_tab_buttons($show_data);
-    tab_dir($cwd);
-    populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled);
-    bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -sticky => 'nswe', -ipady=>0);
-  $b++;
-  $help->attach($show_csv_button, -msg => "Show .CSV files");
-  $show_xpose_button = $tab_frame -> Button(-text=>'Xpose',-width=>@tab_button_widths[2],-background=>$button,-font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
-    our $show_data="xpose";
-    configure_tab_buttons($show_data);
-    tab_dir($cwd);
-    populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled);
-    bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -columnspan=>2, -ipady=>0, -sticky => 'nswe');
-  $help->attach($show_xpose_button, -msg => "Show XPose data");
-  $b = $b+2;
-  $show_r_button = $tab_frame -> Button(-text=>'R',-width=>@tab_button_widths[3],-background=>$button,-font=>$font_normal,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
-    our $show_data="R";
-    configure_tab_buttons($show_data);
-    tab_dir($cwd);
-    populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled);
-    bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -columnspan=>1, -ipady=>0, -sticky => 'nswe');
-  $help->attach($show_r_button, -msg => "Show R/S scripts");
-  $b++;
-  $show_all_button = $tab_frame -> Button(-text=>'*',-width=>@tab_button_widths[4],-background=>$button,-activebackground=>$abutton,-border=>$bbw, -command=>sub{
-    our $show_data="*";
-    configure_tab_buttons($show_data);
-    tab_dir($cwd);
-    populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
-    bind_tab_menu(\@tab_menu_enabled);
-  })-> grid(-row=>1,-column=>$b, -ipady=>0, -sticky => 'nswe');
-  $b++;
-  $help->attach($show_all_button, -msg => "Show all files in folder");
+
+  my $selected_file;
+  $be = $tab_frame ->BrowseEntry(-background => "#FFFFFF", -font=>$font_normal,
+						-choices => [ qw/tab csv xpose r */ ],
+						-variable => \$selected_file,
+                      -browsecmd => sub{
+   our $show_data = $selected_file;
+   tab_dir($cwd);
+   populate_tab_hlist($tab_hlist);
+   if($selected_file eq "tab") {my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
+   if($selected_file eq "csv") {my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
+   if($selected_file eq "xpose") {my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
+   if($selected_file eq "r") {my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
+   if($selected_file eq "*") {my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal)};
+   
+   bind_tab_menu(\@tab_menu_enabled)}
+   )->pack(-side => 'left');
 
   $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>3,-sticky=>"nw");
   #$tab_frame_info -> Label(-text=>"  File:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
