@@ -2099,9 +2099,9 @@ sub tree_models {
       push(@tr_unsort, $tree{$_});
     }
   }
-
   my @tr_sorted = sort(@tr_unsort);
   push (@tr, @tr_sorted);
+
   $i = 0;
   foreach (@tr) {
     #print $_." (".$models_refmod{$ctl_copy[$i]}.")\n";
@@ -2112,7 +2112,7 @@ sub tree_models {
   }
 
   # generate a tree in text format
-    my %lastchild;
+  my %lastchild;
   foreach(@tr_sorted) { # get the lastchild's number
     @line = split (/\:\:/, $_);
     $lastchild {@line[-2]} = @line[-1];
@@ -2123,7 +2123,7 @@ sub tree_models {
   foreach (@tr_sorted) {
     my @line = split (/\:\:/, $_);
     for ($i=1; $i<=@line; $i++) {
-      $tree .= "    ";
+      $tree .= "  ";
       if (($lastchild{@line[$i-2]} eq @line[$i-1])||(@line[$i-1] eq $last_root_child)) {@flags[$i] = 1} else {@flags[$i] = 0};
       #if (@flags[$i] == 0) {$tree .= chr(179)} else {$tree .= " "};
       if (@flags[$i] == 0) {$tree .= "|"} else {$tree .= " "};
@@ -4222,6 +4222,7 @@ sub delete_models_window {
   my $sel_ref = shift;
   my @del_files = @ctl_show; # make copy, since @ctl_file can change during delete process!
   my @runs = @del_files[@$sel_ref];
+  foreach (@runs) {$_ =~ s/dir-//}
   my $del_dialog = $mw -> Toplevel( -title=>"Delete models, results and/or tables");
   no_resize ($del_dialog);  
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
@@ -4250,7 +4251,10 @@ sub delete_models_window {
 # filter out folders
   my @folders;
   foreach my $num (@$sel_ref) {
-    if ((@file_type_copy[$num] == 1)&&(@del_files[$num] ne "..")) {push (@folders, @del_files[$num])};
+    if ((@file_type_copy[$num] == 1)&&(@del_files[$num] ne "..")) {
+	@del_files[$num] =~ s/dir-//;
+	push (@folders, @del_files[$num])
+    };
   }
   $del_dialog_frame -> Label (-text=>"", -background=>$bgcol) -> grid(-row=>3, -column=>1, -sticky=>"nse"); # spacer
   $del_dialog_frame -> Label (-text=>"Delete:", -background=>$bgcol) -> grid(-row=>4, -column=>1, -sticky=>"nse"); # spacer
@@ -4313,7 +4317,7 @@ sub populate_cleanup {
 	  push (@runtime, "FILE".$i);
       }
       foreach (@runtime) {
-	  if (-e $_) {push @runtime_files, $_};
+	  if (-e $_) {push (@runtime_files, $_)};
       }
       push (@files, @runtime_files);
   };
@@ -4390,6 +4394,7 @@ sub duplicate_model_window {
   @runs = @$sel_ref;
   my $runno = @ctl_show[@runs[0]];
   $new_ctl_name = new_model_name($runno);
+  $new_ctl_name =~ s/dir\-//;
   $dupl_dialog = $mw -> Toplevel(-title=>'Duplicate');
   no_resize ($dupl_dialog);  
   $dupl_dialog_frame = $dupl_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
@@ -4398,12 +4403,14 @@ sub duplicate_model_window {
   $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove',  -background=>$white,
      -textvariable=>\$new_ctl_name)->grid(-row=>1,-column=>2,-sticky=>"w");
   $dupl_dialog_frame -> Label (-background=>$bgcol, -font=>$font, -text=>'Reference model:')->grid(-row=>2,-column=>1,-sticky=>"e");
-  my $ref_mod_entry = $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove', -text=>@ctl_show[@runs[0]],  -background=>$white,
-     -textvariable=>\$new_ctl_ref)->grid(-row=>2,-column=>2,-sticky=>"w");
+  my $new_ctl_ref = @ctl_show[@runs[0]];
+  $new_ctl_ref =~ s/dir-//;
+  my $ref_mod_entry = $dupl_dialog_frame -> Entry (-width=>8, -border=>2, -relief=>'groove', 
+    -textvariable=> \$new_ctl_ref, -background=>$white)->grid(-row=>2,-column=>2,-sticky=>"w");
 
   my $modelfile = @ctl_show[@runs[0]].".".$setting{ext_ctl};
   my $modelno = $modelfile;
-  my $modelno =~ s/\.$setting{ext_ctl}//;
+  $modelno =~ s/\.$setting{ext_ctl}//;
   my $mod_ref = extract_from_model ($modelfile, $modelno);
   my %mod = %$mod_ref;
   $new_ctl_descr = $mod{description};
@@ -4440,6 +4447,7 @@ sub duplicate_model_window {
     if ($new_ctl_descr eq "") {$descr_bool=0; $mw -> messageBox(-type=>'ok', -message=>"You have to provide a description of the model");} else {$descr_bool=1};
     if (($overwrite_bool==1)&&($descr_bool==1)) {
       my $new_ctl_ref = $ref_mod_entry -> get();
+      $new_ctl_ref =~ s/dir\-//;
       duplicate_model ($runno, $new_ctl_name, $new_ctl_descr, $new_ctl_ref, $change_run_nos, $est_as_init, $fix_est, \%setting);
       destroy $dupl_dialog;
       sleep(1); # to make sure the file is ready for reading
@@ -4700,8 +4708,8 @@ sub read_curr_dir {
 	foreach(@dir_files) {
 	    if (-d $_) {
 		unless ($_ =~ /\./) {
-		    push (@dirs,$_);
-		    push (@dirs2,"/".$_);
+		    push (@dirs, "dir-".$_);
+		    push (@dirs2, "/".$_);
 		}
 	    }
 	}
@@ -4809,12 +4817,12 @@ sub populate_models_hlist {
   undef %model_indent;
   if ($order eq "tree") {
     my ($ctl_show_ref, $tree_text) = tree_models();
-    @ctl_show = @$ctl_show_ref;
+    our @ctl_show = @$ctl_show_ref;
     $models_hlist->columnWidth(0, 0);
     $models_hlist->columnWidth(1, (@models_hlist_widths[1]+@models_hlist_widths[2]));
     $models_hlist->columnWidth(2, 0);
   } else {
-    @ctl_show = @ctl_copy;
+    our @ctl_show = @ctl_copy;
     $models_hlist->columnWidth(0, 0); # Dummy column, needed to remove whitespace between columns (bug in Tk?)
     $models_hlist->columnWidth(1, @models_hlist_widths[1]);
     $models_hlist->columnWidth(2, @models_hlist_widths[2]);
@@ -5803,10 +5811,12 @@ sub frame_tab_show {
   }
   $b=1;
  
-  my $tab_frame = $mw -> Frame ()-> grid (-row=>2, -column=>3, -sticky=>"swe",-ipadx=>0,-ipady=>0);
+  my $tab_frame = $mw -> Frame (-background=>$bgcol)-> grid (-row=>2, -column=>3);
 
   my $selected_file = "tab";
-  $tab_browse_entry = $tab_frame -> BrowseEntry(-background => "#FFFFFF", -font=>$font_normal,
+  $tab_browse_entry = $tab_frame -> BrowseEntry(-background => $white, -font=>$font_normal,
+						-selectbackground=>'#606060', #-highlightthickness =>0,
+						-arrowimage => $gif{down}, -border=>$bbw, -relief=>"groove",
 						-choices => [ qw/tab csv xpose R pnm scm */ ],
 						-variable => \$selected_file, -browsecmd => sub{ 
     tab_browse_entry_update($selected_file);  
@@ -5815,18 +5825,18 @@ sub frame_tab_show {
     tab_browse_entry_update($selected_file);  
   });
 
-  $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>3,-sticky=>"nw");
+  $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>2, -columnspan=>1, -ipady=>0,-sticky=>"nws");
   our $tab_file_info = $tab_frame_info -> Text (
       -width=>22, -relief=>'sunken', -border=>2, -height=>4,
       -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>1, -row=>1, -rowspan=>3, -sticky=>'nwes', -ipadx=>0);
+  )->grid(-column=>1, -row=>1, -rowspan=>1, -sticky=>'nwes', -ipadx=>0);
   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
       my $tabsel = $tab_hlist -> selectionGet ();
       my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
       if (-e $tab_file) {
 	  table_info_window($tab_file);
       }
-    })->grid(-column=>2,-row=>1, -sticky => 'en');
+    })->grid(-column=>2,-row=>1, -sticky => 'wens');
   $help->attach($edit_tab_info_button, -msg => "Edit project details");
   $show_ofv=0;
   $show_successful=0;
@@ -6503,10 +6513,9 @@ sub save_header_widths {
 ### Purpose : Save the columnwidths of the main Listbox
 ### Compat  : W+L+
   my $x=0;
-#  my @header_widths = ();
   foreach(@main_headers) {
     @models_hlist_widths[$x] = $models_hlist->columnWidth($x);
-    if (@models_hlist_widths[$x] < 5) {@models_hlist_widths[$x] = 5};
+    if (@models_hlist_widths[$x] < 10) {@models_hlist_widths[$x] = 10};
     $x++;
   }
   shift(@models_hlist_widths);
@@ -7378,8 +7387,8 @@ sub frame_models_show {
   }
 
 # take care of resizing
-$mw -> gridColumnconfigure(1, -weight => 1, -minsize=>300);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>300);
+$mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
+$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>500);
 $mw -> gridColumnconfigure(3, -weight => 1, -minsize=>150);
 $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
@@ -7465,7 +7474,11 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
         );
         $models_hlist -> columnWidth($x, @models_hlist_widths[$x]);
   }
-  $models_hlist -> bind('<Leave>' => sub {save_header_widths();});
+  $models_hlist -> bind('<Leave>' => sub {
+      if ( $setting_internal{models_view} eq "list") {
+	  save_header_widths();
+      }
+  });
   $models_hlist -> update();
 
 
@@ -7503,7 +7516,6 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
        $listimage = $gif{listview};
     } else {
        $setting_internal{models_view} = "tree";
-       save_header_widths ();
        $listimage = $gif{treeview};
     }
     $sort_button -> configure (-image=>$listimage);
@@ -8413,8 +8425,8 @@ sub get_runs_in_progress {
 ### Compat  : W+L?
     my $wd = shift();
     unless (-d $wd) {$wd = $cwd}
-  $dir = fastgetcwd()."/";
-  @dirs = read_dirs($wd, "");
+  my $dir = fastgetcwd()."/";
+  my @dirs = read_dirs($wd, "");
   %dir_results = new ;
   %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
   # First check main directory
