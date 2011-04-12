@@ -558,7 +558,8 @@ sub get_estimates_from_lst {
       }
 
       if ($line =~ m/NEAR ITS BOUNDARY/) {$bnd{$est_method}="Y"};
-      if ((substr($line,0,1) eq "1")||(($i+1) == @lst)) {
+#      if ((substr($line,0,1) eq "1")||(($i+1) == @lst)) {
+      if ((substr($line,0,1) eq "1")&&(!(@lst[$i+2] =~ m/(ET|SI)/))) {
 	  # if (($est_area==1)&&(!((@lst[$i+4] =~ m/STANDARD ERROR OF ESTIMATE/)||(@lst[$i+3] =~ m/STANDARD ERROR OF ESTIMATE/)))){ # no SE errors
 	  #     my @est = get_estimates_from_text (\@est_text);
 	  #     $estimates {$est_method} = \@est;
@@ -620,6 +621,7 @@ sub get_estimates_from_text {
 
     my $th_area=0; my $om_area=0; my $si_area=0; my $se_area=0; my $etabar_area = 1;
     my @th; my @om; my @si; my @th_se; my @om_se; my @si_se;
+    my $om_line; my $cnt_om = 0;
     foreach my $line (@lines) {
 	if ($line =~ m/THETA - VECTOR/) {
 	    $th_area = 1;
@@ -641,10 +643,18 @@ sub get_estimates_from_text {
 	    }
 	}
 	if ($om_area == 1) {
+#	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0))||(substr($line,0,1) eq "1")) {
+	    if ((substr($line, 0,3) eq " ET")&&($cnt_om > 0)) {
+		push (@om, extract_cov ($om_line));
+		$om_line = "";
+	    }
+	    if (substr($line,0,3) eq " ET") {
+		$cnt_om++;
+	    }
 	    unless ($line =~ m/ET/) {
 		if ($line =~ m/\./ ) {
 		    chomp($line);
-		    push (@om, extract_cov ($line));
+		    $om_line .= $line;
 		}
 	    }
 	}
@@ -657,6 +667,7 @@ sub get_estimates_from_text {
 	    }
 	}
     }
+#    shift(@om);
     return (\@th, \@om, \@si);
 }
 
@@ -1659,6 +1670,7 @@ sub extract_from_model {
     my $table_area=0; my $estim_area=0; my $msf_file="";
     my $cnt = 0;
     my @th_descr; my @om_descr; my @si_descr;
+    my $om_comment_flag; my $si_comment_flag;
     my @tab_files;
     my (@th_fix, @om_fix, @si_fix);
     foreach (@ctl_lines) {
@@ -1703,12 +1715,15 @@ sub extract_from_model {
 		  push (@th_init,    @th_ex[2]);
 		  push (@th_bnd_up,  @th_ex[2]);
 	      }
+	      $om_comment_flag = 0;
+	      if (((substr($init,0,5) =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {$om_comment_flag = 1}
+	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
 	      if (($init =~ m/\d/)&!($init =~ m/OMEGA/)) { # match numeric character
 		  $init =~ s/\s//g;
 		  chomp($descr);
 		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
-		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@om_descr, $descr); }
-		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); }
+		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@om_descr, $descr); $om_comment_flag = 2 }
+		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); $si_comment_flag = 2 }
 		  if ($init =~ m/FIX/) { # match numeric character
 		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
 		      if ($omega_area ==1) {push (@om_fix, "FIX")} ;
@@ -1719,6 +1734,8 @@ sub extract_from_model {
 		      if ($sigma_area ==1) {push (@si_fix, "")} ;
 		  }
 	      }
+	      if (($om_comment_flag == 1)&&($omega_area==1)) {push (@om_descr, $descr);}
+	      if (($si_comment_flag == 1)&&($sigma_area==1)) {push (@si_descr, $descr);}
 	  }
 	  if($table_area==1) {
 	      if($_ =~ s/FILE\=//) {
