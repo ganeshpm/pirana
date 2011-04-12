@@ -4936,6 +4936,7 @@ sub read_tab_files {
 	}
 	$dir = join ("\/", @split2);
     }
+    my $flag = 0;
     if (chdir ($dir)) {
 	if ($show_data eq "tab") {
 	    my @tab_files = dir ("./", '\.'.$setting{ext_tab}) ;
@@ -4963,11 +4964,13 @@ sub read_tab_files {
 		    push (@tabcsv_files_loc, $dir.'/'.$_);
 		}
 	    }
+	    $flag = 1;
 	}
 	if ($show_data eq "csv") {
 	    my @csv_files = <*.$setting{ext_csv}>;
 	    @tabcsv_files = @csv_files;
 	    @tabcsv_files_loc = @csv_files;
+	    $flag = 1;
 	}
 	if ($show_data eq "xpose") {
 	    my @xp_tabs = <??tab*>;
@@ -4988,11 +4991,13 @@ sub read_tab_files {
 		}
 	    }
 	    @tabcsv_files = sort (@xp_tabsnos);
+	    $flag = 1;
 	}
 	if ($show_data eq "R") {
 	    my @R_files = <*\.[RSrs]>;
 	    @tabcsv_files = @R_files;
 	    @tabcsv_files_loc = @R_files;
+	    $flag = 1;
 	}
 	if ($show_data eq "*") {
 	    my @all_files = <*>;
@@ -5002,7 +5007,18 @@ sub read_tab_files {
 		    push(@tabcsv_files_loc, $_);
 		}
 	    }
+	    $flag = 1;
 	}
+	if ($flag == 0) { # not the default file-types, but user supplied
+	    my @all_files = <*.$show_data>;
+	    foreach (@all_files) {
+		unless (-d $_) {
+		    push(@tabcsv_files, $_);
+		    push(@tabcsv_files_loc, $_);
+		}
+	    }
+	    $flag = 1;
+	} 
 	# get table/file info from databases and put in hash
 	chdir($cwd);
 	$db_table_info = db_read_table_info ("pirana.dir");
@@ -5789,32 +5805,17 @@ sub frame_tab_show {
  
   my $tab_frame = $mw -> Frame ()-> grid (-row=>2, -column=>3, -sticky=>"swe",-ipadx=>0,-ipady=>0);
 
-  my $selected_file;
-  $be = $tab_frame ->BrowseEntry(-background => "#FFFFFF", -font=>$font_normal,
-						-choices => [ qw/tab csv xpose r */ ],
-						-variable => \$selected_file,
-                      -browsecmd => sub{
-   our $show_data = $selected_file;
-   tab_dir($cwd);
-   populate_tab_hlist($tab_hlist);
-   if($selected_file eq "tab") {my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
-   if($selected_file eq "csv") {my @tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
-   if($selected_file eq "xpose") {my @tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
-   if($selected_file eq "r") {my @tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
-   if($selected_file eq "*") {my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal)};
-   
-   bind_tab_menu(\@tab_menu_enabled)}
-   )->pack(-side => 'left');
+  my $selected_file = "tab";
+  $tab_browse_entry = $tab_frame -> BrowseEntry(-background => "#FFFFFF", -font=>$font_normal,
+						-choices => [ qw/tab csv xpose R pnm scm */ ],
+						-variable => \$selected_file, -browsecmd => sub{ 
+    tab_browse_entry_update($selected_file);  
+  }) -> grid(-row=>1, -column=>1, -sticky=>"nwse");
+  $tab_browse_entry -> bind('<Return>', sub{
+    tab_browse_entry_update($selected_file);  
+  });
 
   $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>3,-sticky=>"nw");
-  #$tab_frame_info -> Label(-text=>"  File:", -font=>$font_normal, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
-#  $tab_frame_info -> Label(-text=>"  Size:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>1, -column=>1, -sticky=>"nw");
-#  $tab_frame_info -> Label(-text=>"  Crtd:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>2, -column=>1, -sticky=>"nw");
-#  $tab_frame_info -> Label(-text=>"  Note:", -font=>$font_small, -background=>$bgcol)-> grid(-row=>3, -column=>1, -sticky=>"nw");
- #our $tab_file_text = $tab_frame_info -> Text (
- #    -width=>17, -relief=>'sunken', -border=>0, -height=>1,
- #    -font=>$font_small, -background=>"#f6f6e6", -state=>'normal'
- #)->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
   our $tab_file_info = $tab_frame_info -> Text (
       -width=>22, -relief=>'sunken', -border=>2, -height=>4,
       -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
@@ -5827,32 +5828,24 @@ sub frame_tab_show {
       }
     })->grid(-column=>2,-row=>1, -sticky => 'en');
   $help->attach($edit_tab_info_button, -msg => "Edit project details");
-  # our $new_file_button = $tab_frame_info -> Button(-image=>$gif{new}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
-  # 	new_data_file_window ($show_data);
-  # })->grid(-column=>2,-row=>2, -sticky => 'ens');
-  # $help->attach($new_file_button, -msg => "Create new file...");
-  #   $tab_menu -> command (-label=> " Create new file..", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{new}, -compound=>"left", -command => sub{
-  #   });
-
-  # our $tab_file_size = $tab_frame_info -> Text (
-  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  # )->grid(-column=>2, -row=>1,-sticky=>'nw', -ipadx=>0);
-  # our $tab_file_mod = $tab_frame_info -> Text (
-  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  # )->grid(-column=>2, -row=>2,-sticky=>'nw', -ipadx=>0);
-  # our $tab_file_note = $tab_frame_info -> Text (
-  #     -width=>17, -relief=>'sunken', -border=>0, -height=>1,
-  #     -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  # )->grid(-column=>2, -row=>3,-sticky=>'nw', -ipadx=>0);
-
   $show_ofv=0;
   $show_successful=0;
   $show_covar=0;
-
-#  show_links();
   }
+}
+
+sub tab_browse_entry_update {
+    my $selected_file = shift;
+    our $show_data = $selected_file;
+    tab_dir($cwd);
+    populate_tab_hlist($tab_hlist);
+    my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
+    if($selected_file eq "tab") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
+    if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
+    if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
+    if($selected_file eq "r") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
+    if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal)};
+    bind_tab_menu(\@tab_menu_enabled);
 }
 
 sub bind_models_menu {
