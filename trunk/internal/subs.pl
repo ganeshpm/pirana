@@ -5803,25 +5803,16 @@ sub frame_tab_show {
     bind_tab_menu(\@tab_menu_enabled);
   
   our $show_data="tab";
-  if ($os =~ m/MSWin/i) {
-    our @tab_button_widths = qw/4 4 5 4 4/;
-  } else {
-    our @tab_button_widths = qw/2 2 3 1 1/;
-  }
-  $b=1;
- 
   my $tab_frame = $mw -> Frame (-background=>$bgcol)-> grid (-row=>2, -column=>3);
-
-  my $selected_file = "tab";
   $tab_browse_entry = $tab_frame -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
 						-arrowimage => $gif{down}, -border=>$bbw, -relief=>"groove",
 						-choices => [ qw/tab csv xpose R pnm scm */ ],
-						-variable => \$selected_file, -browsecmd => sub{ 
-    tab_browse_entry_update($selected_file);  
+						-variable => \$show_data, -browsecmd => sub{ 
+						    tab_browse_entry_update($show_data);  
   }) -> grid(-row=>1, -column=>1, -sticky=>"nwse");
   $tab_browse_entry -> bind('<Return>', sub{
-    tab_browse_entry_update($selected_file);  
+    tab_browse_entry_update($show_data);  
   });
 
   $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>2, -columnspan=>1, -ipady=>0,-sticky=>"nws");
@@ -5845,11 +5836,11 @@ sub frame_tab_show {
 
 sub tab_browse_entry_update {
     my $selected_file = shift;
-    our $show_data = $selected_file;
+    print $selected_file;
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
-    if($selected_file eq "tab") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
+    if($selected_file eq "tab") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
     if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
     if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
     if($selected_file eq "r") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
