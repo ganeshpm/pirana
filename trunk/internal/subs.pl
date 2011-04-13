@@ -1529,7 +1529,6 @@ sub new_script_dialog {
 		$script_template -> configure (-text => "From template (".$template.")");
 	    }
     });
-
     $new_script_optionmenu = $new_script_window_frame -> Optionmenu ( -options=> ["Pirana folder","User folder"], -font=>$font, -width=>16, -variable=>\$location, -border=>$bbw,
         -font=>$font_normal, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white,-activeforeground=>$white, -command=>sub{
 	    if ($location eq "Pirana folder") {
