@@ -1721,6 +1721,7 @@ sub extract_from_model {
 	      if (($init =~ m/\d/)&!($init =~ m/OMEGA/)) { # match numeric character
 		  $init =~ s/\s//g;
 		  chomp($descr);
+		  $descr =~ s/\r//g; # also take care of carriage return on Windows
 		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
 		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@om_descr, $descr); $om_comment_flag = 2 }
 		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); $si_comment_flag = 2 }
