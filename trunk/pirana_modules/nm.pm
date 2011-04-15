@@ -1773,7 +1773,9 @@ sub extract_from_model {
 		  push (@th_bnd_up,  @th_ex[2]);
 	      }
 	      $om_comment_flag = 0;
-	      if (((substr($init,0,5) =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {$om_comment_flag = 1}
+	      if (((substr($init,0,5) =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
+		  $om_comment_flag = 1;
+	      }
 	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
 	      if (($init =~ m/\d/)&!($init =~ m/OMEGA/)) { # match numeric character
 		  $init =~ s/\s//g;
@@ -1804,7 +1806,18 @@ sub extract_from_model {
 		      }
 		  } 
 	      }
-	      if (($om_comment_flag == 1)&&($omega_area==1)) {push (@om_descr, $descr);}
+	      if (($om_comment_flag == 1)&&($omega_area==1)) {
+		  unless ($descr =~ m/(cov|corr)/i) {
+		      my $k = 1;
+		      if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
+			  $init =~ m/\((.*)\)/;
+			  $k = $1;
+		      } 
+		      for (my $n = 0; $n < $k; $n++) {
+			  push (@om_descr, $descr);
+		      }
+		  }		  
+	      }
 	      if (($si_comment_flag == 1)&&($sigma_area==1)) {push (@si_descr, $descr);}
 	  }
 	  if($table_area==1) {
