@@ -1493,7 +1493,10 @@ sub generate_HTML_parameter_estimates {
   # OMEGA
   print HTML "<TR class='head1''><TD align='left'><B>Omega</B></TD><TD></TD>";
   $i=1;
-  foreach my $om (@omega) {print HTML "<TD>".$i."</TD><TD></TD>" ; $i++};
+  foreach my $om (@omega) {
+      print HTML "<TD>".$i."</TD><TD></TD>" ; 
+      $i++;
+  };
   if (@etabar>0) {
       print HTML "<TD>Etabar (SE)</TD><TD>p val</TD>";
   }
@@ -1548,9 +1551,15 @@ sub generate_HTML_parameter_estimates {
   #OMEGA transformed
   print HTML "<TR class='head1''><TD align='left' colspan=2><B>Omega (on SD scale) *</B></TD>";
   $i=1;
-  foreach my $om (@omega) {print HTML "<TD>".$i."</TD><TD></TD>" ; $i++};
+  foreach my $om (@omega) {
+      if (@omega_same[($i-1)] == 0) {
+	  print HTML "<TD>".$i."</TD><TD></TD>" ; 
+      }
+      $i++;
+  };
   print HTML "</TR>\n";
   $i=0; my $om_se_x; my @om_cov_se;
+  my $cnt_om_nonsame = 0; foreach (@omega_same) {if ($_ == 0) {$cnt_om_nonsame++}}
   foreach my $om (@omega) {
       my @om_x = @$om; my $j = 1;
       if (@omega_same[$i] == 0) {
@@ -1560,6 +1569,7 @@ sub generate_HTML_parameter_estimates {
       my $diag = 1;
       foreach my $om_cov (@om_x) {
 	  if (($j-1)/2 == int(($j-1)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
+	  if (@omega_same[($j-1)] == 0) {
 	  print HTML "<TD $bg>";
 	  if (@omega_se>0) {
 	      $om_se_x = @omega_se[$i];
@@ -1596,11 +1606,12 @@ sub generate_HTML_parameter_estimates {
 	      print HTML "<TD $bg></TD>";
 	  }
 	  print HTML "</TD>";
+	  }
 	  $j++;
       }
-      for (my $fill = $j-1; $fill<@omega; $fill++) {
-          if (($fill)/2 == int(($fill)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = "";}
-          print HTML "<TD $bg></TD><TD $bg></TD>";
+      for (my $fill = $j-1; $fill<$cnt_om_nonsame; $fill++) {
+           if (($fill)/2 == int(($fill)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = "";}
+           print HTML "<TD $bg></TD><TD $bg></TD>";
       };
       print HTML "</TR>";
       }
@@ -1642,6 +1653,11 @@ sub generate_HTML_parameter_estimates {
         print HTML "</TD>";
         $j++;
       }
+      for (my $fill = $j-1; $fill<int(@sigma); $fill++) {
+	   
+           if (($fill)/2 == int(($fill)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = "";}
+           print HTML "<TD $bg></TD><TD $bg></TD>";
+      };
 
       if (@si_shrink>0) {
 	  print HTML "<TD>".rnd(@si_shrink[$i],1)."%</TD>";

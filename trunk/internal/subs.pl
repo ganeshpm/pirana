@@ -1591,12 +1591,14 @@ sub create_scripts_menu {
 		    my @sel = $models_hlist -> selectionGet ();
 		    if (@sel == 0) { message("First select a model."); return(); }
 		    my @models_sel = @ctl_show[@sel];
+		    foreach (@models_sel) {$_ =~ s/dir-// ;}
 		    run_script ($folder."/".$scriptfile, \@models_sel, $edit);
    	        });
 	    }
 	    if ($edit == 1) {
 		$mbar_scripts -> command (-label => $script, -font=>$font,  -background=>$bgcol, -command => sub{
 		    my @sel = $models_hlist -> selectionGet ();
+		    foreach (@models_sel) {$_ =~ s/dir-// ;}
 		    edit_model ($folder."/".$scriptfile);
 		});
 	    }
@@ -5807,7 +5809,7 @@ sub frame_tab_show {
   $tab_browse_entry = $tab_frame -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
 						-arrowimage => $gif{down}, -border=>$bbw, -relief=>"groove",
-						-choices => [ qw/tab csv xpose R pnm scm */ ],
+						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
   }) -> grid(-row=>1, -column=>1, -sticky=>"nwse");
