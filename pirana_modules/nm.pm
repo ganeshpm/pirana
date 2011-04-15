@@ -559,7 +559,7 @@ sub get_estimates_from_lst {
 
       if ($line =~ m/NEAR ITS BOUNDARY/) {$bnd{$est_method}="Y"};
 #      if ((substr($line,0,1) eq "1")||(($i+1) == @lst)) {
-      if ((substr($line,0,1) eq "1")&&(!(@lst[$i+2] =~ m/(ET|SI)/))) {
+      if ( ((substr($line,0,1) eq "1")&&(!(@lst[$i+2] =~ m/(ET|SI)/))) || ($line =~ m/Finished/)  ) {
 	  # if (($est_area==1)&&(!((@lst[$i+4] =~ m/STANDARD ERROR OF ESTIMATE/)||(@lst[$i+3] =~ m/STANDARD ERROR OF ESTIMATE/)))){ # no SE errors
 	  #     my @est = get_estimates_from_text (\@est_text);
 	  #     $estimates {$est_method} = \@est;
@@ -598,16 +598,55 @@ sub get_term_results_from_text {
     my $text_ref = shift;
     my @lines = @$text_ref;
     my @etabar; my @etabar_se; my @etabar_p; my @om_shrink; my @si_shrink;
-    my $etabar_flag = 0; my $term_text;
+    my $term_text; 
+    my $etabar_area; my $se_area; my $p_val_area; my $eta_shrink_area; my $eps_shrink_area;
     foreach my $line (@lines) {
-	if ($line =~ m/ETABAR:/)    {push (@etabar, extract_th(substr($line,8))); $etabar_flag=1; }
+	if ($line =~ m/ETABAR:/)    {
+	    $etabar_area = 1; 
+	}
 	$line =~ s/\#TERM\:// ;
 	$line =~ s/\#TERE\:// ;
-	unless (($etabar_flag==1)||(substr($line,0,1)=~m/1/)) {chomp($line); $line =~ s/^\s+//; if ($line ne "") {$term_text .= $line."\n";}}
-	if ($line =~ m/SE:/)       {push (@etabar_se, extract_th(substr($line,8)))}
-	if ($line =~ m/P VAL.:/)   {push (@etabar_p, extract_th(substr($line,8)))}
-	if ($line =~ m/ETAshrink/) {push (@om_shrink, extract_th(substr($line,14)))}
-	if ($line =~ m/EPSshrink/) {push (@si_shrink, extract_th(substr($line,14)))}
+	unless (($etabar_area==1)||(substr($line,0,1)=~m/1/)) {chomp($line); $line =~ s/^\s+//; if ($line ne "") {$term_text .= $line."\n";}}
+	if ($line =~ m/SE:/)       {
+	    $etabar_area = 0;
+	    $se_area = 1;
+	}
+	if ($line =~ m/P VAL.:/)   {
+	    $se_area = 0;
+	    $p_val_area = 1;
+	}
+	if ($line =~ m/ETAshrink/) {
+	    $p_val_area = 0;
+	    $eta_shrink_area = 1;
+	}
+	if ($line =~ m/EPSshrink/) {
+	    $eta_shrink_area = 0;
+	    $eps_shrink_area = 1;
+	}
+	if ($etabar_area == 1) {
+	    push (@etabar, extract_th($line)); 
+	}
+	if ($se_area == 1) {
+	    if ($line =~ m/\d/) {
+		push (@etabar_se, extract_th($line));
+	    }
+	}
+	if ($p_val_area == 1) {
+	    if ($line =~ m/\d/) {
+		push (@etabar_p, extract_th($line));
+	    }
+	}
+	if ($eta_shrink_area == 1) {
+	    if ($line =~ m/\d/) {
+		push (@om_shrink, extract_th($line));
+	    }
+	}
+	if (substr($line,0,1) eq "1") {$eps_shrink_area = 0}
+	if ($eps_shrink_area == 1) {
+	    if ($line =~ m/\d/) {
+		push (@si_shrink, extract_th($line))
+	    }
+	}
     }
     foreach (@om_shrink) {$_ = rnd($_,3)};
     foreach (@si_shrink) {$_ = rnd($_,3)};
@@ -630,13 +669,6 @@ sub get_estimates_from_text {
 	    $om_area = 1;
 	    $th_area = 0;
 	}
-	if ($line =~ m/SIGMA - COV MATRIX/) {
-	    $si_area = 1;
-	    $om_area = 0;
-	}
-	if ($line =~ m/ETABAR:/) {
-	    $etabar_area = 1;
-	}
 	if ($th_area == 1) {
 	    unless ($line =~ m/TH/) {
 		push (@th, extract_th ($line));
@@ -644,18 +676,18 @@ sub get_estimates_from_text {
 	}
 	if ($om_area == 1) {
 #	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0))||(substr($line,0,1) eq "1")) {
-	    if ((substr($line, 0,3) eq " ET")&&($cnt_om > 0)) {
-		push (@om, extract_cov ($om_line));
-		$om_line = "";
-	    }
-	    if (substr($line,0,3) eq " ET") {
-		$cnt_om++;
-	    }
 	    unless ($line =~ m/ET/) {
 		if ($line =~ m/\./ ) {
 		    chomp($line);
 		    $om_line .= $line;
 		}
+	    }
+	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0))||($line =~ m/SIGMA/)) {
+		push (@om, extract_cov ($om_line));
+		$om_line = "";
+	    }
+	    if (substr($line,0,3) eq " ET") {
+		$cnt_om++;
 	    }
 	}
 	if ($si_area == 1) {
@@ -665,6 +697,13 @@ sub get_estimates_from_text {
 		    push (@si, extract_cov ($line));
 		}
 	    }
+	}
+	if ($line =~ m/SIGMA - COV MATRIX/) {
+	    $si_area = 1;
+	    $om_area = 0;
+	}
+	if ($line =~ m/ETABAR:/) {
+	    $etabar_area = 1;
 	}
     }
 #    shift(@om);
@@ -678,12 +717,12 @@ sub extract_th {
   my @sp;
   $line =~ s/FIX//;
   my @raw_split = split (" ",$line);
-  my $i=0;
   foreach (@raw_split) {
     unless ($_ eq "") {
       $_ =~ s/\s//g;
-      push (@sp, $_);
-      $i++;
+      if ($_ =~ m/\d/) {
+	  push (@sp, $_);
+      }
     }
   }
   return (@sp);
@@ -970,7 +1009,9 @@ sub parse_omega_line { # can also be used for sigma block
 	    $add_om_string = $1." ";
 	}
     };
-    if ( $om_string =~ m/SAME/)           { $replace_om = 0 };
+    if ( $om_string =~ m/SAME/) { 
+	$replace_om = 0 
+    };
 
     if ($replace_om == 0) {  # First line of $OMEGA block
 	if ($om_string =~ m/SAME/) {$om_n++};
@@ -1398,6 +1439,7 @@ sub generate_HTML_parameter_estimates {
 
   my $omega_ref = @est[1];  my @omega = @$omega_ref;
   my $omega_names_ref = $mod{om_descr}; my @omega_names = @$omega_names_ref;
+  my $omega_same_ref = $mod{om_same}; my @omega_same = @$omega_same_ref;
 
   my $sigma_ref = @est[2];  my @sigma = @$sigma_ref;
   my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
@@ -1473,8 +1515,8 @@ sub generate_HTML_parameter_estimates {
 	    if ($om_cov != 0) {
 		push (@om_se_diag, (@om_cov_se[$i]/$om_cov));
 	    }
-	} # on- or off-diagonal?
-
+	} 
+        # on- or off-diagonal?
         if (($j-1)/2 == int(($j-1)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
         print HTML "<TD $bg>".rnd($om_cov,4);
         if (($om_cov!=0)&&(@om_cov_se[$i]!=0)) {
@@ -1485,6 +1527,7 @@ sub generate_HTML_parameter_estimates {
         print HTML "</TD>";
         $j++;
       }
+
       if (@etabar>0) {
         for (my $fill = $j-1; $fill<@omega; $fill++) {
           if (($fill)/2 == int(($fill)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = "";}
@@ -1510,6 +1553,7 @@ sub generate_HTML_parameter_estimates {
   $i=0; my $om_se_x; my @om_cov_se;
   foreach my $om (@omega) {
       my @om_x = @$om; my $j = 1;
+      if (@omega_same[$i] == 0) {
       print HTML "<TR><TD class='head2'>".($i+1)."</TD>\n";
       print HTML "<TD align='left'>".@omega_names[$i]."</TD>\n";
       my $bg = "";
@@ -1523,17 +1567,17 @@ sub generate_HTML_parameter_estimates {
 	  }
 	  my $corr;
 	  if ($j == @om_x) {
-	      print HTML rnd(sqrt(abs($om_cov))*100,1);
+	      print HTML rnd(sqrt(abs($om_cov))*100,1)."%";
 	  } else {
 	      my $corr_denom = sqrt(@om_diag[$i])*sqrt(@om_diag[($j-1)]) ;
 	      if ($corr_denom != 0) {
 		  $corr = ($om_cov / $corr_denom);
-		  print HTML rnd ( 100 * $corr , 1);
+		  print HTML rnd ( 100 * $corr , 1)."%";
 	      } else {
-		  print HTML "-";
+		  print HTML "NA";
 	      }
 	  }
-	  print HTML "%";
+#	  print HTML "%";
 
 	  # uncertainty in correlation
 	  if (($om_cov!=0)&&(@om_cov_se[$i]!=0)) {
@@ -1559,6 +1603,7 @@ sub generate_HTML_parameter_estimates {
           print HTML "<TD $bg></TD><TD $bg></TD>";
       };
       print HTML "</TR>";
+      }
       $i++;
   }
   print HTML "</TABLE>\n<TABLE cellpadding=2 cellspacing=0 border=0 CLASS='sigma'>";
@@ -1572,21 +1617,32 @@ sub generate_HTML_parameter_estimates {
   }
   print HTML "</TR>\n";
   $i=0; my $si_se_x; my @si_cov_se; my $bg;
+  my @si_diag; my @si_se_diag;
   foreach my $si (@sigma) {
       my @si_x = @$si; my $j = 1;
       print HTML "<TR><TD class='head2'>".($i+1)."</TD>\n";
       if (($j-1)/2 == int(($j-1)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
       print HTML "<TD>".@sigma_names[$i]."</TD>\n";
+
       foreach my $si_cov (@si_x) {
+        if (@sigma_se>0) {$si_se_x = @sigma_se[$i]; @si_cov_se = @$si_se_x;};
+        if ($j == @si_x) {
+	    push (@si_diag, $si_cov);
+	    if ($si_cov != 0) {
+		push (@si_se_diag, (@si_cov_se[$i]/$si_cov));
+	    }
+	}
+        if (($j-1)/2 == int(($j-1)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
         print HTML "<TD $bg>".rnd($si_cov,4);
         if (($si_cov!=0)&&(@si_cov_se[$i]!=0)) {
-          print HTML "<TD $bg><FONT color='#777777'>(".rnd((@si_cov_se[$i]/$si_cov*100),3)."%)</FONT></TD>";
+          print HTML "<TD $bg><FONT color='#777777'>(".rnd((@si_cov_se[$i]/$si_cov*100),1)."%)</FONT></TD>";
         } else {
           print HTML "<TD $bg></TD>";
         }
         print HTML "</TD>";
         $j++;
       }
+
       if (@si_shrink>0) {
 	  print HTML "<TD>".rnd(@si_shrink[$i],1)."%</TD>";
       }
@@ -1673,6 +1729,7 @@ sub extract_from_model {
     my $om_comment_flag; my $si_comment_flag;
     my @tab_files;
     my (@th_fix, @om_fix, @si_fix);
+    my @om_same;
     foreach (@ctl_lines) {
       if (substr($_,0,1) eq "\$") {
         if ($theta_area==1) {$theta_area=0} ;
@@ -1723,7 +1780,11 @@ sub extract_from_model {
 		  chomp($descr);
 		  $descr =~ s/\r//g; # also take care of carriage return on Windows
 		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
-		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@om_descr, $descr); $om_comment_flag = 2 }
+		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {
+		      push (@om_descr, $descr); 
+		      push (@om_same, 0);
+		      $om_comment_flag = 2 
+		  }
 		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); $si_comment_flag = 2 }
 		  if ($init =~ m/FIX/) { # match numeric character
 		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
@@ -1734,6 +1795,14 @@ sub extract_from_model {
 		      if ($omega_area ==1) {push (@om_fix, "")} ;
 		      if ($sigma_area ==1) {push (@si_fix, "")} ;
 		  }
+	      }
+	      if ($omega_area == 1) {
+		  if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
+		      $init =~ m/\((.*)\)/;
+		      for (my $n = 0; $n < $1; $n++) {
+			  push (@om_same, 1);
+		      }
+		  } 
 	      }
 	      if (($om_comment_flag == 1)&&($omega_area==1)) {push (@om_descr, $descr);}
 	      if (($si_comment_flag == 1)&&($sigma_area==1)) {push (@si_descr, $descr);}
@@ -1780,6 +1849,7 @@ sub extract_from_model {
     $mod{th_bnd_low} = \@th_bnd_low;
     $mod{th_bnd_up} = \@th_bnd_up;
     $mod{om_descr} = \@om_descr;
+    $mod{om_same} = \@om_same;
     $mod{si_descr} = \@si_descr;
     $mod{th_fix} = \@th_fix;
     $mod{om_fix} = \@om_fix;
@@ -1942,6 +2012,7 @@ sub generate_LaTeX_parameter_estimates {
 
   my $omega_ref = @est[1];  my @omega = @$omega_ref;
   my $omega_names_ref = $mod{om_descr}; my @omega_names = @$omega_names_ref;
+  my $omega_same_ref = $mod{om_same}; my @omega_same = @$omega_same_ref;
 
   my $sigma_ref = @est[2];  my @sigma = @$sigma_ref;
   my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
@@ -2059,6 +2130,7 @@ sub generate_LaTeX_parameter_estimates {
   $i=0; my $om_se_x; my @om_cov_se;
   foreach my $om (@omega) {
       my @om_x = @$om; my $j = 1;
+      if (@omega_same[$i] == 0) {
       $latex .= "".($i+1)." & ";
       $latex .= "".@omega_names[$i]." & ";
       my $bg = "";
@@ -2097,6 +2169,7 @@ sub generate_LaTeX_parameter_estimates {
           $latex .= " & & ";
       };
       $latex .= "\\tabularnewline \n";
+      }
       $i++;
   }
   $latex .= "\\end{tabular} \n\n";
@@ -2119,6 +2192,7 @@ sub generate_LaTeX_parameter_estimates {
   }
   $latex .= "\\tabularnewline \n";
   $i=0; my $si_se_x; my @si_cov_se; my $bg;
+  my @si_diag; my @si_se_diag;
   foreach my $si (@sigma) {
       @sigma_names[$i] =~ s/\_/\\\_/i;
       @sigma_names[$i] =~ s/\%/\\\%/i;
@@ -2127,6 +2201,13 @@ sub generate_LaTeX_parameter_estimates {
       $latex .= "".($i+1)." & ";
       $latex .= " ".@sigma_names[$i]." & ";
       foreach my $si_cov (@si_x) {
+        if (@sigma_se>0) {$si_se_x = @sigma_se[$i]; @si_cov_se = @$si_se_x;};
+        if ($j == @si_x) {
+	    push (@si_diag, $si_cov);
+	    if ($si_cov != 0) {
+		push (@si_se_diag, (@si_cov_se[$i]/$si_cov));
+	    }
+	} 
         $latex .= " ".rnd($si_cov,4)." & ";
         if (($si_cov!=0)&&(@si_cov_se[$i]!=0)) {
           $latex .= "(".rnd((@si_cov_se[$i]/$si_cov*100),3)."\\%) & ";
