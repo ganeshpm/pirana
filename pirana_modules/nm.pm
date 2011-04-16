@@ -599,14 +599,22 @@ sub get_term_results_from_text {
     my @lines = @$text_ref;
     my @etabar; my @etabar_se; my @etabar_p; my @om_shrink; my @si_shrink;
     my $term_text; 
-    my $etabar_area; my $se_area; my $p_val_area; my $eta_shrink_area; my $eps_shrink_area;
+    my $text_area = 1; my $etabar_area; my $se_area; my $p_val_area; my $eta_shrink_area; my $eps_shrink_area;
     foreach my $line (@lines) {
 	if ($line =~ m/ETABAR:/)    {
 	    $etabar_area = 1; 
 	}
 	$line =~ s/\#TERM\:// ;
 	$line =~ s/\#TERE\:// ;
-	unless (($etabar_area==1)||(substr($line,0,1)=~m/1/)) {chomp($line); $line =~ s/^\s+//; if ($line ne "") {$term_text .= $line."\n";}}
+	if ($line =~ m/ETABAR/) {
+	    $text_area = 0;
+	}
+	if ($text_area == 1) {
+	    chomp($line); 
+	    $line =~ s/^\s+//; 
+	    if ($line ne "") {
+		$term_text .= $line."\n";}
+	}
 	if ($line =~ m/SE:/)       {
 	    $etabar_area = 0;
 	    $se_area = 1;
@@ -1342,7 +1350,7 @@ sub output_results_HTML {
 	  generate_HTML_run_specific_info ($meth, \%res, \%mod, $term_res{$meth}, $ofvs{$meth}, $est_times{$meth}, $bnd{$meth}, $grad_zero{$meth}, $cond_nr{$meth});
 	  generate_HTML_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
       }
-  print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements<BR>";
+  print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements. SAME blocks are not shown.<BR>";
 #      print HTML "<font size=1 face=verdana,arial>* Random effects are shown as OM^2 and SI^2</FONT><BR>";
 #      print HTML "<font size=1 face=verdana,arial>** RSE on random effects are shown as RSE(OM^2) and RSE(SI^2). RSE(OM) can be calculated as RSE(OM^2)/2. </FONT><BR>";
   }
@@ -1360,7 +1368,7 @@ sub generate_HTML_run_specific_info {
   my @term;
   my @times = @$est_time_ref;
   if ($term_ref =~ m/ARRAY/) {
-      my @term = @$term_ref;
+      @term = @$term_ref;
   }
   my $term_message_ref = @term[5];
   $$term_message_ref =~ s/\n/\<BR\>/g;
@@ -1743,7 +1751,7 @@ sub extract_from_model {
     my $om_comment_flag; my $si_comment_flag;
     my @tab_files;
     my (@th_fix, @om_fix, @si_fix);
-    my @om_same;
+      my @om_same; my $sigma_flag;
     foreach (@ctl_lines) {
       if (substr($_,0,1) eq "\$") {
         if ($theta_area==1) {$theta_area=0} ;
@@ -1759,7 +1767,7 @@ sub extract_from_model {
       } else {
 	  if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1; $theta_area_prv=1; }
 	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; $omega_area_prv=1; }
-	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; }
+	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; $sigma_flag = 1; }
 	  if (substr ($_,0,6) eq "\$TABLE") {$table_area = 1 }
 	  if (substr ($_,0,4) eq "\$EST")   {$estim_area = 1 }
 	  if (substr ($_,0,5) eq "\$DATA") {
@@ -1796,12 +1804,15 @@ sub extract_from_model {
 		  chomp($descr);
 		  $descr =~ s/\r//g; # also take care of carriage return on Windows
 		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
-		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {
+		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr|\[f\])/i))&&($sigma_flag==0)) {
 		      push (@om_descr, $descr); 
 		      push (@om_same, 0);
 		      $om_comment_flag = 2 
 		  }
-		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {push (@si_descr, $descr); $si_comment_flag = 2 }
+		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {
+		      push (@si_descr, $descr); 
+		      $si_comment_flag = 2 
+		  }
 		  if ($init =~ m/FIX/) { # match numeric character
 		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
 		      if ($omega_area ==1) {push (@om_fix, "FIX")} ;
@@ -1812,7 +1823,7 @@ sub extract_from_model {
 		      if ($sigma_area ==1) {push (@si_fix, "")} ;
 		  }
 	      }
-	      if ($omega_area == 1) {
+	      if (($omega_area == 1)&&($sigma_flag == 0)) {
 		  if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
 		      $init =~ m/\((.*)\)/;
 		      for (my $n = 0; $n < $1; $n++) {
@@ -1821,7 +1832,7 @@ sub extract_from_model {
 		  } 
 	      }
 	      if (($om_comment_flag == 1)&&($omega_area==1)) {
-		  unless ($descr =~ m/(cov|corr)/i) {
+		  unless ($descr =~ m/(cov|corr|\[f\])/i) {
 		      my $k = 1;
 		      if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
 			  $init =~ m/\((.*)\)/;
