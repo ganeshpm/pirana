@@ -720,9 +720,7 @@ sub extract_th {
   foreach (@raw_split) {
     unless ($_ eq "") {
       $_ =~ s/\s//g;
-      if ($_ =~ m/\d/) {
-	  push (@sp, $_);
-      }
+      push (@sp, $_);
     }
   }
   return (@sp);
