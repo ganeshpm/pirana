@@ -632,26 +632,31 @@ sub get_term_results_from_text {
 	    $eps_shrink_area = 1;
 	}
 	if ($etabar_area == 1) {
+	    $line =~ s/ETABAR://;
 	    push (@etabar, extract_th($line)); 
 	}
 	if ($se_area == 1) {
 	    if ($line =~ m/\d/) {
+		$line =~ s/SE://;
 		push (@etabar_se, extract_th($line));
 	    }
 	}
 	if ($p_val_area == 1) {
 	    if ($line =~ m/\d/) {
+		$line =~ s/P VAL.://;
 		push (@etabar_p, extract_th($line));
 	    }
 	}
 	if ($eta_shrink_area == 1) {
 	    if ($line =~ m/\d/) {
+		$line =~ s/ETAshrink\(%\)://;
 		push (@om_shrink, extract_th($line));
 	    }
 	}
 	if (substr($line,0,1) eq "1") {$eps_shrink_area = 0}
 	if ($eps_shrink_area == 1) {
 	    if ($line =~ m/\d/) {
+		$line =~ s/EPSshrink\(%\)://;
 		push (@si_shrink, extract_th($line))
 	    }
 	}
