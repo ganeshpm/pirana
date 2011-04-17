@@ -8,7 +8,7 @@ use Cwd;
 use File::Basename;
 use File::stat;
 use Time::localtime;
-use pirana_modules::misc qw(time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
+use pirana_modules::misc qw(count_numeric om_block_structure time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
@@ -1375,7 +1375,10 @@ sub generate_HTML_run_specific_info {
   my %res = %$res_ref;
   my %mod = %$mod_ref;
   my @term;
-  my @times = @$est_time_ref;
+  my @times;
+  if ($est_time_ref =~ m/ARRAY/) {
+      @times = @$est_time_ref;
+  }
   if ($term_ref =~ m/ARRAY/) {
       @term = @$term_ref;
   }
@@ -1761,6 +1764,7 @@ sub extract_from_model {
     my @tab_files;
     my (@th_fix, @om_fix, @si_fix);
       my @om_same; my $sigma_flag;
+      my @block = (1); my $last_om = 1;
     foreach (@ctl_lines) {
       if (substr($_,0,1) eq "\$") {
         if ($theta_area==1) {$theta_area=0} ;
@@ -1808,19 +1812,36 @@ sub extract_from_model {
 		  $om_comment_flag = 1;
 	      }
 	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
-	      if (($init =~ m/\d/)&!($init =~ m/OMEGA/)) { # match numeric character
+	      if (($init =~ m/\$OMEGA/)&&($init =~ m/BLOCK/)) {
+		  $init =~ m/\((.*)\)/;
+		  my $block_ref = om_block_structure($1);
+		  @block = @$block_ref;
+	      }
+	      my $init_clean = $init; 
+	      $init_clean =~ s/BLOCK(.*)//;
+	      if ($init_clean =~ m/\d/) { # match numeric character
 		  $init =~ s/\s//g;
 		  chomp($descr);
+		  if ($omega_area+$sigma_area > 0) {
+		      my $n = count_numeric ($init_clean);
+		      for (my $l = 0; $l < $n; $l++) { 
+			  if (int(@block) > 1) {
+			      $last_om = shift (@block);
+			  } else {
+			      $last_om = 1;
+			  } 
+		      }
+		  }
 		  $descr =~ s/\r//g; # also take care of carriage return on Windows
 		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
-		  if (($omega_area == 1)&&(!($descr =~ m/(cov|corr|\[f\])/i))&&($sigma_flag==0)) {
+		  if (($omega_area == 1)&&($last_om==1)&&($sigma_flag==0)) {
 		      push (@om_descr, $descr); 
 		      push (@om_same, 0);
 		      $om_comment_flag = 2 
 		  }
-		  if (($sigma_area == 1)&&(!($descr =~ m/(cov|corr)/i))) {
+		  if (($sigma_area == 1)&&($last_om==1)) {
 		      push (@si_descr, $descr); 
-		      $si_comment_flag = 2 
+		      $si_comment_flag = 2; 
 		  }
 		  if ($init =~ m/FIX/) { # match numeric character
 		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
@@ -1841,7 +1862,7 @@ sub extract_from_model {
 		  } 
 	      }
 	      if (($om_comment_flag == 1)&&($omega_area==1)) {
-		  unless ($descr =~ m/(cov|corr|\[f\])/i) {
+		  unless ($descr =~ m/(cov|corr|\[f\]|\~)/i) {
 		      my $k = 1;
 		      if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
 			  $init =~ m/\((.*)\)/;

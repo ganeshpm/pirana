@@ -8,7 +8,29 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub count_numeric {
+    my $str = shift;
+    my @n_all = split (" ", $str);
+    my @n;
+    foreach (@n_all) {
+	if ($_ =~ m/\d/) {push (@n, $_);}
+    }
+    return (int(@n));
+}
+
+sub om_block_structure {
+    my $n = shift;
+    my @om_struct;
+    for ($i = 1; $i <= $n; $i++) {
+	for ($j = 1; $j < $i; $j++) {
+	    push (@om_struct, 0);
+	}
+	push (@om_struct, 1);
+    }
+    return (\@om_struct);
+}
 
 sub unique {
 # return an array with unique values from an array with non-unique values

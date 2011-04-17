@@ -6977,16 +6977,18 @@ sub psn_run_window {
     my $dir = $dir_entry -> get();
     my ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
     my ($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
-    my $ssh_label_pre = $psn_run_frame -> Label (-text=>$text_pre.$ssh_add, -font=>$font_small, -foreground=>$grey
+    my $pre_text_formatted = $text_pre.$ssh_add;
+    if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."} else {};
+    my $ssh_label_pre = $psn_run_frame -> Label (-text=>$pre_text_formatted, -font=>$font_fixed_small, -foreground=>$grey
 	)->grid(-column=>2, -row=>11, -sticky=>'nws');
-    my $ssh_label_post = $psn_run_frame -> Label (-text=>$ssh_add2.$text_post, -font=>$font_small, -foreground=>$grey
+    my $ssh_label_post = $psn_run_frame -> Label (-text=>$ssh_add2.$text_post, -font=>$font_fixed_small, -foreground=>$grey
 	)->grid(-column=>2, -row=>14, -sticky=>'nws');
     $psn_run_frame -> Label (-text=>" "
 	)->grid(-column=>2, -row=>15, -sticky=>'nws');
 
     my $psn_command_line_entry = $psn_run_frame -> Text (
-        -width=>64, -relief=>'sunken', -border=>0, -height=>3, -highlightthickness=>0,
-        -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal', -wrap=> 'word'
+        -width=>72, -relief=>'sunken', -border=>0, -height=>4, -highlightthickness=>0,
+        -font=>$font_fixed_small, -background=>"#FFFFFF", -state=>'normal', -wrap=> 'word'
         )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwes', -ipadx=>0);
  #   $psn_command_line_entry -> delete("1.0","end");
  #   print "****".$psn_command_line."###";
@@ -7057,8 +7059,10 @@ sub psn_run_window {
 
 	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
 	($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
-	
-	$ssh_label_pre -> configure (-text=>$text_pre.$ssh_add);
+
+	$pre_text_formatted = $text_pre.$ssh_add;
+	if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
+	$ssh_label_pre -> configure (-text=>$pre_text_formatted);
 	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
     }) -> grid(-row=>6,-column=>2,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Connect through:", -font=>$font_normal, -background=>$bgcol
@@ -7072,6 +7076,10 @@ sub psn_run_window {
 	}
     }) -> grid(-row=>16,-column=>2,-columnspan=>2,-sticky=>"nw");
 
+    $psn_run_frame -> Label (-text=>"Command prefix:",-font=>$font_small, -background=>$bgcol, -foreground=>$grey
+	) -> grid(-row=>11,-column=>1,-sticky=>"nes");
+    $psn_run_frame -> Label (-text=>"Command suffix:",-font=>$font_small, -background=>$bgcol, -foreground=>$grey
+	) -> grid(-row=>14,-column=>1,-sticky=>"nes");
     $psn_run_frame -> Label (-text=>"PsN command line:\n",-font=>$font_normal, -background=>$bgcol
 	) -> grid(-row=>12,-column=>1,-sticky=>"nw");
     # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
@@ -7122,7 +7130,10 @@ sub psn_run_window {
 	$ssh{default} = $ssh{connect_ssh};
 	
 	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
-	$ssh_label_pre -> configure (-text=>$text_pre.$ssh_add);
+
+	$pre_text_formatted = $text_pre.$ssh_add;
+	if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
+	$ssh_label_pre -> configure (-text=>$pre_text_formatted);
 	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
 
         $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
