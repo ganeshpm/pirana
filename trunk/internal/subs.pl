@@ -5278,10 +5278,11 @@ sub pcluster_create_bat_file {
 }
 
 sub exec_run_psn {
-    my ($psn_command_line, $ssh_ref, $model, $model_description, $background) = @_;
+    my ($psn_command_line, $ssh_ref, $model, $model_description, $pre, $post) = @_;
     my %ssh = %$ssh_ref;
     status ("Starting run(s) locally using PsN");
-    system ($psn_command_line);
+    print $pre.$psn_command_line.$post;
+    system ($pre.$psn_command_line.$post);
     $psn_command_line =~ s/\'//g;
     db_log_execution ($model, $model_description, "PsN", "local", $psn_command_line, $setting{name_researcher}, "pirana.dir");
     status ();
@@ -5338,10 +5339,7 @@ sub build_psn_run_command {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-model", $model.".".$setting{ext_ctl}, 1, %ssh, %clusters);
     }
 
-    my $ssh_add = "";
-    my $ssh_add2 = "";
     my $outputfile= $model.".".$setting{ext_res};
-
     if ($psn_command eq "execute") {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
     };
@@ -5352,12 +5350,22 @@ sub build_psn_run_command {
 	$psn_command_line .= " ".$modelfile;
     }
 
+#    $psn_command_line = $ssh_add.$psn_command_line.$ssh_add2 ;
+#    print $psn_command_line."\n";
+    return( $psn_command_line);
+}
+
+sub build_ssh_connection {
+    my ($ssh_ref, $dir, $setting_ref) = @_;
+    my %ssh = %$ssh_ref;
+    my %setting = %$setting_ref;
+    my $ssh_add; my $ssh_add2;
+    # connection using SSH
     if ($ssh{connect_ssh}==1) {
 	$ssh_add = $ssh{login}." ";
 	if ($ssh{parameters} ne "") {
 	    $ssh_add .= $ssh{parameters}.' ';
 	}
-	$dir = $dir_entry -> get();
 	$dir =~ s/$ssh{local_folder}//gi;
 	unless ($ssh{login} =~ m/(plink|putty)/i) { # plink (PuTTY) doesn't like the quotes
 	    $ssh_add .= "'";
@@ -5369,16 +5377,52 @@ sub build_psn_run_command {
 	unless ($ssh{login} =~ m/(plink|putty)/i) {
 	    $ssh_add2 = "'";
 	}
-	$cwd = $dir_entry -> get();
-	my $l = length($cwd);
-	unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
+	my $l = length($dir);
+	unless (lcase(substr($dir,0,$l)) eq lcase($setting{cluster_drive})) {
 	    message ("Your current working directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.");
 	    return();
 	}
     }
-    $psn_command_line = $ssh_add.$psn_command_line.$ssh_add2 ;
-#    print $psn_command_line."\n";
-    return( $psn_command_line );
+    return ($ssh_add, $ssh_add2);
+}
+
+sub update_psn_background {
+    my ($psn_background, $ssh_ref, $dir, $setting_ref) = @_;
+    my %ssh = %$ssh_ref;
+    my %setting = %$setting_ref;
+    my ($text_pre, $text_post);
+    if (!($os =~ m/MSWin/ )) {
+	if ($psn_background == 0) {
+	    if ($setting{terminal} ne "") {
+		if (($setting{quit_shell}==0)||($psn_option eq "sumo")) { # don't close terminal window after completion
+		    if ($setting{terminal} =~ m/gnome-terminal/) { # for gnome-terminal
+			$text_post .= '|less';		   
+		    } else { # this works for xterm and maybe some other terminals
+			$text_post .= ';read -n1';
+		    }
+		}
+		$text_pre = $setting{terminal}.' -e "';
+		$text_post .= '" &';
+	    }
+	} else {
+	    $text_post .= " &";
+	}
+    } else {
+	if (($ssh{connect_ssh}==0)&&($psn_background == 0)) {
+	    $text_pre = "start ";
+	} 
+	if (($ssh{connect_ssh}==0)&&($psn_background == 1)) {
+	    $text_pre = "start /b ";
+	}
+	if (($ssh{connect_ssh}==1)&&($psn_background == 0)) {
+	    $text_pre = "start ";
+	}
+	if (($ssh{connect_ssh}==1)&&($psn_background == 1)) {
+	    $text_pre = "start ";
+	    $text_post = " &";
+	}
+    } 
+    return ($text_pre, $text_post);
 }
 
 sub text_window_nm_help {
@@ -6930,6 +6974,16 @@ sub psn_run_window {
 
     my $psn_background = 0;
     my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+    my $dir = $dir_entry -> get();
+    my ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
+    my ($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
+    my $ssh_label_pre = $psn_run_frame -> Label (-text=>$text_pre.$ssh_add, -font=>$font_small, -foreground=>$grey
+	)->grid(-column=>2, -row=>11, -sticky=>'nws');
+    my $ssh_label_post = $psn_run_frame -> Label (-text=>$ssh_add2.$text_post, -font=>$font_small, -foreground=>$grey
+	)->grid(-column=>2, -row=>14, -sticky=>'nws');
+    $psn_run_frame -> Label (-text=>" "
+	)->grid(-column=>2, -row=>15, -sticky=>'nws');
+
     my $psn_command_line_entry = $psn_run_frame -> Text (
         -width=>64, -relief=>'sunken', -border=>0, -height=>3, -highlightthickness=>0,
         -font=>$font_normal, -background=>"#FFFFFF", -state=>'normal', -wrap=> 'word'
@@ -6993,13 +7047,19 @@ sub psn_run_window {
 
 #  my $psn_background = 0;
     $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
-    $psn_run_frame -> Checkbutton (-text=>" ", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
+    $psn_run_frame -> Checkbutton (-text=>"(without console window)", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
         # update
         $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
         $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
         $psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0", $psn_command_line);
+
+	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
+	($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
+	
+	$ssh_label_pre -> configure (-text=>$text_pre.$ssh_add);
+	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
     }) -> grid(-row=>6,-column=>2,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Connect through:", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>7,-column=>1,-sticky=>"nsw");
@@ -7024,11 +7084,6 @@ sub psn_run_window {
         -border=>$bbw, -background=>$run_color,-activebackground=>$arun_color,
         -font=>$font_normal, -background=>"#c0c0c0",
         -activebackground=>"#a0a0a0", -command=> sub{
-            if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
-                $run_method_nm_type="NMQual";
-            } else {
-                $run_method_nm_type="nmfe"
-            };
 	    unless ($psn_option eq "sumo") { # no need for building the PsN statement
                 $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
                 $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);				
@@ -7063,10 +7118,15 @@ sub psn_run_window {
 
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
-        $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+#       $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+	$ssh{default} = $ssh{connect_ssh};
+	
+	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
+	$ssh_label_pre -> configure (-text=>$text_pre.$ssh_add);
+	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
+
         $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
-	$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
-        $psn_command_line_entry -> delete("1.0","end");
+	$psn_command_line_entry -> delete("1.0","end");
         $psn_command_line_entry =~ s/\n//g;
         $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
@@ -7088,6 +7148,7 @@ sub psn_run_window {
 
     $psn_run_button -> configure ( -border=>$bbw, -command=> sub {
         my $files = "";
+	$psn_run_button -> configure (-state=>'disabled');
 
         # store the parameter options
         $psn_command_line = $psn_command_line_entry -> get("1.0","end");
@@ -7105,50 +7166,20 @@ sub psn_run_window {
         @runs = $models_hlist -> selectionGet ();
  #       $psn_commands{$psn_option} = $psn_params;
  #       save_ini ($home_dir."/ini/psn.ini", \%psn_commands, \%psn_commands_descr, $base_dir."/ini_defaults/psn.ini");
-
+	
         psn_history_save_to_log ($psn_command_line);
-
-	# use start/xterm for opening the console
-	if($os =~ m/MSWin/) {
-	    if (($ssh{connect_ssh}==0)&&($psn_background == 0)) {
-		$psn_command_line = "start ".$psn_command_line;
-	    } 
-	    if (($ssh{connect_ssh}==0)&&($psn_background == 1)) {
-		$psn_command_line = "start /b ".$psn_command_line;
-	    }
-	    if (($ssh{connect_ssh}==1)&&($psn_background == 0)) {
-		$psn_command_line = "start ".$psn_command_line;
-	    }
-	    if (($ssh{connect_ssh}==1)&&($psn_background == 1)) {
-		$psn_command_line = "start ".$psn_command_line." &";
-	    }
-	} else {
-	    if ($psn_background == 1) {
-		$psn_command_line = $psn_command_line." &";
-	    } else {
-		if ($setting{terminal} ne "") {
-		    if (($setting{quit_shell}==0)||($psn_option eq "sumo")) { # don't close terminal window after completion
-			if ($setting{terminal} =~ m/gnome-terminal/) { # for gnome-terminal
-			    $psn_command_line .= '|less';		   
-			} else { # this works for xterm and maybe some other terminals
-			    $psn_command_line .= ';read -n1';
-			}
-		    }
-		    $psn_command_line = $setting{terminal}.' -e "'.$psn_command_line.'" &';
-		}
-	    }
-	}
-
-        exec_run_psn ($psn_command_line, \%ssh, $modelfile, $model_description, $psn_background);
+        exec_run_psn ($psn_command_line, \%ssh, $modelfile, $model_description, $text_pre.$ssh_add, $ssh_add2.$text_post);
 
         status ();
         #if ($stdout) {$stdout -> yview (scroll=>1, units);}
         chdir ($cwd);
-        $help -> detach($psn_run_button);
+
+	$help -> detach($psn_run_button);
 	if ($setting_internal{quit_dialog} == 1) {
 	    $psn_run_window -> destroy();
 	}
-                                   });
+
+     });
  
     status ();
 }
