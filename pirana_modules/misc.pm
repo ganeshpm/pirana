@@ -420,12 +420,15 @@ sub win_start {
 }
 sub linux_start {
     my $curr_dir = cwd();
-#    print @_[0]." ".@_[1]." &";
     system (@_[0]." ".@_[1]." &");
 }
 sub darwin_start {
     my $curr_dir = cwd();
-    system ("open -a '".@_[0]."' ".@_[1]." &");
+    unless ((@_[0] eq "")||(@_[0] eq " ")) {
+	system ("/usr/bin/open -a '".@_[0]."' ".@_[1]." &");
+    } else {
+	system ("/usr/bin/open ".@_[1]." &");
+    }
 }
 
 sub start_command {

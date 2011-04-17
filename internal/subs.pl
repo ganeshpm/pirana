@@ -5838,7 +5838,6 @@ sub frame_tab_show {
 
 sub tab_browse_entry_update {
     my $selected_file = shift;
-    print $selected_file;
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
     my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
