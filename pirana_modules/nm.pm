@@ -912,6 +912,10 @@ sub duplicate_model {
   my @ctl_lines=<CTL_IN>; close CTL_IN;
   open (CTL_OUT, ">".$new_file);
   my @ctl_new;
+
+  $runno =~ s/run//;
+  $new_runno =~ s/run//;
+
 #  print $om_block;
   if (($change_run_nos==1)||($est_as_init==1)||($fix_est==1)) {
       my ($th_area, $om_area, $si_area);
@@ -988,7 +992,7 @@ sub duplicate_model {
   }
   if ($new_ctl_descr ne "") { print CTL_OUT "; Model desc: ".$new_ctl_descr."\n"; }
   if ($new_ctl_ref ne "") { print CTL_OUT "; Ref. model: ".$new_ctl_ref."\n"; }
-  print CTL_OUT "; Duplicated from: ".$runno."\n";
+  print CTL_OUT "; Duplicated from: ".$file."\n";
   if (@ctl_new[0] =~ m/Model desc/i) {shift @ctl_new};
   if (@ctl_new[0] =~ m/Ref\. model/i) {shift @ctl_new};
   unless ($^O =~ m/MSWin/) {
