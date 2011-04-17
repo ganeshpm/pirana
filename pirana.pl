@@ -185,6 +185,7 @@ our $dir_bgcol      = "#c9d4e5";
 our $dir_bgcol      = "#e3e8f0";
 our $entry_color    = $white;
 our $tab_hlist_color = "#f0f0f0";
+our $grey           = "#999999";
 if ($^O =~ m/MSWin/i) {
     our $selectcol = $white;
 } else {
