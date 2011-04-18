@@ -1576,9 +1576,10 @@ sub generate_HTML_parameter_estimates {
       $i++;
   };
   print HTML "</TR>\n";
-  $i=0; my $om_se_x; my @om_cov_se;
+  $i=0; my $om_se_x; my @om_cov_se; 
   my $cnt_om_nonsame = 0; foreach (@omega_same) {if ($_ == 0) {$cnt_om_nonsame++}}
   foreach my $om (@omega) {
+      my $col = 0;
       my @om_x = @$om; my $j = 1;
       if (@omega_same[$i] == 0) {
       print HTML "<TR><TD class='head2'>".($i+1)."</TD>\n";
@@ -1586,7 +1587,7 @@ sub generate_HTML_parameter_estimates {
       my $bg = "";
       my $diag = 1;
       foreach my $om_cov (@om_x) {
-	  if (($j-1)/2 == int(($j-1)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
+	  if (($col)/2 == int(($col)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = ""}
 	  if (@omega_same[($j-1)] == 0) {
 	  print HTML "<TD $bg>";
 	  if (@omega_se>0) {
@@ -1624,10 +1625,11 @@ sub generate_HTML_parameter_estimates {
 	      print HTML "<TD $bg></TD>";
 	  }
 	  print HTML "</TD>";
+          $col++;
 	  }
 	  $j++;
       }
-      for (my $fill = $j-1; $fill<$cnt_om_nonsame; $fill++) {
+      for (my $fill = $col; $fill < $cnt_om_nonsame; $fill++) {
            if (($fill)/2 == int(($fill)/2)) {$bg = "bgcolor='#EAEAEA'"} else {$bg = "";}
            print HTML "<TD $bg></TD><TD $bg></TD>";
       };
@@ -1808,7 +1810,9 @@ sub extract_from_model {
 		  push (@th_bnd_up,  @th_ex[2]);
 	      }
 	      $om_comment_flag = 0;
-	      if (((substr($init,0,5) =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
+	      my $init_clean = $init; 
+	      $init_clean =~ s/BLOCK\(.\)//;
+	      if ((($init_clean =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
 		  $om_comment_flag = 1;
 	      }
 	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
@@ -1817,8 +1821,6 @@ sub extract_from_model {
 		  my $block_ref = om_block_structure($1);
 		  @block = @$block_ref;
 	      }
-	      my $init_clean = $init; 
-	      $init_clean =~ s/BLOCK(.*)//;
 	      if ($init_clean =~ m/\d/) { # match numeric character
 		  $init =~ s/\s//g;
 		  chomp($descr);
@@ -1862,7 +1864,7 @@ sub extract_from_model {
 		  } 
 	      }
 	      if (($om_comment_flag == 1)&&($omega_area==1)) {
-		  unless ($descr =~ m/(cov|corr|\[f\]|\~)/i) {
+		  if ($last_om == 1) {
 		      my $k = 1;
 		      if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
 			  $init =~ m/\((.*)\)/;
