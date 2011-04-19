@@ -1806,7 +1806,7 @@ sub extract_from_model {
 	      if (($init =~ m/\d/)&&($theta_area==1)) {
 		  my @th_ex = extract_th_mod($init);
 		  push (@th_bnd_low, @th_ex[0]);
-		  push (@th_init,    @th_ex[2]);
+		  push (@th_init,    @th_ex[1]);
 		  push (@th_bnd_up,  @th_ex[2]);
 	      }
 	      $om_comment_flag = 0;
@@ -2309,7 +2309,7 @@ sub interpret_pk_block_for_ode {
     my %vars_not_decl_upd = %$vars_not_decl_ref;
     my @lines = split ("\n", $pk_block);
     my %vars_decl_pk;
-    my %vars_decl_pk_keep;
+    my @pk_vars_order;
     foreach my $line (@lines) {
 	my ($line, $rest) = split (";", $line);
 	$line =~ s/\s//g;
@@ -2317,51 +2317,51 @@ sub interpret_pk_block_for_ode {
 	    my ($lh, $rh) = split ("=", $line);
 	    if ($rh =~ m/THETA\((.*)\)/) {
 		my $th_1 = $1;
-		($th_1, my$rest) = split (/\)/, $th_1); # split of eta or other garbage
+		($th_1, my $rest) = split (/\)/, $th_1); # split of eta or other garbage
 		$rh = "theta[".$th_1."]" ;
 	    }
-	    $rh = 1;
-	    $vars_decl_pk{$lh} = $rh;
+	    $lh =~ s/\s//g;
+	    if ((exists ($vars_not_decl_upd{$lh})||($rh =~ m/eta/))) {
+		$vars_decl_pk{$lh} = $rh;
+		push (@pk_vars_order, $lh);
+	    }
 	}
     }
-    foreach my $var (keys(%vars_not_decl_upd)) {
-	if (exists($vars_decl_pk{$var})) {
-	   $vars_decl_pk_keep{$var} = $vars_decl_pk{$var};
-	}
-    }
-    print keys (%vars_decl_pk_keep);
-    return (\%vars_decl_pk_keep)
+    return (\%vars_decl_pk, \@pk_vars_order)
 }
 
 sub rh_convert_array {
 # convert NONMEM's ODE array to R: substitute () for []
 # and also put in p["VAR"], and handle brackets
     my $rh = shift;
-    my @rh_elem = split (/(\*|\+|\-|\/|\^)/, $rh);
+    my @rh_elem = split (/(\*|\+|\-|\/|\^|\(|\))/, $rh);
     my $rh_R = "";
     my %vars_decl;
-    foreach my $t (@rh_elem) {
-	if ($t =~ m/(A\(.*\))/ ) {
+    my $prv_elem; my $a_area = 0;
+    foreach my $el (@rh_elem) {
+	my $t = $el;
+	$t =~ s/a/A/g;
+	if ($prv_elem eq "A") {$a_area = 1};
+	if ($a_area == 1) {
 	    $t =~ s/\(/\[/;
 	    $t =~ s/\)/\]/;
+	    $a_area = 1;
 	} else {
-	    my $br_pre = "";
-	    my $br_post = "";
-	    while($t =~ m/\(/g) {
-		$br_pre .= "(";
-	    }
-	    while ($t =~ m/\)/g) {
-		$br_post .= ")";
-	    }
-	    $t =~ s/(\)|\()//g;
-	    unless (($t eq "")||($t =~ m/(\*|\+|\-|\/|\^)/)|(exists($vars_decl{$t}))) {
-		if (is_float($t)) {
-		    $t = $br_pre.$t.$br_post;
+	    unless (($t eq "")||($t =~ m/(\*|\+|\-|\/|\^|\(|\))/)|(exists($vars_decl{$t}))) {
+		if ((is_float($t))||($t =~ m/(SQRT|ABS)/)||($t eq "A")) {
+		    $t = $t;
 		} else {
-		    $t = $br_pre.'p$'.$t.$br_post;
+		    $t = 'p$'.$t;
 		}
 	    }
+	    # if ($t =~ m /(\*|\/|\^)/) {  # beautify code
+	    # 	$t = " ".$t." ";
+	    # }
 	}
+	$t =~ s/SQRT/sqrt/g;
+	$t =~ s/ABS/sqrt/g;
+	if ($el =~ m/\)/) {$a_area = 0};
+	$prv_elem = $el;
 	$rh_R .= $t;
     }
     return($rh_R);
@@ -2465,14 +2465,20 @@ sub interpret_des {
 }
 
 sub translate_des_to_BM {
-    my ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_not_decl_dum_ref) = @_;
+    my ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_pk_order_ref, $est_ref) = @_;
     my %des_rh = %$des_rh_ref;
     my %des_descr = %$des_descr_ref;
     my %vars_decl = %$vars_decl_ref;
     my @vars_decl_dum = @$vars_decl_dum_ref;
-    my %vars_not_decl = %$vars_pk_decl_ref;
-    my @vars_not_decl_dum = @$vars_not_decl_dum_ref;
+    my %vars_pk_decl = %$vars_pk_decl_ref;
+    my @vars_pk_order= @$vars_pk_order_ref;
     my $BM_code;
+
+# parameter estimates
+    my @est = @$est_ref;
+    my $theta_ref = @est[0];  my @th = @$theta_ref;
+#    my $omega_ref = @est[1];  my @om = @$omega_ref;
+#    my $sigma_ref = @est[2];  my @si = @$sigma_ref;
 
 # translate to R / deSolve code
     my @n = sort (keys (%des_rh));
@@ -2487,23 +2493,21 @@ sub translate_des_to_BM {
 	$BM_code .= "init A".$comp." = 0 \n";
     }
     $BM_code .= "\n";
-    $BM_code .= ";### Parameters are all set to 1. In future versions of Pirana,\n;### the appropriate value will be extracted.\n";
-    my $max_length = get_max_length_in_array (@vars_not_decl_dum);
-    my $i=1;
-    foreach( @vars_not_decl_dum ) {
-	my $space_no = ($max_length - length($_)) ;
-	my $space = " " x $space_no;
-	$BM_code .= $_.$space.' = '.$vars_not_decl{$_}."\n";
-	$i++;
-    };
+    $BM_code .= "theta [1..".int(@th)."] = 0\n";
+    my $i = 1; foreach (@th) {
+	$BM_code .= "theta[".$i."] = ".(rnd ($_,3))."\n";
+        $i++;
+    }
+    $BM_code .= "\n";
 
-    my @n = sort (keys (%des_rh));
-# $R_code .= declared variables
-    foreach( @vars_decl_dum ) {
-	my $code = $vars_decl{$_};
-	$code =~ s/(\(|\))//g;
-	$BM_code .= $_." = ".$code."\n";
-    };
+     my $max_length = get_max_length_in_array (@vars_pk_order);
+     my $i=1;
+     foreach my $var ( @vars_pk_order ) {
+ 	my $space_no = ($max_length - length($var)) ;
+ 	my $space = " " x $space_no;
+ 	$BM_code .= $var . $space.' = '.$vars_pk_decl{$var}."\n";
+ 	$i++;
+     };
 
     $BM_code .= "\n;### ODE system\n";
 # $R_code .= ODEs
@@ -2518,14 +2522,20 @@ sub translate_des_to_BM {
 }
 
 sub translate_des_to_R {
-    my ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_not_decl_dum_ref) = @_;
+    my ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_pk_order_ref, $est_ref) = @_;
     my %des_rh = %$des_rh_ref;
     my %des_descr = %$des_descr_ref;
     my %vars_decl = %$vars_decl_ref;
     my @vars_decl_dum = @$vars_decl_dum_ref;
-    my %vars_not_decl = %$vars_pk_decl_ref;
-    my @vars_not_decl_dum = @$vars_not_decl_dum_ref;
+    my %vars_pk_decl = %$vars_pk_decl_ref;
+    my @vars_pk_order= @$vars_pk_order_ref;
     my $R_code;
+
+# parameter estimates
+    my @est = @$est_ref;
+    my $theta_ref = @est[0];  my @th = @$theta_ref;
+    #my $omega_ref = @est[1];  my @om = @$omega_ref;
+    #my $sigma_ref = @est[2];  my @si = @$sigma_ref;
 
 # translate to R / deSolve code
     my @n = sort (keys (%des_rh));
@@ -2536,21 +2546,58 @@ sub translate_des_to_R {
     $R_code .= "times  <- seq(from=0, to=24, by=0.1)  # Integration window and stepsize \n";
     $R_code .= "obs_c  <- c(1:".@n_init.")  # Observation compartments \n";
     $R_code .= "n_ind  <- 20\n";
-    $R_code .= "n_par  <- ".@vars_not_decl_dum."\n\n";
+    my $n_par = 0;
+    foreach (@vars_pk_order) {
+	if ($vars_pk_decl{$_} =~ m/theta/) {
+	    $n_par++;
+	}
+    }
+    $R_code .= "n_par  <- ".$n_par."\n\n";
     $R_code .= "### Parameters\n";
+    $R_code .= "theta <- c(";
+    my $i = 1; foreach (@th) {
+	$R_code .= (rnd ($_,3));
+	unless ($i == int(@th)) {
+	    $R_code .= ", ";
+	}
+        $i++;
+    }
+    $R_code .= ")\n";
     $R_code .= "omega  <- diag(.01, n_par)  # 10% iiv in each parameter\n";
     $R_code .= "etas   <- mvrnorm(n = n_ind, mu=rep(0, n_par), Sigma=omega )\n\n";
-    $R_code .= "# Parameters are all set to 1. In future versions of Pirana, the appropriate value will be extracted.\n";
     $R_code .= "draw_params <- function (eta) {\n";
     $R_code .= "  p <- list()  # Parameter list \n";
-    my $max_length = get_max_length_in_array (@vars_not_decl_dum);
-    my $i=1;
-    foreach( @vars_not_decl_dum ) {
-	my $space_no = ($max_length - length($_)) ;
+
+    my $max_length = get_max_length_in_array (@vars_pk_order);
+    my $i=1; my $eta_par = 1;
+    foreach my $var (@vars_pk_order ) {
+	my $space_no = ($max_length - length($var)) ;
 	my $space = " " x $space_no;
-	$R_code .= '  p$'.$_.$space.' <- '.$vars_not_decl{$_}." * exp(eta[".$i."])\n";
+	
+	# for variables declared in right-hand side, put p$ in front
+	$vars_pk_decl{$var} =~ s/\s//g;
+	my @eq = split (/(\*|\+|\-|\/|\^|\(|\))/, $vars_pk_decl{$var});
+	my $j = 0; my $eq_str;
+	foreach (@eq) {
+	    unless ((is_float($_))||($_ =~ m /(\*|\+|\-|\/|\^|\(|\))/)||($_ =~ m/theta/)) { # unless numeric, this is a variable
+		$_ = "p\$".$_;
+	    }
+	    $eq_str .= $_;
+	    $j++;
+	}
+	$vars_pk_decl{$var} = $eq_str;
+
+	my $eta ;
+	if ($vars_pk_decl{$var} =~ m/theta/) {
+	    $eta = " * exp(eta[".$eta_par."])"; 
+	    $eta_par++;
+	}
+	$R_code .= '  p$'.$var.$space.' <- '.$vars_pk_decl{$var}." ".$eta;
+	$R_code .= "\n";
 	$i++;
     };
+
+
     $R_code .= "  return(p)\n";
     $R_code .= "}\n\n";
 
@@ -2580,7 +2627,7 @@ sub translate_des_to_R {
     }
     $R_code .= "}\n\n";
 
-    $R_code .= "### Perform integration, collect data\n";
+    $R_code .= "### Perform numerical integration, collect data\n";
     $R_code .= "pl_dat <- c()\n";
     $R_code .= "for (i in 1:n_ind) {\n";
     $R_code .= "  p_ind <- draw_params (eta = etas[i,])\n";
