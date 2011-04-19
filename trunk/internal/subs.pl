@@ -666,14 +666,28 @@ sub ssh_setup_window {
 sub translate_des_window {
     my ($sel_ref, $lang) = @_;
     my $mod_file = @ctl_show[@$sel_ref[0]].".".$setting{ext_ctl};
+    my $lst_file = @ctl_show[@$sel_ref[0]].".".$setting{ext_res};
     my $des_block  = extract_nm_block ($mod_file, "DES");
     if ($des_block eq "") { message ("No \$DES block found in model file."); return(); };
     my $pk_block   = extract_nm_block ($mod_file, "PK");
     my $th_block   = extract_nm_block ($mod_file, "THETA");
     my ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_not_decl_ref, $vars_not_decl_dum_ref) = interpret_des($des_block);
-    my $vars_pk_decl_ref = interpret_pk_block_for_ode ($pk_block, $vars_not_decl_ref); # try to extract variable declarations not made in $DES but in $PK
+    my ($vars_pk_decl_ref, $vars_pk_order_ref) = interpret_pk_block_for_ode ($pk_block, $vars_not_decl_ref); # try to extract variable declarations not made in $DES but in $PK
 
     if (keys(%$des_rh_ref)==0) { message ("No system of ODEs found in \$DES. Please check control stream."); return();}
+
+# get estimates
+    my ($methods_ref, $est_ref, $se_est_ref, $term_ref) = get_estimates_from_lst ($lst_file);
+    my @methods = @$methods_ref;
+    my %est = %$est_ref;
+    my $last_method = @methods[-1] ;  # take results from the last estimation method
+    my $est_ref = $est{$last_method};
+    unless ($est_ref =~ m/ARRAY/) { # no estimates in lst-file or no lst-file
+	my $mod_ref = extract_from_model ($mod_file, @$sel_ref[0], "all");
+	my %mod = %$mod_ref;
+	my @est = ($mod{th_init}, $mod{om_init}, $mod{si_init});
+	$est_ref = \@est;
+    }    
 
     my $code;
     if ($lang eq "R") {
@@ -681,14 +695,14 @@ sub translate_des_window {
 	$code .= "### Number of ODEs in system : ".keys(%$des_rh_ref)."\n";
 	$code .= "### Number of parameters     : ".keys(%$vars_not_decl_ref)."\n\n";
 	$code .= "library (deSolve)\nlibrary (MASS)\nlibrary (lattice)\n\n";
-	$code .= translate_des_to_R ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_not_decl_dum_ref ) ;
+	$code .= translate_des_to_R ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_pk_order_ref, $est_ref ) ;
 	unless (-d $cwd."/pirana_temp") {mkdir ($cwd."/pirana_temp")};
 	open(RCODE, ">".$cwd."/pirana_temp/".@ctl_show[@$sel_ref[0]]."_desolve.R");
 	print RCODE $code;
 	close RCODE;
 	open_script_in_Rgui (unix_path($cwd."/pirana_temp/".@ctl_show[@$sel_ref[0]]."_desolve.R"));
     } else {
-	$code = translate_des_to_BM ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_not_decl_dum_ref ) ;
+	$code = translate_des_to_BM ($des_rh_ref, $des_descr_ref, $vars_decl_ref, $vars_decl_dum_ref, $vars_pk_decl_ref, $vars_pk_order_ref, $est_ref ) ;
 	text_window ($mw, $code, "BM code");
     }
     return ();
