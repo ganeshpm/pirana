@@ -1383,9 +1383,13 @@ sub generate_HTML_run_specific_info {
       @term = @$term_ref;
   }
   my $term_message_ref = @term[5];
-  $$term_message_ref =~ s/\n/\<BR\>/g;
+  my $term_message = lc($$term_message_ref);
+  $term_message =~ s/\n/\<BR\>/g;
+  $term_message =~ s/unreportable/<FONT color='#770000'><b>unreportable<\/b><\/FONT>/;
+  $term_message =~ s/terminated/<FONT color='#770000'><b>terminated<\/b><\/FONT>/;
+  $term_message =~ s/rounding errors/<FONT color='#770000'><b>rounding errors<\/b><\/FONT>/;
   print HTML "<TR><TD colspan=1 width=200>Objective function value:</TD><TD colspan=1>".$ofv."</TD></TR>";
-  print HTML "<TR><TD colspan=1 valign='top'>Termination message:</TD><TD colspan=1>".$$term_message_ref."</TD></TR>";
+  print HTML "<TR><TD colspan=1 valign='top'>Termination message:</TD><TD colspan=1>".$term_message."</TD></TR>";
   if (@times[0] != 0) {
       my $dur = time_format (@times[0]);
       print HTML "<TR><TD colspan=1 valign='top'>Estimation time:</TD><TD colspan=1>".$dur."</TD></TR>";
