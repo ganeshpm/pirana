@@ -5869,7 +5869,7 @@ sub frame_tab_show {
   my $tab_frame = $mw -> Frame (-background=>$bgcol)-> grid (-row=>2, -column=>3);
   $tab_browse_entry = $tab_frame -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
-						-arrowimage => $gif{down}, -border=>$bbw, -relief=>"groove",
+						-arrowimage => $gif{down}, -border=>2, -relief=>"groove",
 						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
@@ -7399,33 +7399,37 @@ sub frame_models_show {
 #           update_psn_lst_param ();
 #           if (($run_method eq "NONMEM")&&(@file_type_copy[@sel[0]]==2)) { update_new_dir(@ctl_show[@sel])};
           # get note from SQL
-          if (@file_type_copy[@sel[0]] == 1) {
-	      my $dir = @ctl_show[@sel[0]];
-	      my $psn_text_ref;
-	      if (-e $dir."/command.txt") { 
-		  $psn_text_ref = file_to_text ($dir."/command.txt");
-		  update_text_box(\$notes_text, "PsN command:\n".$$psn_text_ref);
-	      } else {
-		  update_text_box(\$notes_text, " ");
-	      }
-	  }
-          if (@file_type_copy[@sel[0]] == 2) {
-            my $mod_file = @ctl_show[@sel[0]].".".$setting{ext_ctl};
-            update_text_box(\$notes_text, $models_notes{@ctl_show[@sel[0]]});
-	    if ($estim_window) {
-		my @lst = @ctl_show[$models_hlist -> selectionGet ()];
-		if (int(@lst) > 1) { 
-		    show_estim_multiple (\@lst); 
-		} else {
-		    show_estim_window (\@lst);
-		}
-		$estim_window -> raise();
-	    }
-          } else {
-	      if ($show_model_info==1) { $notes_text -> configure(-state=>"disabled") }
-          }
-        }
-      ) -> grid(-column => 1, -row => 3, -rowspan=>1, -columnspan=>2, -sticky=>'nswe', -ipady=>0);
+	   if (@file_type_copy[@sel[0]] < 2) {
+	       $save_note_button -> configure (-state=>'disabled');
+	   }
+	   if (@file_type_copy[@sel[0]] == 1) {
+	       my $dir = @ctl_show[@sel[0]];
+	       my $psn_text_ref;
+	       $dir =~ s/dir-//;
+	       if (-e $dir."/command.txt") { 
+		   $psn_text_ref = file_to_text ($dir."/command.txt");
+		   update_text_box(\$notes_text, "PsN command:\n".$$psn_text_ref);
+	       } else {
+		   update_text_box(\$notes_text, " ");
+	       }
+	   }
+	   if (@file_type_copy[@sel[0]] == 2) {
+	       my $mod_file = @ctl_show[@sel[0]].".".$setting{ext_ctl};
+	       update_text_box(\$notes_text, $models_notes{@ctl_show[@sel[0]]});
+	       $save_note_button -> configure (-state=>'normal');
+	       if ($estim_window) {
+		   my @lst = @ctl_show[$models_hlist -> selectionGet ()];
+		   if (int(@lst) > 1) { 
+		       show_estim_multiple (\@lst); 
+		   } else {
+		       show_estim_window (\@lst);
+		   }
+		   $estim_window -> raise();
+	       }
+	   } else {
+	       if ($show_model_info==1) { $notes_text -> configure(-state=>"disabled") }
+	   }
+         }) -> grid(-column => 1, -row => 3, -rowspan=>1, -columnspan=>2, -sticky=>'nswe', -ipady=>0);
   unless ($os =~ m/MSWin/i) {
      $models_hlist -> bind ('<Button-1>' => sub {
         if ($hires_time) { # workaround, on Linux double-click doesn't work due to headers in listbox.
@@ -7728,7 +7732,7 @@ sub show_run_frame {
     note_color ($lightyellow);
     status();
   })->grid(-column=>4, -row=>3,-rowspan=>1,-sticky=>'nwes');
-  $colors_frame -> Button (-text => "Save note", -border=>$bbw, -background=>$button,
+  our $save_note_button = $colors_frame -> Button (-text => "Save note", -border=>$bbw, -background=>$button,
     -activebackground=>$abutton, -font=>$font_normal, -command=> sub{
 	my @sel = $models_hlist -> selectionGet ();
 	my $model_id = @ctl_show[@sel[0]];
