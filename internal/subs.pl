@@ -4288,8 +4288,10 @@ sub delete_models_window {
   my $files_ref = populate_delete_models($del_folders_check, $del_models_check, $del_results_check, $del_tables_check, \$delete_models_listbox, \$delete_files_listbox, \@runs, \@folders);
 
   $del_dialog_frame -> Label (-text=>' ',  -font=>$font, -background=>$bgcol) -> grid(-row=>8, -column=>2); # spacer
-  $del_dialog_frame -> Button (-text=>'Delete ',  -font=>$font, -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
+  my $del_button = $del_dialog_frame -> Button (-text=>'Delete ',  -font=>$font, -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw);
+  $del_button -> configure ( -command=>sub{
      # first, delete folders
+      $del_button -> configure (-state => 'disabled');
      if ($del_folders_check == 1) {
        foreach my $folder (@folders) {
          if($folder ne "..") {   # for safety...
@@ -4311,7 +4313,8 @@ sub delete_models_window {
      status ();
      $del_dialog -> destroy();
      read_curr_dir($cwd,$filter, 1);
-  })->grid(-row=>9,-column=>3,-sticky=>"nwse");
+  });
+  $del_button -> grid(-row=>9,-column=>3,-sticky=>"nwse");
   $del_dialog_frame -> Button (-text=>'Cancel ',  -font=>$font,-width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=>sub{
     destroy $del_dialog
   })->grid(-column=>2,-row=>9, -sticky=>"nwse");
@@ -6734,6 +6737,7 @@ sub nmfe_run_window {
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
     $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
+	$ssh{default} = $ssh{connect_ssh};
 	my $ext = "sh";
 	if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
 	    $ext = "bat";
