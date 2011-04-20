@@ -559,7 +559,7 @@ sub get_estimates_from_lst {
 
       if ($line =~ m/NEAR ITS BOUNDARY/) {$bnd{$est_method}="Y"};
 #      if ((substr($line,0,1) eq "1")||(($i+1) == @lst)) {
-      if ( ((substr($line,0,1) eq "1")&&(!(@lst[$i+2] =~ m/(ET|SI)/))) || ($line =~ m/Finished/)  ) {
+      if ( ((substr($line,0,1) eq "1")&&(!(@lst[$i+2] =~ m/(ET|SI)/))) || ($i == (int(@lst)-1))  ) {
 	  # if (($est_area==1)&&(!((@lst[$i+4] =~ m/STANDARD ERROR OF ESTIMATE/)||(@lst[$i+3] =~ m/STANDARD ERROR OF ESTIMATE/)))){ # no SE errors
 	  #     my @est = get_estimates_from_text (\@est_text);
 	  #     $estimates {$est_method} = \@est;
