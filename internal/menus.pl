@@ -73,12 +73,22 @@ sub create_menu_bar {
     $mbar_model_psn -> command (-label=> " sse",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
 				  psn_command("sse");
 				});
+    $mbar_model_psn -> command (-label=> " mcmp",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+				  psn_command("mcmp");
+				});
     $mbar_model_psn -> command (-label=> " scm",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
 				  psn_command("scm");
 				});
+    $mbar_model_psn -> command (-label=> " custom",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
+				  psn_command("cusom");
+				});
+   
     $mbar_model_psn -> command (-label=> " sumo",-font=>$font, -compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
 				  psn_command("sumo");
 				});
+    $mbar_model_psn -> command (-label=> " update_inits", -font=>$font,-compound => 'left',-image=>$gif{msf}, -background=>$bgcol, -command => sub{
+       psn_command("update_inits");
+    });
   }
  pirana_debug ($debug_mode, "Declare MODEL -> WFN menu.");
   my $mbar_model_wfn;

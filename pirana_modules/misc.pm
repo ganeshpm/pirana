@@ -8,7 +8,27 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub sort_table {
+    my ($table_ref, $order_col, $index) = @_;
+    my @table = @$table_ref;
+    my @order; my %order_hash; my @ordered;
+    my $i = 0;  
+    foreach my $row (@table) {
+	my @row_array = @$row;
+	my $row_idx = @row_array[$order_col].@row_array[$index];
+	push (@order, $row_idx)  ;
+	$order_hash{$row_idx} = $i;
+	$i++;
+    }
+    my @order = sort(@order);
+    foreach my $row (@order) {
+	$num = $order_hash{$row};
+	push (@ordered, @table[$num]);
+    }
+    return (\@ordered);
+}
 
 sub count_numeric {
     my $str = shift;
