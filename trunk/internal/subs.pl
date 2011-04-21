@@ -748,10 +748,8 @@ sub sge_get_job_cwd {
 sub refresh_sge_monitor_ssh {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my %ssh = %$ssh_ref;
-
-    $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; 
-    my $ssh_post = "'";
+    my $ssh_post;
     unless ($ssh{login} =~ m/(plink|putty)/i) {
 	    $ssh_post = "'";
     }
@@ -799,7 +797,9 @@ sub refresh_sge_monitor_ssh {
     my $job_info_running_ref = qstat_process_nodes_info ($sge_data{running_jobs});
     my $job_info_scheduled_ref = qstat_process_nodes_info ($sge_data{scheduled_jobs});
     my $job_info_finished_ref = qstat_process_nodes_info ($sge_data{finished_jobs});
-#    $job_info_running_ref = order_table ($job_info_running_ref, 3); # order based on username
+    $job_info_running_ref = sort_table ($job_info_running_ref, 3, 0); # order based on username
+    $job_info_scheduled_ref = sort_table ($job_info_scheduled_ref, 3, 0); # order based on username
+    $job_info_finished_ref = sort_table ($job_info_finished_ref, 3, 0); # order based on username
     populate_nodes_hlist ($nodes_hlist, $node_info_ref);
     populate_nodes_hlist ($use_hlist, $node_use_ref);
     populate_jobs_hlist ($jobs_hlist_running, $job_info_running_ref);
@@ -812,6 +812,11 @@ sub refresh_sge_monitor {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my ($job_info_running_ref, $job_info_scheduled_ref, $job_info_finished_ref, $node_info_ref, $node_use_ref);
     my @dum = [];
+    $nodes_hlist -> delete("all");
+    $use_hlist -> delete("all");
+    $jobs_hlist_running -> delete("all");
+    $jobs_hlist_scheduled -> delete("all");
+    $jobs_hlist_finished -> delete("all");
     if ($ssh{connect_ssh}==1) {
         my $res = refresh_sge_monitor_ssh(@_);
         return($res);
@@ -1040,9 +1045,9 @@ sub sge_monitor_window {
    # ssh_notebook_tab ($sge_ssh, 3, "");
 
 ### Build running Jobs tab
-    $jobs_hlist_running = tk_table_from_model_output ($ssh_pre."qstat -s r |".$ssh_post, $sge_running);
-    $jobs_hlist_scheduled = tk_table_from_model_output ($ssh_pre."qstat -s p |".$ssh_post, $sge_scheduled);
-    $jobs_hlist_finished = tk_table_from_model_output ($ssh_pre."qstat -s z |".$ssh_post, $sge_finished);
+    my $jobs_hlist_running = tk_table_from_model_output ($ssh_pre."qstat -s r |".$ssh_post, $sge_running);
+    my $jobs_hlist_scheduled = tk_table_from_model_output ($ssh_pre."qstat -s p |".$ssh_post, $sge_scheduled);
+    my $jobs_hlist_finished = tk_table_from_model_output ($ssh_pre."qstat -s z |".$ssh_post, $sge_finished);
 
 # nodes
  #   my $node_info_ref = qstat_get_nodes_info ($ssh_pre."qhost |".$ssh_post);
@@ -1103,7 +1108,7 @@ sub sge_monitor_window {
 #    print $res;
     if ($res == 0) {
 #	$sge_monitor_window -> destroy();
-	message ("Pirana can't start SGE commands. SGE is probably not installed, or environment variables\nare not set properly. Please check your SGE installation.\n\nNote: If you connect to an SGE cluster over SSH, please switch on 'Use SSH-mode by default'\nin the SSH settings.");
+	message ("Pirana can't start SGE commands. SGE is probably not installed, or environment variables\nare not set properly. Please check your SGE installation.\n\nNote: If you connect to an SGE cluster over SSH, please switch on 'SSH-mode'.");
 #	return(0);
     }
 
@@ -1112,11 +1117,11 @@ sub sge_monitor_window {
         refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
     }) -> grid(-row=>8,-column=>1,-sticky=>"nws");
     $sge_monitor_window_frame -> Button (-text => "Refresh", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
-	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
+	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
     })-> grid(-column=>2, -row=>8,-sticky=>"nwe");
     $sge_monitor_window_frame -> Button (-text => "Kill all jobs", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	sge_kill_jobs_window();
-	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished);
+	refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
     })-> grid(-column=>3, -row=>8,-sticky=>"nwe");
     $sge_monitor_window_frame -> Button (-text => "Start Qmon", -font=>$font, -width=>12, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command => sub{
 	my $ssh_add1 = "";
@@ -3736,7 +3741,8 @@ sub message {
 	$message_box -> destroy();
 	return(1);
     }) -> grid(-row=>2, -column=>1);
-    $message_box -> focus ();  
+    $message_box -> focus (); 
+    $message_box -> raise();
  # $mw -> messageBox(-type=>'ok', -message=>@_[0]);
 }
 
@@ -8249,8 +8255,8 @@ sub show_inter_window {
       });
       $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>0);
       our $inter_dirs;
-      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nws");
-      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -justify=>"l", -anchor=>"w", -font=>$font_normal,-width=>96, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"we");
+      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nwse");
+      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"w");
       $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
       $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
@@ -8278,6 +8284,9 @@ sub show_inter_window {
 	 my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref) = get_run_progress();
 	 update_inter_results_dialog ($wd."/".@info[0], $gradients_ref);
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
+      $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+         @info = $grid->infoSelection();
+      }) -> grid(-column => 4, -row=>1, -sticky=>"w");
 
       ## Stop run functionality: not yet implemented (has issues)
       #$inter_frame_buttons -> Button (-text=>'Stop run', -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
@@ -8291,7 +8300,7 @@ sub show_inter_window {
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
       $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nws");
       $inter_intermed_frame -> Label (
-        -text=>"\nNote: to obtain intermediate estimates from runs, the specification\nof MSF files are needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the $EST block.",
+        -text=>"\nNote: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the \$EST block.",
         -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
       $inter_intermed_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>3, -sticky=>"w");
     } else {$inter_window -> focus};
@@ -8303,17 +8312,17 @@ sub show_inter_window {
 
     our $grid = $inter_window_frame ->Scrolled('HList', -head => 1,
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
-        -height     => 6, -border     => 0, -selectbackground => $pirana_orange,
+        -height     => 12, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 110, -background => 'white'
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
 
-    my @headers_inter = (" ","Theta", "Omega","Sigma", "Gradients", " ");
-    my @headers_inter_widths = (24, 54, 54, 54, 54);
+    my @headers_inter = (" ","Theta", "", "Omega", "", "Sigma", "", "Gradients","");
+    my @headers_inter_widths = (24, 60, 100, 60, 100, 60, 100, 60, 100);
 
     our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1,
-        -columns    => 6, -scrollbars => 'e', -highlightthickness => 0,
+        -columns    => 9, -scrollbars => 'e', -highlightthickness => 0,
         -height     => 18, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 45, -background => 'white',
+        -width      => 110, -background => 'white',
     )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
@@ -8331,56 +8340,56 @@ sub show_inter_window {
       $x++;
     }
 
-   # create the gradient plot
-   $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe');
-   my @plot_title = ("",20);
-   @border = (8,55,40,52); # top, right, bottom, lef
-   our $gradients_plot = $plot_frame -> PlotDataset
-    ( -width => 360, -height => 300,
-      -background => $bgcol, -border=> \@border,
-      -plotTitle => \@plot_title,
-      -xlabel => "Iteration", -ylabel => "Gradient",
-      -y1label => 'OFV', -xType => 'linear', -yType => 'linear',
-      -y1TickFormat => "%d", -xTickFormat => "%g", -yTickFormat => "%d"
-    ) -> grid(-column=>2, -row=>1);
-   $gradients_plot -> configure (-fonts =>
-     ['Arial 7',   # axes ticks
-      'Arial 8 italic', # axes labels
-      'Arial 9 bold',  # title
-      'Arial 7' # legend
-      ]);
-   $grid_inter -> update();
-   $grid -> configure(-browsecmd => sub{
-          $diff = str2time(localtime()) - $last_time;
-          our $last_time = str2time(localtime());
-          my @info = $grid->infoSelection();
+   # # create the gradient plot
+   # $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe');
+   # my @plot_title = ("",20);
+   # @border = (8,55,40,52); # top, right, bottom, lef
+   # our $gradients_plot = $plot_frame -> PlotDataset
+   #  ( -width => 360, -height => 300,
+   #    -background => $bgcol, -border=> \@border,
+   #    -plotTitle => \@plot_title,
+   #    -xlabel => "Iteration", -ylabel => "Gradient",
+   #    -y1label => 'OFV', -xType => 'linear', -yType => 'linear',
+   #    -y1TickFormat => "%d", -xTickFormat => "%g", -yTickFormat => "%d"
+   #  ) -> grid(-column=>2, -row=>1);
+   # $gradients_plot -> configure (-fonts =>
+   #   ['Arial 7',   # axes ticks
+   #    'Arial 8 italic', # axes labels
+   #    'Arial 9 bold',  # title
+   #    'Arial 7' # legend
+   #    ]);
+   # $grid_inter -> update();
+   # $grid -> configure(-browsecmd => sub{
+   #        $diff = str2time(localtime()) - $last_time;
+   #        our $last_time = str2time(localtime());
+   #        my @info = $grid->infoSelection();
 
-          if (($diff > 0)||($last_chosen ne @info[0])) {
-            our $last_chosen = @info[0];
-            chdir ("./".@info[0]);
-            my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref, $all_ofv_ref, $all_iter_ref) = get_run_progress();
-            chdir ($wd);
-            update_inter_results_dialog ($wd."/".@info[0], $gradients_ref);
-            $gradients_plot -> clearDatasets;
-            my $lines_ref = update_gradient_plot($sub_iter, $gradients_ref, $all_gradients_ref, $all_iter_ref);
-            my $gradient_info = $plot_frame -> Balloon();
-            unless ($lines_ref == 0) {
-		my @lines = @$lines_ref;
-		foreach my $line (@lines) {
-		    if ($line =~ m/linegraph/i) { # test if correct Tk format
-			$gradients_plot -> addDatasets($line);
-		    }
-		}
-            }
-            my $ofv_line = update_ofv_plot($sub_iter, $all_ofv_ref, $all_iter_ref);
-            unless ($ofv_line == 0) {
-		if ($ofv_line =~ m/linegraph/i) { # test if correct Tk format
-		    $gradients_plot -> addDatasets($ofv_line);
-		}
-            }
-            $gradients_plot -> plot;
-          }
-   });
+   #        if (($diff > 0)||($last_chosen ne @info[0])) {
+   #          our $last_chosen = @info[0];
+   #          chdir ("./".@info[0]);
+   #          my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref, $all_ofv_ref, $all_iter_ref) = get_run_progress();
+   #          chdir ($wd);
+   #          update_inter_results_dialog ($wd."/".@info[0], $gradients_ref);
+   #          $gradients_plot -> clearDatasets;
+   #          my $lines_ref = update_gradient_plot($sub_iter, $gradients_ref, $all_gradients_ref, $all_iter_ref);
+   #          my $gradient_info = $plot_frame -> Balloon();
+   #          unless ($lines_ref == 0) {
+   # 		my @lines = @$lines_ref;
+   # 		foreach my $line (@lines) {
+   # 		    if ($line =~ m/linegraph/i) { # test if correct Tk format
+   # 			$gradients_plot -> addDatasets($line);
+   # 		    }
+   # 		}
+   #          }
+   #          my $ofv_line = update_ofv_plot($sub_iter, $all_ofv_ref, $all_iter_ref);
+   #          unless ($ofv_line == 0) {
+   # 		if ($ofv_line =~ m/linegraph/i) { # test if correct Tk format
+   # 		    $gradients_plot -> addDatasets($ofv_line);
+   # 		}
+   #          }
+   #          $gradients_plot -> plot;
+   #        }
+   # });
    our @n = get_runs_in_progress($wd);
    if ( int(@n) == 1 ) {
          inter_status ("No active runs found");
@@ -8496,71 +8505,71 @@ sub get_runs_in_progress {
 ### Compat  : W+L?
     my $wd = shift();
     unless (-d $wd) {$wd = $cwd}
-  my $dir = fastgetcwd()."/";
-  my @dirs = read_dirs($wd, "");
-  %dir_results = new ;
-  %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
-  # First check main directory
-  inter_status ("Searching / for active runs...");
+    my $dir = fastgetcwd()."/";
+    my @dirs = read_dirs($wd, "");
+    %dir_results = new ;
+    %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
+    # First check main directory
+    inter_status ("Searching / for active runs...");
     if ((-e "nonmem.exe")||(-e "nonmem")) {  # check for nmfe runs
-      #unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
+	#unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
         if (-e "INTER") {
-          if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
-            ($res_iter {"/"}, $res_ofv {"/"}, $res_descr{"/"}, $minimization_done) = get_run_progress("OUTPUT");
-          }
-          inter_window_add_item("/", $minimization_done);
+	    if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
+		($res_iter {"/"}, $res_ofv {"/"}, $res_descr{"/"}, $minimization_done) = get_run_progress("OUTPUT");
+	    }
+	    inter_window_add_item("/", $minimization_done);
         }
-      #}
+	#}
     }
-  # check directories
-  foreach (@dirs) {
-    chdir($_);
-    $sub = fastgetcwd();
-    $sub =~ s/$dir//;
-    inter_status ("Searching /".$sub." for active runs...");
-    my @nm = glob ("nonmem*.exe");
-    if ((-e @nm[0])||(-e "nonmem")) {  # check for nmfe runs
-      # unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
-        if (-e "INTER") {
-          if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
-            ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("OUTPUT");
-          }
-          @msf = glob("*MSF*");
-          @msf[0] =~ s/MSF//ig;
-          $res_runno{$sub} = @msf[0];
-          inter_window_add_item($sub, $minimization_done);
-        }
-      #}
+    # check directories
+    foreach (@dirs) {
+	chdir($_);
+	$sub = fastgetcwd();
+	$sub =~ s/$dir//;
+	inter_status ("Searching /".$sub." for active runs...");
+	my @nm = glob ("nonmem*.exe");
+	if ((-e @nm[0])||(-e "nonmem")) {  # check for nmfe runs
+	    # unless ((-e "nonmem.exe")&&(-w "nonmem.exe")) {
+	    if (-e "INTER") {
+		if ((-e "OUTPUT")&&(-s "OUTPUT" > 0)) {
+		    ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("OUTPUT");
+		}
+		@msf = glob("*MSF*");
+		@msf[0] =~ s/MSF//ig;
+		$res_runno{$sub} = @msf[0];
+		inter_window_add_item($sub, $minimization_done);
+	    }
+	    #}
+	}
+	# Check sub-directories
+	if ($sub =~ m/_/) { # only do this for PsN- or nmfe directories, to save speed
+	    @dirs_sub = read_dirs (".", "NM_run"); # PsN directories
+	    foreach $subdir (@dirs_sub) {
+		chdir ($subdir);
+		if ((-e "nonmem.exe")||(-e "nonmem")) {
+		    if (-e "INTER") {
+			$sub = fastgetcwd();
+			$sub =~ s/$dir//; # relative dir
+			inter_status ("Searching ".$sub." for active runs...");
+			if (-e "OUTPUT") {
+			    ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
+			}
+			if (-e "psn.lst") {
+			    ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
+			}
+			@msf = glob("*MSF*");
+			@msf[0] =~ s/MSF//ig;
+			$res_runno{$sub} = @msf[0];
+			inter_window_add_item($sub, $minimization_done);
+		    }
+		}
+		chdir ("..")
+	    }
+	}
+	chdir("..");
     }
-    # Check sub-directories
-    if ($sub =~ m/_/) { # only do this for PsN- or nmfe directories, to save speed
-    @dirs_sub = read_dirs (".", "NM_run"); # PsN directories
-    foreach $subdir (@dirs_sub) {
-      chdir ($subdir);
-      if ((-e "nonmem.exe")||(-e "nonmem")) {
-          if (-e "INTER") {
-            $sub = fastgetcwd();
-            $sub =~ s/$dir//; # relative dir
-            inter_status ("Searching ".$sub." for active runs...");
-            if (-e "OUTPUT") {
-              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
-            }
-            if (-e "psn.lst") {
-              ($res_iter {$sub}, $res_ofv {$sub}, $res_descr{$sub}, $minimization_done) = get_run_progress("psn.lst");
-            }
-            @msf = glob("*MSF*");
-            @msf[0] =~ s/MSF//ig;
-            $res_runno{$sub} = @msf[0];
-            inter_window_add_item($sub, $minimization_done);
-          }
-      }
-      chdir ("..")
-    }
-    }
-    chdir("..");
-  }
-  chdir($dir);
-  return (keys (%res_iter));
+    chdir($dir);
+    return (keys (%res_iter));
 }
 
 sub get_run_progress {
