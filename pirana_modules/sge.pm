@@ -41,6 +41,7 @@ sub qstat_process_nodes_info {
 		if ($_ eq "") {delete (@arr[$i])};
 		$i++;
 	    }
+	    @arr[5] .= " ". splice (@arr,6,1); # date/time has a space in the middle
 	    push (@all, \@arr);
 	}
     }
@@ -68,7 +69,7 @@ sub qstat_process_jobs_info {
 	unless (($line =~ m/job-ID/i)||($line =~ m/----/)) {
 	    print $line;
 	    chomp($line);
-	    my @arr = split (" ", $line);
+	    my @arr = split (" ", $line);   
 	    my $i=0; foreach(@arr) {
 		if ($_ eq "") {delete (@arr[$i])};
 		$i++;

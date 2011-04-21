@@ -751,8 +751,9 @@ sub refresh_sge_monitor_ssh {
 
     $ssh{connect_ssh} = $ssh{default};
     my $ssh_pre; 
+    my $ssh_post = "'";
     unless ($ssh{login} =~ m/(plink|putty)/i) {
-	    my $ssh_post = "'";
+	    $ssh_post = "'";
     }
     if ($ssh{connect_ssh} == 1) {
 	$ssh_pre .= $ssh{login}.' ';	
@@ -798,6 +799,7 @@ sub refresh_sge_monitor_ssh {
     my $job_info_running_ref = qstat_process_nodes_info ($sge_data{running_jobs});
     my $job_info_scheduled_ref = qstat_process_nodes_info ($sge_data{scheduled_jobs});
     my $job_info_finished_ref = qstat_process_nodes_info ($sge_data{finished_jobs});
+#    $job_info_running_ref = order_table ($job_info_running_ref, 3); # order based on username
     populate_nodes_hlist ($nodes_hlist, $node_info_ref);
     populate_nodes_hlist ($use_hlist, $node_use_ref);
     populate_jobs_hlist ($jobs_hlist_running, $job_info_running_ref);
@@ -1100,9 +1102,9 @@ sub sge_monitor_window {
     my $res = refresh_sge_monitor (\%ssh, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist);
 #    print $res;
     if ($res == 0) {
-	$sge_monitor_window -> destroy();
+#	$sge_monitor_window -> destroy();
 	message ("Pirana can't start SGE commands. SGE is probably not installed, or environment variables\nare not set properly. Please check your SGE installation.\n\nNote: If you connect to an SGE cluster over SSH, please switch on 'Use SSH-mode by default'\nin the SSH settings.");
-	return(0);
+#	return(0);
     }
 
 # main buttons
@@ -5867,30 +5869,21 @@ sub frame_tab_show {
   
   our $show_data="tab";
   my $tab_frame = $mw -> Frame (-background=>$bgcol)-> grid (-row=>2, -column=>3);
-  $tab_browse_entry = $tab_frame -> BrowseEntry(-background => $white, -font=>$font_normal,
-						-selectbackground=>'#606060', #-highlightthickness =>0,
-						-arrowimage => $gif{down}, -border=>2, -relief=>"groove",
-						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
-						-variable => \$show_data, -browsecmd => sub{ 
-						    tab_browse_entry_update($show_data);  
-  }) -> grid(-row=>1, -column=>1, -sticky=>"nwse");
-  $tab_browse_entry -> bind('<Return>', sub{
-    tab_browse_entry_update($show_data);  
-  });
 
-  $tab_frame_info = $mw -> Frame(-background=>$bgcol)->grid(-row=>4, -column=>3, -rowspan=>2, -columnspan=>1, -ipady=>0,-sticky=>"nws");
+  $tab_frame_info = $mw -> Frame(-background=>$bgcol
+  )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
   our $tab_file_info = $tab_frame_info -> Text (
-      -width=>22, -relief=>'sunken', -border=>2, -height=>4,
+      -width=>24, -relief=>'sunken', -border=>2, -height=>5,
       -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>1, -row=>1, -rowspan=>1, -sticky=>'nwes', -ipadx=>0);
+  )->grid(-column=>1, -row=>1, -sticky=>'nwes', -ipadx=>0, -ipady=>0);
   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
       my $tabsel = $tab_hlist -> selectionGet ();
       my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
       if (-e $tab_file) {
 	  table_info_window($tab_file);
       }
-    })->grid(-column=>2,-row=>1, -sticky => 'wens');
-  $help->attach($edit_tab_info_button, -msg => "Edit project details");
+    })->grid(-column=>2,-row=>1, -sticky => 'wen');
+  $help->attach($edit_tab_info_button, -msg => "File properties");
   $show_ofv=0;
   $show_successful=0;
   $show_covar=0;
@@ -6363,7 +6356,7 @@ sub nm_help_filter_keywords {
 sub show_links {
   my $links_height = 24;
   our $frame_command = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>7, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
-  our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
+  our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>2, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
 
 #  our $frame_logo  = $mw -> Frame(-background=>$bgcol)-> grid(-row=>1, -column=>3, -columnspan=>1, -sticky=>"ne", -ipadx=>10);
 #  my $portable_text = "";
@@ -6387,6 +6380,19 @@ sub show_links {
   });
   $help->attach($filter_entry, -msg => "Filter model files");
 
+
+  our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
+						-selectbackground=>'#606060', #-highlightthickness =>0,
+						-arrowimage => $gif{down}, -border=>2, -relief=>"groove",
+						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
+						-variable => \$show_data, -browsecmd => sub{ 
+						    tab_browse_entry_update($show_data);  
+  }) -> grid(-row=>2, -column=>1, -columnspan => 10, -sticky=>"nwse");
+  $tab_browse_entry -> bind('<Return>', sub{
+    tab_browse_entry_update($show_data);  
+  });
+
+
   $i=1;
   $software{tty} =~ m/\.exe/i;
   my $pos = length $`;
@@ -6397,6 +6403,7 @@ sub show_links {
     $i++;
     $help->attach($calc_button, -msg => "Open system calculator");
   }
+
 #  if (-e substr($software{tty}, 0, $pos+4)) {
     our $putty_button = $frame_links -> Button(-image=>$gif{putty},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
       start_command(substr($software{tty}, 0, $pos+4), substr($software{tty},$pos+5, length($software{tty})-($pos+4)));
@@ -6537,14 +6544,23 @@ sub run_command {
 sub new_model_name {
 ### Purpose : Return a new model name when supplied with a previous one (eg. 001 -> 001A)
 ### Compat  : W+L+
-  $old=@_[0];
-  $success=0;
-  $last_char=substr($old,-1,1);
-  $num = ord($last_char);
-  if ($num>47 && $num<59) { # numeric
-    $suffix="A";
-    $new=$old.$suffix;
-    $success=1
+  my $old=@_[0];
+  my $success=0;
+  my $last_char=substr($old,-1,1);
+  my $num = ord($last_char);
+  my $new_num = $last_char;
+  my $new;
+  if ($last_char =~ m/\d/) { # numeric
+      for($i = 0 ; $i < length($old); $i++) {
+	  my $t = substr($length, length($old)-$i, (length($old)-$i+1));
+	  if ($t =~ m/\d/) {
+	      $new_num = $t.$new_num;
+	  }
+      }
+      $plus_one = $new_num + 1;
+      $new = $old;
+      $new =~ s/$new_num/$plus_one/;
+      $success=1
   }
   if (($num>64 && $num<90) || ($num>96 && $num<122)) {  # A..Y or a..y
     $suffix=chr($num+1);
@@ -7069,11 +7085,11 @@ sub psn_run_window {
     $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
     $psn_run_frame -> Checkbutton (-text=>"(without console window)", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
         # update
-        $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-        $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
-        $psn_command_line_entry -> delete("1.0","end");
-        $psn_command_line_entry =~ s/\n//g;
-        $psn_command_line_entry -> insert("1.0", $psn_command_line);
+        # $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+        # $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+        # $psn_command_line_entry -> delete("1.0","end");
+        # $psn_command_line_entry =~ s/\n//g;
+        # $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
 	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
 	($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
@@ -7540,18 +7556,18 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
    our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>2, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
    $show_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nse');
    our $psn_dir_filter = 0;
-   $show_buttons -> Label(-text=>"   Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'w');
-   $show_buttons -> Label(-text=>"    ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -columnspan=>1, -sticky=>'e');
+   $show_buttons -> Label(-text=>"   Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'ws');
+   $show_buttons -> Label(-text=>"    ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -columnspan=>1, -sticky=>'es');
   $filter_psn_button = $show_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
      status();
-  })->grid(-row=>1,-column=>2,-sticky=>'w', -ipady=>0, -ipadx=>0);
+  })->grid(-row=>1,-column=>2,-sticky=>'ws', -ipady=>0, -ipadx=>0);
   $help->attach($filter_psn_button, -msg => "Filter out PsN-generated directories");
   our $nmfe_dir_filter = 0;
   $filter_nmfe_button = $show_buttons ->Checkbutton(-text=>"nmfe",-background=>$bgcol, -font=>$font_normal, -variable=>\$nmfe_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
      status();
-  })->grid(-row=>1,-column=>3,-sticky=>'w', -ipady=>0, -ipadx=>0);
+  })->grid(-row=>1,-column=>3,-sticky=>'ws', -ipady=>0, -ipadx=>0);
   $help->attach($filter_nmfe_button, -msg => "Filter out nmfe run directories");
 
   our $show_buttons_sub = $show_buttons -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>5,-rowspan=>2,-ipadx=>'0', -ipady=>'0',-sticky=>'nw');

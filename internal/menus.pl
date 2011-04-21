@@ -307,7 +307,9 @@ sub create_menu_bar {
     });
   $mbar_view -> command (-label => "    SGE monitor", -font=>$font,-image=>$gif{cluster}, -compound=>'left', -background=>$bgcol, -command=>sub {
       sge_monitor_window();
-      $estim_window -> raise();
+      if ($estim_window) {
+	  $estim_window -> raise();
+      }
     });
   $mbar_view -> command (-label => "    Intermediate results of active runs", -font=>$font, -image=>$gif{edit_inter}, -compound=>'left',-background=>$bgcol, -command=>sub {
     $cwd = $dir_entry -> get();
