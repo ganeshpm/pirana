@@ -1702,7 +1702,7 @@ sub extract_from_model {
   my %mod; my @comments;
   $mod{mod} = $modelno;
   if (-e $file) {
-    $mod{date_mod} = stat($file)->mtime();
+      $mod{date_mod} = stat($file)->mtime();
   }
   open (CTL,"<".$file);
   my @ctl_lines=<CTL>;
@@ -1764,7 +1764,7 @@ sub extract_from_model {
       my $theta_area=0; my $omega_area=0; my $sigma_area=0; my $prior=0;
     my $theta_area_prv=0; my $omega_area_prv=0; my $sigma_area_prv=0; # needed to determine whether in Prior region or not
     my $table_area=0; my $estim_area=0; my $msf_file="";
-    my $cnt = 0;
+      my $cnt = 0; 
     my @th_descr; my @om_descr; my @si_descr;
     my $om_comment_flag; my $si_comment_flag;
     my @tab_files;
@@ -1785,7 +1785,7 @@ sub extract_from_model {
 	  push (@comments, $comment);
       } else {
 	  if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1; $theta_area_prv=1; }
-	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; $omega_area_prv=1; }
+	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; if ($theta_area_prv==1) {$omega_area_prv=1;} }
 	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; $sigma_flag = 1; }
 	  if (substr ($_,0,6) eq "\$TABLE") {$table_area = 1 }
 	  if (substr ($_,0,4) eq "\$EST")   {$estim_area = 1 }
@@ -1839,7 +1839,9 @@ sub extract_from_model {
 		      }
 		  }
 		  $descr =~ s/\r//g; # also take care of carriage return on Windows
-		  if (($theta_area == 1)&&($prior==0)) {push (@th_descr, $descr); }
+		  if (($theta_area == 1)&&($prior==0)) {
+		      push (@th_descr, $descr); 
+		  }
 		  if (($omega_area == 1)&&($last_om==1)&&($sigma_flag==0)) {
 		      push (@om_descr, $descr); 
 		      push (@om_same, 0);
