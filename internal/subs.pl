@@ -7265,14 +7265,14 @@ sub psn_command_history_window {
     });
     $psn_history_window_frame = $psn_history_window -> Frame(-background=>$bgcol)->grid(-column=>1, -row=>1, -ipadx=>10,-ipady=>10);
     my $psn_history_hlist;
-    $psn_history_hlist = $psn_history_window_frame ->Scrolled('HList', -head => 1,
-        -columns    => 1, -scrollbars => 'e', -highlightthickness => 1,
-        -height     => 30, -border     => 0, -pady=>2,
+    $psn_history_hlist = $psn_history_window_frame -> Scrolled('HList', -head => 1,
+        -columns    => 1, -scrollbars => 'se', -highlightthickness => 1,
+        -height     => 30, -border     => 0, -pady=>2, 
         -width      => 100, -background => 'white',
         -selectbackground => $pirana_orange
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
     my @headers = ( "Command" );
-    my @headers_widths = (600);
+    my @headers_widths = (2000);
     my $headerstyle = $models_hlist -> ItemStyle('window', -padx => 0);
     foreach my $x ( 0 .. $#headers ) {
         @psn_history_headers[$x] = $psn_history_hlist -> HdrResizeButton(
@@ -7324,7 +7324,7 @@ sub populate_psn_history {
     foreach my $psn_command (@log) {
 	chomp($psn_command);
 	$psn_history_hlist -> add($i);
-	$psn_history_hlist -> itemCreate($i, 0, -text => $psn_command, -style=>$style);
+	$psn_history_hlist -> itemCreate($i, 0, -text => $psn_command, -style=>$align_left);
 	$i++;
     }
     return (\@log);
@@ -7375,8 +7375,8 @@ sub models_hlist_action {
 sub reload_styles {
   our $dirstyle = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady=> $hlist_pady, -background=>$dir_bgcol, -font => $font_normal);
   our $align_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'white', -font => $font_normal);
-  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'red', -font => $font_normal);
-  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal);
+  our $align_right_red = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-background=>'darkred', -foreground=>'white', -font => $font_normal);
+  our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal );
   our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
   our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
   our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#008800', -background=>'white',-font => $font_fixed);
@@ -7426,14 +7426,21 @@ sub frame_models_show {
 	   }
 	   if (@file_type_copy[@sel[0]] == 1) {
 	       my $dir = @ctl_show[@sel[0]];
-	       my $psn_text_ref;
 	       $dir =~ s/dir-//;
+	       my $notes_text_new = "";
 	       if (-e $dir."/command.txt") { 
-		   $psn_text_ref = file_to_text ($dir."/command.txt");
-		   update_text_box(\$notes_text, "PsN command:\n".$$psn_text_ref);
-	       } else {
-		   update_text_box(\$notes_text, " ");
+		   my $psn_text_ref = file_to_text ($dir."/command.txt");
+		   $notes_text_new .= "PsN command:\n".$$psn_text_ref;
 	       }
+	       if (-e $dir."/NM_run1/psn_nonmem_error_messages.txt") { 
+		   my $psn_text_ref = file_to_text ($dir."/NM_run1/psn_nonmem_error_messages.txt");
+		   $notes_text_new .= "--- NONMEM error messages (NM_run1) -----------\n".$$psn_text_ref;
+	       } 	       
+	       if (-e $dir."/NM_run2/psn_nonmem_error_messages.txt") { 
+		   my $psn_text_ref = file_to_text ($dir."/NM_run2/psn_nonmem_error_messages.txt");
+		   $notes_text_new .= "--- NONMEM error messages (NM_run2) -----------\n".$$psn_text_ref;
+	       } 	       
+	       update_text_box(\$notes_text, $notes_text_new);
 	   }
 	   if (@file_type_copy[@sel[0]] == 2) {
 	       my $mod_file = @ctl_show[@sel[0]].".".$setting{ext_ctl};
@@ -8247,6 +8254,7 @@ sub show_inter_window {
 ### Compat  : W+
     my $wd = shift;
     unless (-d $wd) {$wd = $cwd}
+    my @buttons;
     unless ($inter_window) { # build the dialog
       our $inter_window = $mw -> Toplevel(-title=>'Progress of runs in '.$wd, -background=>$bgcol);
       no_resize ($inter_window);
@@ -8255,13 +8263,13 @@ sub show_inter_window {
       });
       $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>0);
       our $inter_dirs;
-      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$status_col)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nwse");
-      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$status_col)->grid(-column=>1,-row=>1,-sticky=>"w");
+      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nsw");
+      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>1,-row=>1,-sticky=>"w");
       $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
-      $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
-        @n = get_runs_in_progress($wd);
+        @n = get_runs_in_progress($wd, \@buttons);
         if ( int(@n) == 1 ) {
           inter_status ("No active runs found");
         } else {inter_status()};
@@ -8282,7 +8290,11 @@ sub show_inter_window {
          @info = $grid->infoSelection();
          $grid_inter -> delete("all");
 	 my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref) = get_run_progress();
-	 update_inter_results_dialog ($wd."/".@info[0], $gradients_ref);
+	 my $mod_ref;
+	 if (-e $wd."/".@info[0]."/psn.mod") {
+	     $mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
+	 }
+	 update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
       $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
          @info = $grid->infoSelection();
@@ -8316,11 +8328,11 @@ sub show_inter_window {
         -width      => 110, -background => 'white'
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
 
-    my @headers_inter = (" ","Theta", "", "Omega", "", "Sigma", "", "Gradients","");
-    my @headers_inter_widths = (24, 60, 100, 60, 100, 60, 100, 60, 100);
+    my @headers_inter = (" ","Theta", "Grad." , "Desc.", "Omega", "Grad.", "Desc.", "Sigma", "Grad.", "Desc.","");
+    my @headers_inter_widths = (24, 60, 60, 100, 60, 60, 100, 60, 60, 100, 100);
 
     our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1,
-        -columns    => 9, -scrollbars => 'e', -highlightthickness => 0,
+        -columns    => 11, -scrollbars => 'e', -highlightthickness => 0,
         -height     => 18, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 110, -background => 'white',
     )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");
@@ -8359,17 +8371,20 @@ sub show_inter_window {
    #    'Arial 7' # legend
    #    ]);
    # $grid_inter -> update();
-   # $grid -> configure(-browsecmd => sub{
-   #        $diff = str2time(localtime()) - $last_time;
-   #        our $last_time = str2time(localtime());
-   #        my @info = $grid->infoSelection();
-
-   #        if (($diff > 0)||($last_chosen ne @info[0])) {
-   #          our $last_chosen = @info[0];
-   #          chdir ("./".@info[0]);
-   #          my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref, $all_ofv_ref, $all_iter_ref) = get_run_progress();
-   #          chdir ($wd);
-   #          update_inter_results_dialog ($wd."/".@info[0], $gradients_ref);
+   $grid -> configure(-browsecmd => sub{
+           $diff = str2time(localtime()) - $last_time;
+           our $last_time = str2time(localtime());
+           my @info = $grid->infoSelection();
+           if (($diff > 0)||($last_chosen ne @info[0])) {
+             our $last_chosen = @info[0];
+             chdir ("./".@info[0]);
+             my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref, $all_ofv_ref, $all_iter_ref) = get_run_progress();
+             chdir ($wd);
+	     my $mod_ref;
+	     if (-e $wd."/".@info[0]."/psn.mod") {
+		 $mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
+	     }
+             update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
    #          $gradients_plot -> clearDatasets;
    #          my $lines_ref = update_gradient_plot($sub_iter, $gradients_ref, $all_gradients_ref, $all_iter_ref);
    #          my $gradient_info = $plot_frame -> Balloon();
@@ -8388,9 +8403,9 @@ sub show_inter_window {
    # 		}
    #          }
    #          $gradients_plot -> plot;
-   #        }
-   # });
-   our @n = get_runs_in_progress($wd);
+           }
+   });
+   our @n = get_runs_in_progress($wd, \@buttons);
    if ( int(@n) == 1 ) {
          inter_status ("No active runs found");
   } else {inter_status()};
@@ -8503,7 +8518,12 @@ sub inter_window_add_item {
 sub get_runs_in_progress {
 ### Purpose : return a hash of runs that are currently in progress in the current directory, or in PsN/nmfe directories below
 ### Compat  : W+L?
-    my $wd = shift();
+    my ($wd, $buttons_ref) = @_  ;
+    my @buttons = @$buttons_ref;
+    foreach (@buttons) {
+	$_ -> configure (-state => "disabled");
+    }
+
     unless (-d $wd) {$wd = $cwd}
     my $dir = fastgetcwd()."/";
     my @dirs = read_dirs($wd, "");
@@ -8569,6 +8589,9 @@ sub get_runs_in_progress {
 	chdir("..");
     }
     chdir($dir);
+    foreach (@buttons) {
+	$_ -> configure (-state => "normal");
+    }
     return (keys (%res_iter));
 }
 
@@ -8645,9 +8668,10 @@ sub get_run_progress {
 sub update_inter_results_dialog {
 ### Purpose : update dialog with intermediat results
 ### Compat  : W+L+
-  my ($dir, $gradients_ref) = @_;
+  my ($dir, $gradients_ref, $mod_ref) = @_;
   my @gradients = @$gradients_ref;
   ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
+  my %mod = %$mod_ref;
   my @thetas = @$thetas_ref;
   my @omegas = @$omegas_ref;
   my @sigmas = @$sigmas_ref;
@@ -8655,29 +8679,64 @@ sub update_inter_results_dialog {
   $i=1; $n=0;
   $grid_inter -> delete("all");
   $grid_inter -> update();
+#  my $th_descr_ref = $mod{th_descr};
+  my @th_descr = @{$mod{th_descr}};
+  my @th_fix = @{$mod{th_fix}};
+  my $curr_grad = shift (@gradients);
   foreach (@thetas) {
     $grid_inter->add($i);
     $grid_inter->itemCreate($i, 0, -text => $i, -style=>$header_right);
     $grid_inter->itemCreate($i, 1, -text => $_, -style=>$align_right);
+    $grid_inter->itemCreate($i, 3, -text => @th_descr[($i-1)], -style=>$align_left);
+    unless (@th_fix[($i-1)] eq "FIX") {
+	my $style;
+	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
+	$grid_inter->itemCreate($i, 2, -text => "(".$curr_grad.")", -style=>$style);
+	$curr_grad = shift (@gradients);
+    } else {
+	$grid_inter->itemCreate($i, 2, -text => "NA", -style=>$style);
+    }
     $i++;
   }
   $n = $i-1;
   $i = 1;
+  my @om_descr = @{$mod{om_descr}};
+  my @om_fix = @{$mod{om_fix}};
   foreach (@omegas) {
     if ($i > $n) {
         $n = $i;
         $grid_inter->add($i);
     }
-    $grid_inter->itemCreate($i, 2, -text => $_, -style=>$align_right);
+    $grid_inter->itemCreate($i, 4, -text => $_, -style=>$align_right);
+    $grid_inter->itemCreate($i, 6, -text => @om_descr[($i-1)], -style=>$align_left);
+    unless (@om_fix[($i-1)] eq "FIX") {
+	my $style;
+	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
+	$grid_inter->itemCreate($i, 5, -text => "(".$curr_grad.")", -style=>$style);
+	$curr_grad = shift (@gradients);
+    }  else {
+	$grid_inter->itemCreate($i, 5, -text => "NA", -style=>$style);
+    }
     $i++;
   }
   $i=1;
+  my @si_descr = @{$mod{si_descr}};
+  my @si_fix = @{$mod{si_fix}};
   foreach (@sigmas) {
     if ($i > $n) {
         $n = $i;
         $grid_inter->add($i);
     }
-    $grid_inter->itemCreate($i, 3, -text => $_, -style=>$align_right);
+    $grid_inter->itemCreate($i, 7, -text => $_, -style=>$align_right);
+    $grid_inter->itemCreate($i, 9, -text => @si_descr[($i-1)], -style=>$align_left);
+    unless (@si_fix[($i-1)] eq "FIX") {
+	my $style;
+	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
+	$grid_inter->itemCreate($i, 8, -text => "(".$curr_grad.")", -style=>$style);
+	$curr_grad = shift (@gradients);
+    } else {
+	$grid_inter->itemCreate($i, 8, -text => "NA", -style=>$style);
+    }
     $i++;
   }
   $i=1;
@@ -8687,13 +8746,7 @@ sub update_inter_results_dialog {
         $grid_inter -> add($i);
 	$grid_inter -> itemCreate($i, 0, -text => $i, -style=>$header_right);
     }
-    my $style;
-    if ($_ == 0) {
-      $style = $align_right_red
-    } else {
-      $style = $align_right;
-    }
-    $grid_inter->itemCreate($i, 4, -text => $_, -style=>$style);
+    $grid_inter->itemCreate($i, 7, -text => $_, -style=>$style);
     $i++;
   }
 }
