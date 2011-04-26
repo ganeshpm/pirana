@@ -522,7 +522,7 @@ sub get_estimates_from_lst {
 	  $eigen_area = 1;
 	  $e=0;
       }
-      if (($eigen_area == 1)&&(substr($line,0,1) eq "1")) {
+      if (($eigen_area == 1)&&((substr($line,0,1) eq "1")||(substr($line,0,4) eq "Stop"))) {
 	  $eigen_area = 0;
 	  if (@eig[0] != 0) {
 	      $cond_nr{$est_method} = @eig[(@eig-1)]/@eig[0];
@@ -1816,6 +1816,7 @@ sub extract_from_model {
 	      $om_comment_flag = 0;
 	      my $init_clean = $init; 
 	      $init_clean =~ s/BLOCK\(.\)//;
+	      $init_clean =~ s/DIAGONAL\(.\)//;
 	      if ((($init_clean =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
 		  $om_comment_flag = 1;
 	      }
