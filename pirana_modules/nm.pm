@@ -673,7 +673,7 @@ sub get_estimates_from_text {
 
     my $th_area=0; my $om_area=0; my $si_area=0; my $se_area=0; my $etabar_area = 1;
     my @th; my @om; my @si; my @th_se; my @om_se; my @si_se;
-    my $om_line; my $cnt_om = 0;
+    my $om_line; my $cnt_om = 0; my $i;
     foreach my $line (@lines) {
 	if ($line =~ m/THETA - VECTOR/) {
 	    $th_area = 1;
@@ -689,13 +689,13 @@ sub get_estimates_from_text {
 	}
 	if ($om_area == 1) {
 #	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0))||(substr($line,0,1) eq "1")) {
-	    unless ($line =~ m/ET/) {
+	    unless ($line =~ m/(ET|\/|\:|\\)/) {
 		if ($line =~ m/\./ ) {
 		    chomp($line);
 		    $om_line .= $line;
 		}
 	    }
-	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0))||($line =~ m/SIGMA/)) {
+	    if (((substr($line, 0,3) eq " ET")&&($cnt_om > 0)) || ($line =~ m/SIGMA/) || ($line =~ m/(\:|\/|\\)/) ) {
 		push (@om, extract_cov ($om_line));
 		$om_line = "";
 	    }
@@ -711,6 +711,10 @@ sub get_estimates_from_text {
 		}
 	    }
 	}
+	if ($line =~ m/(\:|\\|\/)/i) {
+	    $om_area = 0;
+	    $si_area = 0;
+	}
 	if ($line =~ m/SIGMA - COV MATRIX/) {
 	    $si_area = 1;
 	    $om_area = 0;
@@ -718,8 +722,8 @@ sub get_estimates_from_text {
 	if ($line =~ m/ETABAR:/) {
 	    $etabar_area = 1;
 	}
+	$i++;
     }
-#    shift(@om);
     return (\@th, \@om, \@si);
 }
 
