@@ -7034,7 +7034,7 @@ sub psn_run_window {
  #   print "****".$psn_command_line."###";
  #   $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
-    $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -border=>$bbw)
+    $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -state=>'disabled',-background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -border=>$bbw)
         -> grid(-row=>12, -column=>3, -rowspan=>2, -columnspan=>2, -sticky=>"wens");
     $help -> attach($psn_run_button, "Start run");
 
@@ -7197,7 +7197,7 @@ sub psn_run_window {
         ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
    }) -> grid(-row=>7,-column=>2,-columnspan=>2,-sticky=>"nw");
 
-    $psn_run_button -> configure ( -border=>$bbw, -command=> sub {
+    $psn_run_button -> configure ( -border=>$bbw, -state=> "normal",-command=> sub {
         my $files = "";
 	$psn_run_button -> configure (-state=>'disabled');
 
@@ -8266,7 +8266,7 @@ sub show_inter_window {
       $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nsw");
       $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>1,-row=>1,-sticky=>"w");
       $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
-      @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
         @n = get_runs_in_progress($wd, \@buttons);
@@ -8274,7 +8274,7 @@ sub show_inter_window {
           inter_status ("No active runs found");
         } else {inter_status()};
       }) -> grid(-column => 1, -row=>1, -sticky=>"wns");
-      $inter_frame_buttons -> Button (-text=>'Open intermediate files', -font=>$font,  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $inter_frame_buttons -> Button (-text=>'Open intermediate files', -font=>$font,  -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
          @info = $grid->infoSelection();
          foreach (@info) {
            my $dir = $_;
@@ -8285,7 +8285,18 @@ sub show_inter_window {
            }
          }
       }) -> grid(-column => 2, -row=>1, -sticky=>"w");
-      $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $inter_frame_buttons -> Button (-text=>'Open .ext file', -font=>$font,  -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+         @info = $grid->infoSelection();
+         foreach my $dir (@info) {
+	   my $ext_file = get_current_ext ($wd."/".$dir);
+	   if ((-e $ext_file)&&(!(-d $ext_file))) { 
+	       edit_model($ext_file); 
+	   } else {
+	       message ('No .ext file found')
+	   }
+         }
+      }) -> grid(-column => 3, -row=>1, -sticky=>"w");
+      $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
        #get all
          @info = $grid->infoSelection();
          $grid_inter -> delete("all");
@@ -8295,10 +8306,10 @@ sub show_inter_window {
 	     $mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
 	 }
 	 update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
-      }) -> grid(-column => 3, -row=>1, -sticky=>"w");
-      $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-         @info = $grid->infoSelection();
       }) -> grid(-column => 4, -row=>1, -sticky=>"w");
+      $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+         @info = $grid->infoSelection();
+      }) -> grid(-column => 5, -row=>1, -sticky=>"w");
 
       ## Stop run functionality: not yet implemented (has issues)
       #$inter_frame_buttons -> Button (-text=>'Stop run', -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
@@ -8322,7 +8333,7 @@ sub show_inter_window {
     my @headers = ( "MSF", "Iterations","OFV");
     my @headers_widths = (60, 60, 60, 160,240);
 
-    our $grid = $inter_window_frame ->Scrolled('HList', -head => 1,
+    our $grid = $inter_window_frame ->Scrolled('HList', -head => 1, 
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
         -height     => 10, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 100, -background => 'white'
@@ -8372,20 +8383,22 @@ sub show_inter_window {
    #    'Arial 7' # legend
    #    ]);
    # $grid_inter -> update();
-   $grid -> configure(-browsecmd => sub{
-           $diff = str2time(localtime()) - $last_time;
-           our $last_time = str2time(localtime());
-           my @info = $grid->infoSelection();
-           if (($diff > 0)||($last_chosen ne @info[0])) {
-             our $last_chosen = @info[0];
-             chdir ("./".@info[0]);
-             my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref, $all_ofv_ref, $all_iter_ref) = get_run_progress();
-             chdir ($wd);
-	     my $mod_ref;
-	     if (-e $wd."/".@info[0]."/psn.mod") {
-		 $mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
-	     }
-             update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
+    $grid -> configure(-browsecmd => sub{
+	my $diff = str2time(localtime()) - $last_time;
+	our $last_time = str2time(localtime());
+	my @info = $grid -> infoSelection();
+	if (($diff > 0)||($last_chosen ne @info[0])) {
+	    our $last_chosen = @info[0];
+	    #chdir ("./".@info[0]);
+	    my ($sub_iter, $sub_ofv, $descr, $minimization_done, 
+		$gradients_ref, $all_gradients_ref, $all_ofv_ref, 
+		$all_iter_ref) = get_run_progress("", $cwd."/".@info[0]);
+	    #chdir ($wd);
+	    my $mod_ref;
+	    if (-e $wd."/".@info[0]."/psn.mod") {
+		$mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
+	    }
+	    update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
    #          $gradients_plot -> clearDatasets;
    #          my $lines_ref = update_gradient_plot($sub_iter, $gradients_ref, $all_gradients_ref, $all_iter_ref);
    #          my $gradient_info = $plot_frame -> Balloon();
@@ -8404,12 +8417,12 @@ sub show_inter_window {
    # 		}
    #          }
    #          $gradients_plot -> plot;
-           }
-   });
-   our @n = get_runs_in_progress($wd, \@buttons);
-   if ( int(@n) == 1 ) {
-         inter_status ("No active runs found");
-  } else {inter_status()};
+	}	     
+    });    
+    our @n = get_runs_in_progress($wd, \@buttons);
+    if ( int(@n) == 1 ) {
+	inter_status ("No active runs found");
+    } else {inter_status()};
 }
 
 sub update_gradient_plot {
@@ -8528,8 +8541,8 @@ sub get_runs_in_progress {
     unless (-d $wd) {$wd = $cwd}
     my $dir = fastgetcwd()."/";
     my @dirs = read_dirs($wd, "");
-    %dir_results = new ;
-    %res_iter = {}; %res_ofv = {}; %res_runno = {};  %res_dir = {}; %res_descr = {};
+    my %dir_results = new ;
+    our (%res_iter, %res_ofv, %res_runno,  %res_dir, %res_descr);
     # First check main directory
     inter_status ("Searching / for active runs...");
     if ((-e "nonmem.exe")||(-e "nonmem")) {  # check for nmfe runs
@@ -8540,12 +8553,11 @@ sub get_runs_in_progress {
 	    }
 	    inter_window_add_item("/", $minimization_done);
         }
-	#}
     }
     # check directories
     foreach (@dirs) {
 	chdir($_);
-	$sub = fastgetcwd();
+	my $sub = fastgetcwd();
 	$sub =~ s/$dir//;
 	inter_status ("Searching /".$sub." for active runs...");
 	my @nm = glob ("nonmem*.exe");
@@ -8563,7 +8575,7 @@ sub get_runs_in_progress {
 	    #}
 	}
 	# Check sub-directories
-	if ($sub =~ m/_/) { # only do this for PsN- or nmfe directories, to save speed
+	if (($sub =~ m/_/)||($sub =~ /\.dir/)) { # only do this for PsN- or nmfe directories, to save speed
 	    @dirs_sub = read_dirs (".", "NM_run"); # PsN directories
 	    foreach $subdir (@dirs_sub) {
 		chdir ($subdir);
@@ -8599,13 +8611,14 @@ sub get_runs_in_progress {
 sub get_run_progress {
 ### Purpose : Return the number of iterations and OFV of a currently running model
 ### Compat  : W+L+
-  my $output_file = shift;
-  @l = dir (".", $setting{ext_res});
+  my ($output_file, $dir) = @_;
+  if ($dir eq "") {$dir = "."}
+  @l = dir ($dir, $setting{ext_res});
   if (int(@l)>0) {
-    $output_file = @l[0];
+    $output_file = unix_path($dir."/".@l[0]);
   }
   if ((-e "OUTPUT")&&(-s "OUTPUT" >0)) {$output_file = "OUTPUT"};
-  open (OUT,"<".$output_file);
+  open (OUT,"<".unix_path($dir."/".$output_file));
   @lines = <OUT>;
   close OUT;
   my @gradients;
@@ -8657,7 +8670,7 @@ sub get_run_progress {
      }
   }
   # try to get a description of the model
-  @m = dir (".", $setting{ext_ctl});
+  @m = dir ($dir, $setting{ext_ctl});
   my $mod_ref;
   if ((@m == 1)||(@m[0] =~ m/psn/gi)) {
     my $modelno = @m[0];
@@ -8673,20 +8686,22 @@ sub update_inter_results_dialog {
 ### Compat  : W+L+
   my ($dir, $gradients_ref, $mod_ref) = @_;
   my @gradients = @$gradients_ref;
+  my $n_grad = int(@gradients);
   my $ext_file = get_current_ext ($dir);
-  if (-e $ext_file) {
+  if ((-e $ext_file)&&(-s $ext_file > 0)) { # sometimes in NM7 with the EM methods, .ext files is not updated; in that case fall back on OUTPUT/INTER
       # try to extract from .ext, if created (NONMEM7+)
       ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter_ext($ext_file);     
   } else {
       # try to extract from INTER, maybe NONMEM6 or earlier
       ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
   }
+#  ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
   my %mod = %$mod_ref;
   my @thetas = @$thetas_ref;
   my @omegas = @$omegas_ref;
   my @sigmas = @$sigmas_ref;
   $inter_window -> update();
-  $i=1; $n=0;
+  my $i=1; my $n=0;
   $grid_inter -> delete("all");
   $grid_inter -> update();
 #  my $th_descr_ref = $mod{th_descr};
@@ -8700,9 +8715,11 @@ sub update_inter_results_dialog {
     $grid_inter->itemCreate($i, 3, -text => @th_descr[($i-1)], -style=>$align_left);
     unless (@th_fix[($i-1)] eq "FIX") {
 	my $style;
-	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
-	$grid_inter->itemCreate($i, 2, -text => "(".$curr_grad.")", -style=>$style);
-	$curr_grad = shift (@gradients);
+	if ($n_grad > 0) {
+	    if (($curr_grad == 0)&&($n_grad > 0)) {$style = $align_right_red} else {$style = $align_right;}
+	    $grid_inter->itemCreate($i, 2, -text => "(".$curr_grad.")", -style=>$style);
+	    $curr_grad = shift (@gradients);
+	}
     } else {
 	$grid_inter->itemCreate($i, 2, -text => "NA", -style=>$style);
     }
@@ -8722,9 +8739,11 @@ sub update_inter_results_dialog {
     $grid_inter->itemCreate($i, 6, -text => @om_descr[($i-1)], -style=>$align_left);
     unless ((@om_fix[($i-1)] eq "FIX")||(@om_same[($i-1)] == 1)) {
 	my $style;
-	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
-	$grid_inter->itemCreate($i, 5, -text => "(".$curr_grad.")", -style=>$style);
-	$curr_grad = shift (@gradients);
+	if ($n_grad > 0) {
+	    if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
+	    $grid_inter->itemCreate($i, 5, -text => "(".$curr_grad.")", -style=>$style);
+	    $curr_grad = shift (@gradients);
+	}
     }  else {
 	my $text = "FIX";
 	if (@om_same[($i-1)] == 1) {$text = "SAME"}
@@ -8744,36 +8763,78 @@ sub update_inter_results_dialog {
     $grid_inter->itemCreate($i, 9, -text => @si_descr[($i-1)], -style=>$align_left);
     unless (@si_fix[($i-1)] eq "FIX") {
 	my $style;
-	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
-	$grid_inter->itemCreate($i, 8, -text => "(".$curr_grad.")", -style=>$style);
-	$curr_grad = shift (@gradients);
+	if ($n_grad > 0) {
+	    if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
+	    $grid_inter->itemCreate($i, 8, -text => "(".$curr_grad.")", -style=>$style);
+	    $curr_grad = shift (@gradients);
+	}
     } else {
 	my $text = "FIX";
 	$grid_inter->itemCreate($i, 8, -text => $text, -style=>$style);
     }
     $i++;
   }
-  $i=1;
-  foreach (@gradients) {
-    if ($i > $n) {
-        $n = $i;
-        $grid_inter -> add($i);
-	$grid_inter -> itemCreate($i, 0, -text => $i, -style=>$header_right);
-    }
-    $grid_inter->itemCreate($i, 7, -text => $_, -style=>$style);
-    $i++;
-  }
+  # $i=1;
+  # foreach (@gradients) {
+  #   if ($i > $n) {
+  #       $n = $i;
+  #       $grid_inter -> add($i);
+  # 	$grid_inter -> itemCreate($i, 0, -text => $i, -style=>$header_right);
+  #   }
+  #   $grid_inter->itemCreate($i, 7, -text => $_, -style=>$style);
+  #   $i++;
+  # }
 }
 
 sub extract_inter_ext {
     my $ext_file = shift;
+    open (EXT, "<".$ext_file);
+    my @inter = <EXT>; 
+    my (@thetas, @omegas, @sigmas);
+    my (@headers, @inter_line, $header_line, $inter_line_ref);
+    foreach my $line (@inter) {
+	if ($line =~ m/ITER/) {
+	    $header_line = extract_from_ext_line ($line);
+	    @headers = @$header_line;
+	} else {
+	    $inter_line_ref = extract_from_ext_line ($line);
+	    @inter_line = @$inter_line_ref;
+	}
+    }
+    close (EXT);
+    my $iter = shift (@inter_line);
+    foreach my $header (@headers) {
+	if ($header =~ m/THETA/) {
+	    push (@thetas, shift (@inter_line));
+	}
+	if ($header =~ m/OMEGA/) {
+	    push (@omegas, shift (@inter_line));
+	}
+	if ($header =~ m/SIGMA/) {
+	    push (@sigmas, shift (@inter_line));
+	}
+    }
     return (\@thetas, \@omegas, \@sigmas);
+}
+
+sub extract_from_ext_line {
+    my $line = shift;
+    my @vals = split (" ", $line);
+    my @values;
+    foreach my $val(@vals) {
+	$val =~ s/\s//g;
+	unless ($val eq "") {
+	    push (@values, $val);
+	}
+    }
+    return (\@values)
 }
 
 sub extract_inter {
 ### Purpose : extract intermediate results from files in a folder
 ### Compat  : W+
   my $dir = shift;
+  my (@inter, @lst);
   if ((-e $dir."/INTER")&&(-s $dir."/INTER" > 100)) { # test for minimum file size
     open (INTER,"<".$dir."/INTER");
     @inter = <INTER>;
@@ -8788,7 +8849,7 @@ sub extract_inter {
     return();
   }
 
-  $no_lines = int(@inter);
+  my $no_lines = int(@inter);
   if($no_lines>0) {
     my $last_iter=0;
     while (($no_lines>0) && ($last_iter<2)) {  # get last iteration line no

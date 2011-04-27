@@ -19,19 +19,20 @@ sub get_current_ext {
 ### Purpose : Get the name of the .ext file that has the same date-time stamp as the OUTPUT file
 ### Compat  : W+L+
     my $dir = shift;
-    my @dir;
-    if (-e "OUTPUT") {
-	@dir = dir ($dir, "ext");
-    }
-    my $output_time = stat($dir."/OUTPUT") -> mtime;
+    my @dir = dir ($dir, '.ext');     
     my $ext_file;
-    foreach my $ext (@dir) {
-	my $t = stat($dir."/".$ext) -> mtime;
-	if ($t == $output_time) {
-	    $ext_file = $ext;
+    if (-e $dir."/psn.ext") {
+	$ext_file = "psn.ext"; # don't look any further
+    } else { # assume the most recent ext-file
+	my $t_max;
+	foreach my $ext (@dir) {
+	    my $t = stat($dir."/".$ext) -> mtime;
+	    if ($t > $t_max) {
+		$ext_file = $ext;
+	    }
 	}
     }
-    return($dir."/".$ext_file);
+    return(unix_path($dir."/".$ext_file));
 }
 
 sub extract_name_from_nm_loc {
