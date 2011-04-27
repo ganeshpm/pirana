@@ -12,9 +12,27 @@ use pirana_modules::misc qw(count_numeric om_block_structure time_format rm_spac
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R detect_nm_version);
-
+our @EXPORT_OK = qw(get_current_ext extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R detect_nm_version);
 our @collect_nm;
+
+sub get_current_ext {
+### Purpose : Get the name of the .ext file that has the same date-time stamp as the OUTPUT file
+### Compat  : W+L+
+    my $dir = shift;
+    my @dir;
+    if (-e "OUTPUT") {
+	@dir = dir ($dir, "ext");
+    }
+    my $output_time = stat($dir."/OUTPUT") -> mtime;
+    my $ext_file;
+    foreach my $ext (@dir) {
+	my $t = stat($dir."/".$ext) -> mtime;
+	if ($t == $output_time) {
+	    $ext_file = $ext;
+	}
+    }
+    return($dir."/".$ext_file);
+}
 
 sub extract_name_from_nm_loc {
     my $loc = shift;
