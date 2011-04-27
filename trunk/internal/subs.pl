@@ -3396,9 +3396,9 @@ sub populate_manage_nm_hlist {
     my %nm_dirs = %$nm_dirs_ref; my %nm_vers = %$nm_vers_ref; my %nm_types;
     foreach my $nm (keys(%nm_dirs)) {
 	$nm_local_hlist -> add($i);
-	$nm_local_hlist -> itemCreate($i, 0, -text => $nm, -style=>$style);
-	$nm_local_hlist -> itemCreate($i, 1, -text => $nm_dirs{$nm}, -style=>$style);
-	$nm_local_hlist -> itemCreate($i, 2, -text => $nm_vers{$nm}, -style=>$style);
+	$nm_local_hlist -> itemCreate($i, 0, -text => $nm, -style=>$align_left);
+	$nm_local_hlist -> itemCreate($i, 1, -text => $nm_dirs{$nm}, -style=>$align_left);
+	$nm_local_hlist -> itemCreate($i, 2, -text => $nm_vers{$nm}, -style=>$align_left);
 	$i++;
     }
     
@@ -3408,9 +3408,9 @@ sub populate_manage_nm_hlist {
     my %nm_dirs_remote = %$nm_dirs_remote_ref; my %nm_vers_remote = %$nm_vers_remote_ref;
     foreach my $nm (keys(%nm_dirs_remote)) {
 	$nm_remote_hlist -> add($i);
-	$nm_remote_hlist -> itemCreate($i, 0, -text => $nm, -style=>$style);
-	$nm_remote_hlist -> itemCreate($i, 1, -text => $nm_dirs_remote{$nm}, -style=>$style);
-	$nm_remote_hlist -> itemCreate($i, 2, -text => $nm_vers_remote{$nm}, -style=>$style);
+	$nm_remote_hlist -> itemCreate($i, 0, -text => $nm, -style=>$align_left);
+	$nm_remote_hlist -> itemCreate($i, 1, -text => $nm_dirs_remote{$nm}, -style=>$align_left);
+	$nm_remote_hlist -> itemCreate($i, 2, -text => $nm_vers_remote{$nm}, -style=>$align_left);
 	$i++;
     }
 }
@@ -8324,8 +8324,8 @@ sub show_inter_window {
 
     our $grid = $inter_window_frame ->Scrolled('HList', -head => 1,
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
-        -height     => 12, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 110, -background => 'white'
+        -height     => 10, -border     => 0, -selectbackground => $pirana_orange,
+        -width      => 100, -background => 'white'
     )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
 
     my @headers_inter = (" ","Theta", "Grad." , "Desc.", "Omega", "Grad.", "Desc.", "Sigma", "Grad.", "Desc.","");
@@ -8333,8 +8333,8 @@ sub show_inter_window {
 
     our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1,
         -columns    => 11, -scrollbars => 'e', -highlightthickness => 0,
-        -height     => 18, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 110, -background => 'white',
+        -height     => 15, -border     => 0, -selectbackground => $pirana_orange,
+        -width      => 100, -background => 'white',
     )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
@@ -8345,9 +8345,10 @@ sub show_inter_window {
     $grid -> columnWidth(3, @headers_widths[3]);
     $grid -> columnWidth(4, @headers_widths[4]);
 
+    my @styles = ($header_left, $header_right, $header_left, $header_left, $header_right, $header_left, $header_left,  $header_right, $header_left, $header_left, $header_left, $header_left);
     $x=0; foreach (@headers_inter) {
       if ($x==5) {$style = $header_left} else {$style = $header_right};
-      $grid_inter -> header('create', $x, -text=> $headers_inter[$x], -style=> $style, -headerbackground => 'gray');
+      $grid_inter -> header('create', $x, -text=> $headers_inter[$x], -style=> @styles[$x], -headerbackground => 'gray');
       $grid_inter -> columnWidth($x, @headers_inter_widths[$x]);
       $x++;
     }
@@ -8500,7 +8501,7 @@ sub inter_window_add_item {
       $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>$lightgreen, -font => $font_normal);
       $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$lightgreen, -font => $font_normal);
     }
-    unless ($item =~ m/HASH/) {  # for some reason this sometimes is necessary.
+    unless (($item =~ m/HASH/)||($grid -> infoExists($item))) {  # for some reason this sometimes is necessary.
         $grid->add($item);
         $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right_style);
         $grid->itemCreate($item, 1, -text => $res_iter{$item}, -style=>$align_right_style );
@@ -8621,12 +8622,14 @@ sub get_run_progress {
 	 $sub_iter = substr($line,15,9);
 	 $sub_iter =~ s/\s//g;
 	 push (@all_iter, $sub_iter);
-	 $sub_ofv = substr($line,41,12);
-	 $sub_ofv =~ s/\s//g;
-	 $sub_ofv = rnd($sub_ofv, 7);
-	 push (@all_ofv, $sub_ofv);
-	 $sub_eval = substr($line,76,3);
-	 $sub_eval =~ s/\s//g;
+	 $sub_ofv = substr($line,30,20);
+	 $sub_ofv =~ s/(\p{IsAlpha}|\:|=|\s)//g;
+	 $sub_ofv = rnd($sub_ofv, 7); 
+	 if ($line =~ m/EVALS/) {
+	     push (@all_ofv, $sub_ofv);
+	     $sub_eval = substr($line,76,3);
+	     $sub_eval =~ s/\s//g;
+	 }
      }
      if ($line =~ m/GRADIENT/) {
 	 $gradient_area = 1;
@@ -8670,7 +8673,14 @@ sub update_inter_results_dialog {
 ### Compat  : W+L+
   my ($dir, $gradients_ref, $mod_ref) = @_;
   my @gradients = @$gradients_ref;
-  ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
+  my $ext_file = get_current_ext ($dir);
+  if (-e $ext_file) {
+      # try to extract from .ext, if created (NONMEM7+)
+      ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter_ext($ext_file);     
+  } else {
+      # try to extract from INTER, maybe NONMEM6 or earlier
+      ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
+  }
   my %mod = %$mod_ref;
   my @thetas = @$thetas_ref;
   my @omegas = @$omegas_ref;
@@ -8702,6 +8712,7 @@ sub update_inter_results_dialog {
   $i = 1;
   my @om_descr = @{$mod{om_descr}};
   my @om_fix = @{$mod{om_fix}};
+  my @om_same = @{$mod{om_same}}; 
   foreach (@omegas) {
     if ($i > $n) {
         $n = $i;
@@ -8709,13 +8720,15 @@ sub update_inter_results_dialog {
     }
     $grid_inter->itemCreate($i, 4, -text => $_, -style=>$align_right);
     $grid_inter->itemCreate($i, 6, -text => @om_descr[($i-1)], -style=>$align_left);
-    unless (@om_fix[($i-1)] eq "FIX") {
+    unless ((@om_fix[($i-1)] eq "FIX")||(@om_same[($i-1)] == 1)) {
 	my $style;
 	if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
 	$grid_inter->itemCreate($i, 5, -text => "(".$curr_grad.")", -style=>$style);
 	$curr_grad = shift (@gradients);
     }  else {
-	$grid_inter->itemCreate($i, 5, -text => "NA", -style=>$style);
+	my $text = "FIX";
+	if (@om_same[($i-1)] == 1) {$text = "SAME"}
+	$grid_inter->itemCreate($i, 5, -text => $text, -style=>$style);
     }
     $i++;
   }
@@ -8735,7 +8748,8 @@ sub update_inter_results_dialog {
 	$grid_inter->itemCreate($i, 8, -text => "(".$curr_grad.")", -style=>$style);
 	$curr_grad = shift (@gradients);
     } else {
-	$grid_inter->itemCreate($i, 8, -text => "NA", -style=>$style);
+	my $text = "FIX";
+	$grid_inter->itemCreate($i, 8, -text => $text, -style=>$style);
     }
     $i++;
   }
@@ -8749,6 +8763,11 @@ sub update_inter_results_dialog {
     $grid_inter->itemCreate($i, 7, -text => $_, -style=>$style);
     $i++;
   }
+}
+
+sub extract_inter_ext {
+    my $ext_file = shift;
+    return (\@thetas, \@omegas, \@sigmas);
 }
 
 sub extract_inter {
@@ -8793,45 +8812,45 @@ sub extract_inter {
     };
     my @thetas = @theta_arr;
 
-    ### Gather ETA's
-    my $eta_line_no = $theta_line_no+5;
-    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
-    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
-    if ($inter[$no_lines+$eta_line_no+1]=~/ET/g) {$eta_line_no++};
-    my $curr_lineno = $no_lines + $eta_line_no + 2;
-    my @etas = ();
+    ### Gather OMEGA's
+    my $omega_line_no = $theta_line_no+5;
+    if ($inter[$no_lines+$omega_line_no+1]=~/ET/g) {$omega_line_no++};
+    if ($inter[$no_lines+$omega_line_no+1]=~/ET/g) {$omega_line_no++};
+    if ($inter[$no_lines+$omega_line_no+1]=~/ET/g) {$omega_line_no++};
+    my $curr_lineno = $no_lines + $omega_line_no + 2;
+    my @omegas = ();
 
     until ((@inter[$curr_lineno] =~ m/SIGMA/)||($curr_lineno>@inter)) {
-      if ((@inter[$curr_lineno] =~ m/ET/) && (@inter[$curr_lineno+1] ne "")) { # read ETA from subsequent lines
-        $eta_line = @inter[$curr_lineno+1];
+      if ((@inter[$curr_lineno] =~ m/ET/) && (@inter[$curr_lineno+1] ne "")) { # read OMEGA from subsequent lines
+        $omega_line = @inter[$curr_lineno+1];
         if(@inter[$curr_lineno+2] =~ m/\./) {
-          $eta_line = @inter[$curr_lineno+2];
+          $omega_line = @inter[$curr_lineno+2];
         };
         if(@inter[$curr_lineno+3] =~ m/\./) {
-          $eta_line = @inter[$curr_lineno+3];
+          $omega_line = @inter[$curr_lineno+3];
         };
-        @eta_arr = split(/\s/,$eta_line);
-        @eta_arr = grep /\S/, @eta_arr;
-        my $eta;
-        if (@eta_arr>0) {$eta = rnd(@eta_arr[@eta_arr-1],5)} else {$eta = ""};
-        push (@etas, $eta);
+        @omega_arr = split(/\s/,$omega_line);
+        @omega_arr = grep /\S/, @omega_arr;
+        my $omega;
+        if (@omega_arr>0) {$omega = rnd(@omega_arr[@omega_arr-1],5)} else {$omega = ""};
+        push (@omegas, $omega);
       }
       $curr_lineno++;
     }
-    my @epss = ();
+    my @sigmas = ();
     if (@inter[$curr_lineno] =~ m/SIGMA/) {
       while (($curr_lineno < @inter)&&!(@inter[$curr_lineno] =~ m/ITERATION/gi)) {
         if (@inter[$curr_lineno] =~ m/\./) {
-          $eps_line = @inter[$curr_lineno];
-          @eps_arr = split(/\s/,$eps_line);
-          @eps_arr = grep /\S/, @eps_arr;
-          $eps = rnd(@eps_arr[@eps_arr-1],5);
-          push (@epss,$eps);
+          $sigma_line = @inter[$curr_lineno];
+          @sigma_arr = split(/\s/,$sigma_line);
+          @sigma_arr = grep /\S/, @sigma_arr;
+          $sigma = rnd(@sigma_arr[@sigma_arr-1],5);
+          push (@sigmas,$sigma);
         }
         $curr_lineno++;
       }
     }
-    return \@thetas, \@etas, \@epss;
+    return \@thetas, \@omegas, \@sigmas;
   } else {return (0)}
 }
 
