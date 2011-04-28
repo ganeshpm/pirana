@@ -2664,6 +2664,7 @@ sub add_nm_inst {
     $nm_inst_frame -> Label (-text=>" ",-background=>$bgcol)->grid(-row=>5,-column=>1,-sticky=>"e");
     my $nm_ini_file;
     $nm_inst_frame -> Button (-text=>"Add",-font=>$font, -width=>12, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+
 	my $exists = 0;
 	if ($nm_locality eq "local") {
 	    if ($nm_dirs{$nm_name}) {
@@ -2677,6 +2678,7 @@ sub add_nm_inst {
 	if ($exists == 1) {
 	    message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
 	} else {
+	    my $nm_ver = detect_nm_version($nm_dir);
 	    $nm_ver =~ s/7\.2/72/; # the command is nmfe72
 	    $valid_nm = 0;
 	    if ($nm_locality eq "local") {
@@ -2692,7 +2694,9 @@ sub add_nm_inst {
 		    $valid_nm = 1;
 		}
 		# regular installation
+		print($nm_dir."/util/nmfe".$nm_ver);
 		if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
+		    print('test');
 		    $nm_type = "regular";
 		    $valid_nm = 1;
 		}
