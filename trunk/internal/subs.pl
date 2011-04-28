@@ -2092,38 +2092,43 @@ sub edit_model {
     }
 }
 
+sub tree_models_add_parent {
+### Purppose: Recursive function to add parents to model
+    my ($model, $parent_ref) = @_;
+    my %parent = %$parent_ref;
+    my $mod_line;
+    if ($parent{$model} ne "") {
+	$mod_line = $parent{$model}."::".$model;
+    } else {
+	$mod_line = $model;
+    }
+    if ($parent{$parent{$model}} ne "") {
+	$mod_line = tree_models_add_parent ($parent{$model}, $parent_ref) . "::" . $mod_line;
+    }
+    return($mod_line);
+}
+
 sub tree_models {
 ### Purpose : Generate a tree structure and return them as array and text
 ### Compat  : W+L?
-  undef @ctl_copy_order; undef @tr_unsort; undef @tr; undef @tr_sorted;
-  undef %tree; undef %model_indent;
-  my %tree ;
-  my @tr;
+  my @ctl_copy_order; my @tr_unsort; my @tr; my @tr_sorted;
+  my %tree; my %model_indent; my @tr;
   my $i=0;
   foreach (@ctl_copy) {
     if ($file_type{@ctl_copy[$i]}==2) {
-      if ((-e $models_refmod{@ctl_copy[$i]}.".".$setting{ext_ctl})&&($models_refmod{@ctl_copy[$i]} ne "")) {
-        if (exists ($tree{$models_refmod{@ctl_copy[$i]}})) {
-          $tree{$_} = $tree{$models_refmod{@ctl_copy[$i]}}."::";
-        } else {
-          $tree{$_} = $models_refmod{@ctl_copy[$i]}."::";  # unknown model as parent
-        }
-      }
-      $tree{$_} .= @ctl_copy[$i];
+	$tree{$_} = tree_models_add_parent ($_, \%models_refmod);
     } else {
-      push(@tr, $_); # directories
+	push(@tr, $_); # directories
     }
     $i++;
   }
-  our @tr_unsort;
   foreach (@ctl_copy) {
-    if ($file_type{$_}==2) {
-      push(@tr_unsort, $tree{$_});
-    }
+      if ($file_type{$_}==2) {
+	  push(@tr_unsort, $tree{$_});
+      }
   }
   my @tr_sorted = sort(@tr_unsort);
   push (@tr, @tr_sorted);
-
   $i = 0;
   foreach (@tr) {
     #print $_." (".$models_refmod{$ctl_copy[$i]}.")\n";
@@ -2132,44 +2137,50 @@ sub tree_models {
     $model_indent{@ctl_copy_order[$i]} = @spl-1;
     $i++;
   }
+  my $tree = tree_models_text (\@tr_sorted);
+  return (\@ctl_copy_order, \%model_indent);
+}
 
-  # generate a tree in text format
-  my %lastchild;
-  foreach(@tr_sorted) { # get the lastchild's number
-    @line = split (/\:\:/, $_);
-    $lastchild {@line[-2]} = @line[-1];
-  }
-  $last_root_child = @line[0];
-  $tree = "";
-  my @flags ; my $ofv;
-  foreach (@tr_sorted) {
-    my @line = split (/\:\:/, $_);
-    for ($i=1; $i<=@line; $i++) {
-      $tree .= "  ";
-      if (($lastchild{@line[$i-2]} eq @line[$i-1])||(@line[$i-1] eq $last_root_child)) {@flags[$i] = 1} else {@flags[$i] = 0};
-      #if (@flags[$i] == 0) {$tree .= chr(179)} else {$tree .= " "};
-      if (@flags[$i] == 0) {$tree .= "|"} else {$tree .= " "};
-    };
-    if (($lastchild{@line[-2]} eq @line[-1])||(@line[-1] eq $last_root_child)) {
-      #chop($tree); $tree .= chr(192).chr(196);
-      chop($tree); $tree .= "`--";
+sub tree_models_text {
+    my $tr_sorted_ref = @_;
+    my @tr_sorted = @$tr_sorted_ref;
+    # generate a tree in text format
+    my %lastchild;
+    foreach(@tr_sorted) { # get the lastchild's number
+	@line = split (/\:\:/, $_);
+	$lastchild {@line[-2]} = @line[-1];
     }
-    else {
-      #chop ($tree); $tree .= chr(195).chr(196);
-      $tree .= "--";
+    my$last_root_child = @line[0];
+    $tree = "";
+    my @flags ; my $ofv;
+    foreach (@tr_sorted) {
+	my @line = split (/\:\:/, $_);
+	for ($i=1; $i<=@line; $i++) {
+	    $tree .= "  ";
+	    if (($lastchild{@line[$i-2]} eq @line[$i-1])||(@line[$i-1] eq $last_root_child)) {@flags[$i] = 1} else {@flags[$i] = 0};
+	    #if (@flags[$i] == 0) {$tree .= chr(179)} else {$tree .= " "};
+	    if (@flags[$i] == 0) {$tree .= "|"} else {$tree .= " "};
+	};
+	if (($lastchild{@line[-2]} eq @line[-1])||(@line[-1] eq $last_root_child)) {
+	    #chop($tree); $tree .= chr(192).chr(196);
+	    chop($tree); $tree .= "`--";
+	}
+	else {
+	    #chop ($tree); $tree .= chr(195).chr(196);
+	    $tree .= "--";
+	}
+	if ($models_ofv{@line[-2]} ne "") {
+	    $dofv = rnd($models_ofv{@line[-2]} - $models_ofv{@line[-1]},3);
+	} else {
+	    $dofv = "";
+	}
+	if ($models_ofv{@line[-1]} ne "") { $ofv = $models_ofv{@line[-1]}."\t" } else {$ofv ="\t"}
+	if (@line>1) {$space="\t"} else {$space="\t\t"}; # try to keep things in line
+	if (@line>3) {chop($space);};
+	my $info = $models_suc{@line[-1]}.$models_cov{@line[-1]}.$models_bnd{@line[-1]}."\t".$models_sig{@line[-1]};
+	$tree .=  @line[-1].$space."\t".$ofv." (".$dofv.") \t".$info."\n";
     }
-    if ($models_ofv{@line[-2]} ne "") {
-      $dofv = rnd($models_ofv{@line[-2]} - $models_ofv{@line[-1]},3);
-    } else {
-      $dofv = "";
-    }
-    if ($models_ofv{@line[-1]} ne "") { $ofv = $models_ofv{@line[-1]}."\t" } else {$ofv ="\t"}
-    if (@line>1) {$space="\t"} else {$space="\t\t"}; # try to keep things in line
-    if (@line>3) {chop($space);};
-    my $info = $models_suc{@line[-1]}.$models_cov{@line[-1]}.$models_bnd{@line[-1]}."\t".$models_sig{@line[-1]};
-    $tree .=  @line[-1].$space."\t".$ofv." (".$dofv.") \t".$info."\n";
-  }
-  return (\@ctl_copy_order, $tree);
+    return ($tree);
 }
 
 sub project_info_window {
@@ -2694,9 +2705,9 @@ sub add_nm_inst {
 		    $valid_nm = 1;
 		}
 		# regular installation
-		print($nm_dir."/util/nmfe".$nm_ver);
+#		print($nm_dir."/util/nmfe".$nm_ver);
 		if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
-		    print('test');
+#		    print('test');
 		    $nm_type = "regular";
 		    $valid_nm = 1;
 		}
@@ -4843,11 +4854,12 @@ sub populate_models_hlist {
   if ($condensed == 0 ) {
       $add_condensed = "\n\n";
   }
-  undef @ctl_show;
-  undef %model_indent;
+  our @ctl_show;
+  my %model_indent;
   if ($order eq "tree") {
-    my ($ctl_show_ref, $tree_text) = tree_models();
+    my ($ctl_show_ref, $model_indent_ref) = tree_models();
     our @ctl_show = @$ctl_show_ref;
+    %model_indent = %$model_indent_ref;
     $models_hlist->columnWidth(0, 0);
     $models_hlist->columnWidth(1, (@models_hlist_widths[1]+@models_hlist_widths[2]));
     $models_hlist->columnWidth(2, 0);
