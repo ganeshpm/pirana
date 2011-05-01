@@ -2253,7 +2253,7 @@ sub show_estim_window {
     my $modelfile = $lstfile;
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
 
-    my ($methods_ref, $est_ref, $se_est_ref, $term_ref) = get_estimates_from_lst ($lstfile);
+    my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofv_ref) = get_estimates_from_lst ($lstfile);
     my @methods = @$methods_ref;
     my %est = %$est_ref;
     my %se_est = %$se_est_ref;
@@ -2264,6 +2264,8 @@ sub show_estim_window {
     my $theta_ref = @res[0];  my @th = @$theta_ref;
     my $omega_ref = @res[1];  my @om = @$omega_ref;
     my $sigma_ref = @res[2];  my @si = @$sigma_ref;
+    my %ofv = %$ofv_ref;
+    my $ofv_val = $ofv{$last_method};
 
     # do the same for RSE%
     my $se_ref = $se_est{$last_method};
@@ -2302,13 +2304,13 @@ sub show_estim_window {
 
     @estim_grid_headers = ("Parameter", "Description", "Value", "RSE");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
-						     -columns    => $cols+3, -scrollbars => 'se',-highlightthickness => 0,
+						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
 						     -height     => 25, -width      => 90,
 						     -border     => 0, -indicator=>0,
 						     -background => 'white',
 						     -selectbackground => $pirana_orange,
 	)->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');
-    $estim_grid -> columnWidth(1, 120);
+    $estim_grid -> columnWidth(1, 160);
 
     my $headerstyle = $models_hlist->ItemStyle('window', -padx => 0, -pady=>0);
     foreach my $x ( 0 .. $#estim_grid_headers ) {
@@ -2337,10 +2339,20 @@ sub show_estim_window {
 	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2), $cols );
     })->grid(-column=>2, -row=>3, -sticky=>"nwse");
 
-    $i = 1; $j=1; my $max_i = 1;
+
+    $i = 3; $j=1; my $max_i = 1;
     if (@th>0) {
 	$estim_window ->configure (-title=>$lstfile." (".$last_method.")");
 	$estim_grid -> delete("all");
+
+# OFV
+	$estim_grid -> add(1);
+	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right);
+	$estim_grid -> itemCreate(1, 1, -text => "Objective function value", -style=>$align_left);
+	$estim_grid -> itemCreate(1, 2, -text => $ofv_val, -style=>$estim_style_red);
+	$estim_grid -> add(2);
+	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$align_left);
+
 	foreach my $th (@th) {
 	    $estim_grid -> add($i);
 	    $estim_grid -> itemCreate($i, 0, -text => "TH ".$i, -style=>$header_right);
@@ -2463,19 +2475,20 @@ sub show_estim_multiple {
 ### Compat  : W+L+
     my $lst_ref = shift;
     my @lst = @$lst_ref;
-    my $lstfile = @lst[0].".".$setting{ext_res};
+    my $lstfile = @lst[@lst].".".$setting{ext_res};
     my $modelfile = $lstfile;
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
 
     # get estimates for all models
-    my (@th_all, @om_all, @si_all);
+    my (@th_all, @om_all, @si_all, @ofv_vals);
     my ($max_th, $max_om, $max_si);
     foreach my $lst_temp (@lst) {
 	$lst_temp .= ".".$setting{ext_res};
-	my ($methods_ref, $est_ref, $se_est_ref, $term_ref) = get_estimates_from_lst ($lst_temp);
+	my ($methods_ref, $est_ref, $se_est_ref, $term_ref, $ofv_ref) = get_estimates_from_lst ($lst_temp);
 	my @methods = @$methods_ref;
 	my %est = %$est_ref;
 	my %se_est = %$se_est_ref;
+	my %ofv = %$ofv_ref;
 	
 	my $last_method = @methods[-1] ;  # take results from the last estimation method
 	my $res_ref = $est{$last_method};
@@ -2489,6 +2502,7 @@ sub show_estim_multiple {
 	if (int(@$theta_ref)>$max_th) {$max_th = int(@$theta_ref) }
 	if (int(@$omega_ref)>$max_om) {$max_om = int(@$omega_ref) }
 	if (int(@$sigma_ref)>$max_si) {$max_si = int(@$sigma_ref) }
+	push (@ofv_vals, $ofv{$last_method});
     }
 
     # and get information from NM model file, only for first one
@@ -2499,10 +2513,9 @@ sub show_estim_multiple {
     my $theta_names_ref = $mod{th_descr}; my @theta_names = @$theta_names_ref;
     my $omega_names_ref = $mod{om_descr}; my @omega_names = @$omega_names_ref;
     my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
+    my $max_th_names = int(@theta_names);
 
-    my $cols = ((floor($max_th/10)+1)*3)-1; # calculate no of columns in window
-    if ($max_om > $cols) {$cols = int($max_om+1)};
-    if ($max_si > $cols) {$cols = int($max_si+1)};
+    my $cols = int(@lst) + 1; # calculate no of columns in window
 
     unless ($estim_window) {
 	our $estim_window = $mw -> Toplevel();
@@ -2521,13 +2534,13 @@ sub show_estim_multiple {
     }
     push (@estim_grid_headers, " ");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
-						     -columns    => int(@lst)+3, -scrollbars => 'se',-highlightthickness => 0,
-						     -height     => 25, -width      => 90,
+						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
+						     -height     => 40, -width      => 90,
 						     -border     => 0, -indicator=>0,
 						     -background => 'white',
 						     -selectbackground => $pirana_orange,
 	)->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');
-    $estim_grid -> columnWidth(1, 120);
+    $estim_grid -> columnWidth(1, 160);
 
     my $headerstyle = $models_hlist->ItemStyle('window', -padx => 0, -pady=>0);
     foreach my $x ( 0 .. $#estim_grid_headers ) {
@@ -2559,26 +2572,32 @@ sub show_estim_multiple {
 # First create the correct number of entries for theta/om/si
 # create CSV
      $i = 1; $j=1; my $max_i = 1;
-     if ($max_th > 0) {
+    my $max_all = max(($max_th_names, $max_th)) ;
+    my $prerows = 2;
+    if ($max_th > 0) {
  	$estim_grid -> delete("all");
-	for($i = 1; $i <= $max_th; $i++) {
-	    $estim_grid -> add($i);
-	    $estim_grid -> itemCreate($i, 0, -text => "TH ".$i, -style=>$header_right);
-	    $estim_grid -> itemCreate($i, 1, -text => @theta_names[($i-1)], -style=>$align_left);
+	$estim_grid -> add(1);
+	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right);
+	$estim_grid -> add(2);
+	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$align_left);
+	for($i = 1; $i <= $max_all; $i++) {
+	    $estim_grid -> add(($i+$prerows));
+	    $estim_grid -> itemCreate(($i+$prerows), 0, -text => "TH ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($i+$prerows), 1, -text => @theta_names[($i-1)], -style=>$align_left);
 	}
-	$estim_grid -> add($max_th+1);
-	$estim_grid -> itemCreate($max_th+1, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> add($max_th+$prerows+1);
+	$estim_grid -> itemCreate($max_th+$prerows+1, 0, -text => " ", -style=>$header_right);
 	for($i = 1; $i <= $max_om; $i++) {
-	    $estim_grid -> add($max_th+1+$i);
-	    $estim_grid -> itemCreate(($max_th+1+$i), 0, -text => "OM ".$i, -style=>$header_right);
-	    $estim_grid -> itemCreate(($max_th+1+$i), 1, -text => @omega_names[($i-1)], -style=>$align_left);
+	    $estim_grid -> add($max_th+1+$i+$prerows);
+	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 0, -text => "OM ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 1, -text => @omega_names[($i-1)], -style=>$align_left);
 	}
-	$estim_grid -> add($max_th+$max_om+2);
-	$estim_grid -> itemCreate($max_th+$max_om+2, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> add($max_th+$max_om+$prerows+2);
+	$estim_grid -> itemCreate($max_th+$max_om+$prerows+2, 0, -text => " ", -style=>$header_right);
 	for($i = 1; $i <= $max_si; $i++) {
-	    $estim_grid -> add($max_th+$max_om+2+$i);
-	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i), 0, -text => "SI ".$i, -style=>$header_right);
-	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
+	    $estim_grid -> add($max_th+$max_om+2+$prerows+$i);
+	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 0, -text => "SI ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
 	}
      }
     my $col = 2;
@@ -2586,27 +2605,30 @@ sub show_estim_multiple {
 	my $th_ref = shift(@th_all);
 	my $om_ref = shift(@om_all);
 	my $si_ref = shift(@si_all);
+	my $ofv_val = shift (@ofv_vals);
 	my @th = @$th_ref;
 	my @om = @$om_ref;
 	my @si = @$si_ref;
 	my $i = 1;
+	$estim_grid -> itemCreate(1, 1, -text => "Objective function value", -style=>$align_left);
+	$estim_grid -> itemCreate(1, $col, -text => $ofv_val, -style=>$estim_style_red);
 	foreach (@th) {
 	    my $th_text = rnd($_,4);
-	    $estim_grid -> itemCreate($i, $col, -text => $th_text, -style=>$estim_style);
+	    $estim_grid -> itemCreate(($i+$prerows, $col), -text => $th_text, -style=>$estim_style);
 	    $i++;
 	}
 	my $i = 1;
 	foreach (@om) {
 	    my @om_tmp = @$_;
 	    my $om_text = rnd(@om_tmp[(int(@om_tmp)-1)],4);
-	    $estim_grid -> itemCreate($max_th+1+$i, $col, -text => $om_text, -style=>$estim_style);
+	    $estim_grid -> itemCreate(($max_th+$prerows+1+$i), $col, -text => $om_text, -style=>$estim_style);
 	    $i++;
 	}
 	my $i = 1;
 	foreach (@si) {
 	    my @si_tmp = @$_;
 	    my $si_text = rnd(@si_tmp[(int(@si_tmp)-1)],4);
-	    $estim_grid -> itemCreate($max_th+$max_om+2+$i, $col, -text => $si_text, -style=>$estim_style);
+	    $estim_grid -> itemCreate(($max_th+$max_om+$prerows+2+$i), $col, -text => $si_text, -style=>$estim_style);
 	    $i++;
 	}
 	$col++;
@@ -5117,9 +5139,10 @@ sub tab_dir {
 sub populate_tab_hlist {
 ### Purpose : Put the tables/files in the current (and data-)dir in the listbox that was created earlier
 ### Compat  : W+
-  $i=0;
   my $hlist = shift;
   $style = $align_left;
+  my $i=0;
+  $hlist -> delete ("all");
   foreach (@tabcsv_files) {
     if($hlist) {
       $hlist -> add($i);
@@ -7401,10 +7424,21 @@ sub reload_styles {
   our $black_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $bold_left = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 3,-pady => $hlist_pady, -foreground=>'#000000', -background=>'white',-font => $font_fixed);
   our $bold_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#000000', -background=>'white',-font => $font_fixed);
-  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
-  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 3, -pady => $hlist_pady,-background=>'#c0d0ff', -font => $font_normal);
+  our $estim_style = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#d0e0f3', -font => $font_normal);
+  our $estim_style_red = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#f3e0d0', -font => $font_normal);
+  our $estim_style_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw', -padx => 3, -pady => $hlist_pady,-background=>'#d0e0f3', -font => $font_normal);
   our $estim_style_light = $models_hlist-> ItemStyle( 'text', -anchor => 'ne', -padx => 3, -pady => $hlist_pady,-background=>'#d5e5ff', -font => $font_normal);
   our $estim_style_se = $models_hlist-> ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady, -background=>'#ffffe5', -font => $font_normal);
+}
+
+sub reload_font_sizes {
+    my $font_small_size = ($setting{font_size} - 1);
+    our $font = $font_family.' '.$setting{font_size};
+    our $font_normal =  $font_family.' '.$setting{font_size};
+    our $font_small =  $font_family.' '.$font_small_size;
+    our $font_fixed = $font_fixed_family.' '.$setting{font_size};
+    our $font_fixed_small = $font_fixed_family.' '.$font_small_size;
+    our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 }
 
 sub frame_models_show {
@@ -7518,6 +7552,12 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
     $models_hlist -> bind ('<Control-E>' => sub {
 	psn_command("execute");
     });
+    $models_hlist -> bind ('<Control-v>' => sub {
+	psn_command("vpc");
+    });
+    $models_hlist -> bind ('<Control-V>' => sub {
+	psn_command("vpc");
+    });
     $models_hlist -> bind ('<Control-b>' => sub {
 	psn_command("bootstrap");
     });
@@ -7541,6 +7581,20 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
     });
     $models_hlist -> bind ('<Control-L>' => sub {
         view_outputfile_command();
+    });
+    $models_hlist -> bind ('<Control-plus>' => sub {
+	$setting{font_size}++;
+	reload_font_sizes();
+	reload_styles();
+	populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
+	populate_tab_hlist($tab_hlist);
+    });
+    $models_hlist -> bind ('<Control-minus>' => sub {
+	$setting{font_size} =  $setting{font_size} - 1;
+	reload_font_sizes();
+	reload_styles();
+	populate_models_hlist ($setting_internal{models_view}, $condensed_model_list);
+	populate_tab_hlist($tab_hlist);
     });
     $models_hlist -> bind ('<Delete>' => sub {
 	delete_models_command();
