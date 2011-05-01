@@ -18,6 +18,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Piraña.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 our $debug_mode = 0;
 our $console = 0; # keep console window open on Windows
 foreach (@ARGV) {
@@ -58,6 +59,7 @@ use File::Find;
 use File::stat;             # ..
 use File::Path;             # ..
 use File::Basename;
+use File::Spec;
 use Time::HiRes;
 use HTTP::Date;             # Date and time functions
 use List::Util qw(max maxstr min minstr reduce); # some basic functions

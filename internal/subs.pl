@@ -2307,6 +2307,7 @@ sub show_estim_window {
 						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
 						     -height     => 25, -width      => 90,
 						     -border     => 0, -indicator=>0,
+						     -selectborderwidth => 0, -padx=>0, -pady=>0,
 						     -background => 'white',
 						     -selectbackground => $pirana_orange,
 	)->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');
@@ -2537,6 +2538,7 @@ sub show_estim_multiple {
 						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
 						     -height     => 40, -width      => 90,
 						     -border     => 0, -indicator=>0,
+						     -selectborderwidth => 0, -padx=>0, -pady=>0,
 						     -background => 'white',
 						     -selectbackground => $pirana_orange,
 	)->grid(-column => 1, -columnspan=>7,-row => 2,-sticky=>'nwse');
@@ -2577,26 +2579,26 @@ sub show_estim_multiple {
     if ($max_th > 0) {
  	$estim_grid -> delete("all");
 	$estim_grid -> add(1);
-	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right);
+	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right2);
 	$estim_grid -> add(2);
-	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$align_left);
+	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_all; $i++) {
 	    $estim_grid -> add(($i+$prerows));
-	    $estim_grid -> itemCreate(($i+$prerows), 0, -text => "TH ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($i+$prerows), 0, -text => "TH ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($i+$prerows), 1, -text => @theta_names[($i-1)], -style=>$align_left);
 	}
 	$estim_grid -> add($max_th+$prerows+1);
-	$estim_grid -> itemCreate($max_th+$prerows+1, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> itemCreate($max_th+$prerows+1, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_om; $i++) {
 	    $estim_grid -> add($max_th+1+$i+$prerows);
-	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 0, -text => "OM ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 0, -text => "OM ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 1, -text => @omega_names[($i-1)], -style=>$align_left);
 	}
 	$estim_grid -> add($max_th+$max_om+$prerows+2);
-	$estim_grid -> itemCreate($max_th+$max_om+$prerows+2, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> itemCreate($max_th+$max_om+$prerows+2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_si; $i++) {
 	    $estim_grid -> add($max_th+$max_om+2+$prerows+$i);
-	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 0, -text => "SI ".$i, -style=>$header_right);
+	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 0, -text => "SI ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
 	}
      }
@@ -2728,7 +2730,7 @@ sub add_nm_inst {
 		}
 		# regular installation
 #		print($nm_dir."/util/nmfe".$nm_ver);
-		if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))) {
+		if ((-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver).".bat")||(-e unix_path($nm_dir."/util/nmfe".$nm_ver))||(-e unix_path($add_base_drive.$nm_dir."/util/nmfe".$nm_ver."original.bat"))) {
 #		    print('test');
 		    $nm_type = "regular";
 		    $valid_nm = 1;
@@ -5918,7 +5920,7 @@ sub frame_tab_show {
   $tab_frame_info = $mw -> Frame(-background=>$bgcol
   )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
   our $tab_file_info = $tab_frame_info -> Text (
-      -width=>24, -relief=>'sunken', -border=>2, -height=>5,
+      -width=>24, -relief=>'groove', -border=>1, -height=>4,
       -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
   )->grid(-column=>1, -row=>1, -sticky=>'nwes', -ipadx=>0, -ipady=>0);
   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
@@ -6403,12 +6405,6 @@ sub show_links {
   our $frame_command = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>7, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
   our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>2, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
 
-#  our $frame_logo  = $mw -> Frame(-background=>$bgcol)-> grid(-row=>1, -column=>3, -columnspan=>1, -sticky=>"ne", -ipadx=>10);
-#  my $portable_text = "";
-#  if ($portable_mode == 1) {$portable_text = "\nPortable mode"}
-#  our $pirana_logo = $frame_logo -> Label (-border=>0,-text=>"Pirana v".$version.$portable_text, -justify=>"right", -background=>$bgcol, -font=>$font_normal, -state=>"disabled"
-#    )->grid(-row=>2, -column=>1, -columnspan=>2,-rowspan=>1, -sticky => 'en');
-
   our $missing = 0;
   $frame_command -> Label(-text=>'    Cmd:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>1, -column=>1, -sticky => 'wns');
   if ($os =~ m/MSWin/i) {
@@ -6425,10 +6421,9 @@ sub show_links {
   });
   $help->attach($filter_entry, -msg => "Filter model files");
 
-
   our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
-						-arrowimage => $gif{down}, -border=>2, -relief=>"groove",
+						-arrowimage => $gif{down}, -border=>1, -relief=>"groove",
 						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
@@ -7418,6 +7413,7 @@ sub reload_styles {
   our $align_left = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 3, -pady => 0,-background=>'white', -font => $font_normal );
   our $header_left = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'nw', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
   our $header_right = $models_hlist->ItemStyle('text',-background=>'gray', -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
+  our $header_right2 = $models_hlist->ItemStyle('text',-background=>"#f5f5f5", -anchor => 'ne', -pady => $hlist_pady, -padx => 2, -font => $font_normal );
   our $green_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#008800', -background=>'white',-font => $font_fixed);
   our $red_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#990000', -background=>'white',-font => $font_fixed);
   our $yellow_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 3, -pady => $hlist_pady,-foreground=>'#888800', -background=>'white',-font => $font_fixed);
@@ -7522,7 +7518,7 @@ sub frame_models_show {
 
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>500);
+$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>580);
 $mw -> gridColumnconfigure(3, -weight => 1, -minsize=>150);
 $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
@@ -7635,11 +7631,10 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
   });
   $models_hlist -> update();
 
-
    our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>2, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
-   $show_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nse');
+   $show_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'wns');
    our $psn_dir_filter = 0;
-   $show_buttons -> Label(-text=>"   Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'ws');
+   $show_buttons -> Label(-text=>"  Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'ws');
    $show_buttons -> Label(-text=>"    ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -columnspan=>1, -sticky=>'es');
   $filter_psn_button = $show_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
@@ -7683,13 +7678,19 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
     })->grid(-row=>1,-column=>3,-sticky=>'wens');
   $help->attach($show_execution_log, -msg => "Show model execution log");
 
+  our $sge_monitor_button = $show_buttons_sub -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub {sge_monitor_window();
+      })->grid(-row=>1,-column=>4,-columnspan=>1,-sticky=>'wens');
+  $help->attach($sge_monitor_button, -msg => "SGE montitor");
+#  if ($^O =~ m/MSWin/) { $sge_monitor_button -> configure(-state=>'disabled');}
+
   our $show_inter_button = $show_buttons_sub->Button(-image=>$gif{edit_inter},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
       $cwd = $dir_entry -> get();
       chdir($cwd);
       show_inter_window($cwd);
       if ($inter_window) {$inter_window -> focus();}
-      })->grid(-row=>1,-column=>4,-sticky=>'wens');
+      })->grid(-row=>1,-column=>5,-sticky=>'wens');
   $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
+
   our $show_estim_button = $show_buttons_sub->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         my @lst = @ctl_show[$models_hlist -> selectionGet ()];
 	if (int(@lst) > 1) { 
@@ -7698,7 +7699,7 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
 	    show_estim_window (\@lst);
 	}
         $estim_window -> raise();
-      })->grid(-row=>1,-column=>5,-sticky=>'wens');
+      })->grid(-row=>1,-column=>6,-sticky=>'wens');
   $help->attach($show_estim_button, -msg => "Show/compare parameter estimates from runs");
 
 }
@@ -7753,11 +7754,6 @@ sub create_mod_buttons {
 #  $mod_buttons -> Label (-text=>"       Runs: ", -font=>$font_normal, -background=>$bgcol)
 #   ->grid(-row=>2,-column=>1,-sticky=>'wens');
 
-#  our $sge_monitor_button = $mod_buttons -> Button(-image=>$gif{cluster}, -state=>'normal', -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub {sge_monitor_window();
-#      })->grid(-row=>1,-column=>7,-columnspan=>1,-sticky=>'wens');
-#  $help->attach($sge_monitor_button, -msg => "SGE montitor");
-#  if ($^O =~ m/MSWin/) { $sge_monitor_button -> configure(-state=>'disabled');}
-
 ### functionality removed temporarily. Too unstable, due to buggy Statistics::R module
 #  our $piranaR_button = $mod_buttons -> Button(-image=>$gif{pirana_r}, -state=>'normal', -width=>26, -height=>24, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
 #      create_window_piranaR ($mw, "", 0);
@@ -7798,35 +7794,35 @@ sub show_run_frame {
       -font=>$font_small, -background=>$entry_color, -state=>'normal'
   )->grid(-column=>2, -row=>1, -rowspan=>2, -columnspan=>2, -sticky=>'nwse', -ipadx=>0, -ipady=>0);
 
-  my $colorbox_width = 1;
-  if($os =~ m/MSWin/i) { $colorbox_width = 4;};
-  $colors_frame = $run_frame -> Frame (-background=>$bgcol)->grid(-column=>4, -row=>1, -rowspan=>1,-sticky=>'wn', -ipady=>0);
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>0, -background=>$darkred, -activebackground=>$lightred, -font=>'Arial 5', -command=> sub {
+  my $colorbox_width = 1; my $colorbox_height=0;
+  if($os =~ m/MSWin/i) { $colorbox_width = 4; $colorbox_height=2};
+  $colors_frame = $run_frame -> Frame (-background=>$bgcol)->grid(-column=>4, -row=>1, -rowspan=>1,-sticky=>'wns', -ipady=>0);
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$darkred, -activebackground=>$lightred, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightred);
     status();
-  })->grid(-column=>2, -row=>2,-rowspan=>1,-sticky=>'nw');
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$lighterblue, -activebackground=>$lightestblue, -font=>'Arial 5', -command=> sub {
+  })->grid(-column=>2, -row=>2,-rowspan=>1,-sticky=>'nwse');
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$lighterblue, -activebackground=>$lightestblue, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lighterblue);
     status();
-  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nw');
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$darkgreen, -activebackground=>$lightgreen, -font=>'Arial 5', -command=> sub {
+  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nwse');
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$darkgreen, -activebackground=>$lightgreen, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightgreen);
     status();
-  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nw');
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>'white', -activebackground=>'white', -font=>'Arial 5', -command=> sub {
+  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nwes');
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>'white', -activebackground=>'white', -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ("#FFFFFF");
     status();
-  })->grid(-column=>2, -row=>3,-rowspan=>1,-sticky=>'nw');
-    $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>1,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
+  })->grid(-column=>2, -row=>3,-rowspan=>1,-sticky=>'nwse');
+    $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>$colorbox_height,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($button);
     status();
-  })->grid(-column=>3, -row=>3,-rowspan=>1,-sticky=>'nw');
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>1, -background=>$darkyellow, -activebackground=>$lightyellow, -font=>'Arial 5', -command=> sub {
+  })->grid(-column=>3, -row=>3,-rowspan=>1,-sticky=>'nwse');
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$darkyellow, -activebackground=>$lightyellow, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightyellow);
     status();
