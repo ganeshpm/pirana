@@ -5,7 +5,7 @@ package pirana_modules::nm;
 use strict;
 require Exporter;
 use Cwd;
-use File::Basename;
+# use File::Basename;
 use File::stat;
 use Time::localtime;
 use pirana_modules::misc qw(count_numeric om_block_structure time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
@@ -50,7 +50,7 @@ sub nm_smart_search {
     if ($^O =~ m/MSWin/) {
 	@dirs = ("C:/Program Files", "C:/");
 	# if in portable mode from USB stick, add stick location as well
-	my $base_dir = &File::Basename::dirname(realpath($0));
+	my $base_dir = File::Spec -> rel2abs($0);
 	unless (substr($base_dir,0,2) =~ m/C\:/i) {
 	    push (@dirs, substr($base_dir,0,2)."/");
 	}
