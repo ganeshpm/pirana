@@ -15,7 +15,7 @@ for (i in 1:length(names(models))) {
     ps<-xpose.VPC(
             vpc.info = paste(npc_dir, "/vpc_results.csv", sep=""),
             vpctab = paste(npc_dir,"/vpctab",sep=""),
-            type="p",logy=T,
+            type="p",logy=F,
             PI.ci="area",
             PI.ci.med.arcol=rgb(0.1,0.1,0.1,1),
             PI.ci.med.lty="dotted",
