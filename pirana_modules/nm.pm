@@ -1846,8 +1846,10 @@ sub extract_from_model {
 	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
 	      if (($init =~ m/\$OMEGA/)&&($init =~ m/BLOCK/)) {
 		  $init =~ m/\((.*)\)/;
-		  my $block_ref = om_block_structure($1);
-		  @block = @$block_ref;
+		  unless ($init =~ m/SAME/i) {
+		      my $block_ref = om_block_structure($1);
+		      @block = @$block_ref;
+		  }
 	      }
 	      if ($init_clean =~ m/\d/) { # match numeric character
 		  $init =~ s/\s//g;
@@ -1891,6 +1893,7 @@ sub extract_from_model {
 		      for (my $n = 0; $n < $1; $n++) {
 			  push (@om_same, 1);
 		      }
+		      $last_om = 1;
 		  } 
 	      }
 	      if (($om_comment_flag == 1)&&($omega_area==1)) {
