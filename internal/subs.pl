@@ -1134,7 +1134,7 @@ sub even {
 sub create_nm_start_script {
 ### Purpose : Create a script (bat or sh) to start
 ### Compat  : W+L+
-  my ($script_file, $nm_version, $run_dir, $mod_ref, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref) = @_;
+  my ($script_file, $nm_version, $run_dir, $mod_ref, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref, $parallelization_text) = @_;
   my %clusters = %$clusters_ref;
   my %ssh = %$ssh_ref;
   my $nmfe_file;
@@ -1241,9 +1241,9 @@ sub create_nm_start_script {
       } else {
       # or normal nmfe NONMEM
 	  if (($os =~ m/MSWin/i)&&($ssh{connect_ssh} == 0)) {
-	      push (@script,"CALL ".$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n");
+	      push (@script,"CALL ".$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." ".$parallelization_text." \n");
 	  } else {
-	      push (@script, $qsub.$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." \n");
+	      push (@script, $qsub.$nm_start_script." ".$model.".".$setting{ext_ctl}." ".$model.".".$setting{ext_res}." ".$parallelization_text." \n");
 	  }
       }
 
@@ -4998,9 +4998,9 @@ sub print_note {
 }
 
 sub update_nmfe_run_script_area {
-    my ( $command_area, $script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref, $nm_versions_menu) = @_;
+    my ( $command_area, $script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref, $nm_versions_menu, $parallelization_text) = @_;
 #    build_nmfe_run_command ($script_file, $model_list, $nm_version_chosen, $method_chosen, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref);
-     my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), $model_list, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref);
+     my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_version_chosen, os_specific_path($cwd), $model_list, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref, $parallelization_text);
     my @script = @$script_ref;
     if ($command_area) {
 	$command_area -> delete("0.0", "end");
@@ -6502,27 +6502,56 @@ sub nmfe_run_window {
     my $nmfe_run_frame = $nmfe_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
    # my $nmfe_notebook = $nmfe_frame ->NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
    # my $nmfe_run_frame = $nmfe_notebook -> add("general", -label=>"General");
-    my $command_area_scrollbar = $nmfe_run_frame -> Scrollbar() -> grid (-column=>3,-row=>16,-sticky=>'nws');
-    my $command_area = $nmfe_run_frame -> Text (
-      -width=>60, -height=>8, -yscrollcommand => ['set' => $command_area_scrollbar],
-      -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none',
+    my $command_area = $nmfe_run_frame -> Scrolled ("Text", -scrollbars=>'se',
+      -width=>72, -height=>8, 
+      -background=>"#FFFFFF", -exportselection => 0, -wrap=>'none', 
       -border=>1, -font=>$font_normal, -relief=>'groove',
       -selectbackground=>'#606060', -highlightthickness =>0
-    ) -> grid(-row=>16,-column=>2,-columnspan=>2,-sticky=>"nwe");
-    $command_area_scrollbar -> configure(-command => ['yview' => $command_area]);
+    ) -> grid(-row=>16,-column=>2,-columnspan=>3,-sticky=>"nwe");
 
-    my @pnm_files = ["x.pnm"];
-    my $pnm_menu = $nmfe_run_frame -> Optionmenu(-options=>\@pnm_files,
-      -border=>$bbw,
+    my $parallelization = 0;
+    my $nm_version_chosen;
+    my $pnm_file_chosen;
+    my $pnm_nodes_chosen;
+    my @pnm_nodes = (2,3,4,5,6,7,8,10,12,16,24);
+    my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+	if ($parallelization == 1) {
+	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes=2]"' ;   
+	} else {
+	    $parallelization_text = "";
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
+    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
+
+    my $pnm_menu = $nmfe_run_frame -> Optionmenu(
+      -border=>$bbw, -variable=> \$pnm_file_chosen,
       -background=>$run_color,-activebackground=>$arun_color,
       -font=>$font_normal, -background=>"#c0c0c0",
       -activebackground=>"#a0a0a0", -command=> sub{
-    }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wns');
+	$parallelization = 1;
+	$parallelization_text = '"-parafile='.$pnm_file_chosen.'"';
+	my $pnm_nodes_chosen_clean = $pnm_nodes_chosen;
+	$pnm_nodes_chosen_clean =~ s/\snodes//;
+	unless ($pnm_file_chosen eq "off") {
+	    $parallelization_text .= ' "[nodes='.$pnm_nodes_chosen_clean.']"' ;
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
+    }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wnse');
+    foreach (@pnm_nodes) {$_ .= " nodes"};
+    my $pnm_nodes_menu = $nmfe_run_frame -> Optionmenu(-options=> [@pnm_nodes],
+      -border=>$bbw, -variable=> \$pnm_nodes_chosen,
+      -background=>$run_color,-activebackground=>$arun_color,
+      -font=>$font_normal, -background=>"#c0c0c0",
+      -activebackground=>"#a0a0a0", -command=> sub{
+	my $pnm_nodes_chosen_clean = $pnm_nodes_chosen;
+	$pnm_nodes_chosen_clean =~ s/\snodes//;
+	$parallelization_text = '"-parafile='.$pnm_file_chosen.'"';
+	unless ($pnm_file_chosen eq "off") {
+	    $parallelization_text .= ' "[nodes='.$pnm_nodes_chosen_clean.']"' ;
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
+    }) -> grid(-row=>12,-column=>4,-columnspan=>1,-sticky => 'wnse');
 
-    my $parallelization = 0;
-    my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallellization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
-    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
-    my $nm_version_chosen;
     my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
       -variable => \$nm_version_chosen,
       -border=>$bbw,
@@ -6532,7 +6561,12 @@ sub nmfe_run_window {
         if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
-	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
+	if ($parallelization == 1) {
+	    $parallelization_text = "-parafile=".$pnm_file_chosen;
+	} else {	
+	    $parallelization_text = "";
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
 	my $nm_ver;
 	if ($ssh{connect_ssh} == 0) {
 	    $nm_ver = $nm_vers{$nm_version_chosen};
@@ -6546,6 +6580,12 @@ sub nmfe_run_window {
 	    $pnm_menu -> configure (-state=>"disabled");
 	    $pnm_choose -> configure (-state=>"disabled");
 	}
+	@pnm_files = ("off");
+	push (@pnm_files, dir($cwd, "\.pnm")) ;  # pnm files in current folder
+	if (-d $nm_dirs{$nm_version_chosen}) {
+	    push (@pnm_files, dir($nm_dirs{$nm_version_chosen}."/run", "\.pnm")) ;  # pnm files in Nonmem folder
+	};
+	$pnm_menu -> configure (-options => [@pnm_files]);
     }) -> grid(-row=>3,-column=>2,-columnspan=>1,-sticky => 'wens');
 
     $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"e");
@@ -6553,7 +6593,8 @@ sub nmfe_run_window {
 
     $nmfe_run_frame -> Label (-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
     my $dir = $cwd;
-    my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50) -> grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>"w");
+    my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50
+	) -> grid(-row=>4,-column=>2,-columnspan=>3,-sticky=>"w");
     if ($clusters{run_on_sge} == 1) {
          $run_in_new_dir = 1;
     }
@@ -6569,7 +6610,7 @@ sub nmfe_run_window {
     ) -> grid(-row=>16,-column=>1,-sticky=>"ne");
     my $nmfe_run_script = $nmfe_run_frame -> Entry (-textvariable=> \$nmfe_run_command,
        -background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
-    ) -> grid(-row=>14,-column=>2,-columnspan=>2,-sticky=>"nwe");
+    ) -> grid(-row=>14,-column=>2,-columnspan=>3,-sticky=>"nwe");
     $nmfe_run_frame -> Label (-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>14,-column=>1,-sticky=>"ne");
 
@@ -6605,9 +6646,17 @@ sub nmfe_run_window {
     if ($nm_versions_menu) { 
 	$nm_versions_menu -> configure (-options => [@nm_installations] );
     } ;
-    
-     my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
- #   ssh_notebook_tab ($nmfe_ssh_frame, 1, \@params);
+
+    my @pnm_files = ("off");
+    push (@pnm_files, dir($cwd, "\.pnm")) ;  # pnm files in current folder
+    print $nm_dirs{$nm_version_chosen};
+    if (-d $nm_dirs{$nm_version_chosen}) {
+	print $nm_dirs{$nm_version_chosen};
+	push (@pnm_files, dir($nm_dirs{$nm_version_chosen}."/run", "\.pnm")) ;  # pnm files in Nonmem folder
+    }
+    $pnm_menu -> configure (-options => [@pnm_files] );
+
+    my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  
     $nmfe_run_frame -> Label (-text=>"Connect through:", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
@@ -6734,6 +6783,7 @@ sub nmfe_run_window {
     center_window($nmfe_run_window, $setting{center_window}); # center after adding frame (redhat)
 
     # update
+    $parallelization = 0;
     my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
     $nmfe_run_command = $run_command;
     update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
@@ -6821,7 +6871,7 @@ sub psn_run_window {
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
                                                    -font=>$font, -background=>"#f6f6e6", -state=>'normal'
-        )->grid(-column=>1, -row=>0, -columnspan=>2, -sticky=>'nwe');
+        )->grid(-column=>1, -row=>0, -columnspan=>3, -sticky=>'nwe');
  
    # Get PsN help information 
     my $psn_text_ref = file_to_text ($base_dir."/doc/psn/".$psn_option."_h.txt" );
