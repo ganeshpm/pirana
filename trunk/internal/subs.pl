@@ -730,46 +730,15 @@ sub sge_kill_jobs_window {
     return();
 }
 
-sub sge_get_job_cwd {
-    my $job = shift;
-    my $info_ref = qstat_get_specific_job_info ($job);
-    my @info = @$info_ref;
-    my $folder;
-    foreach my $line (@info) {
-	if (substr($line, 0, 3) eq "cwd") {
-	    $folder = $line;
-	    $folder =~ s/cwd://i;
-	    $folder =~ s/^\s+//; #remove leading spaces
-	}
-    }
-    return ($folder);
-}
-
 sub refresh_sge_monitor_ssh {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my %ssh = %$ssh_ref;
-    my $ssh_pre; 
-    my $ssh_post;
-    unless ($ssh{login} =~ m/(plink|putty)/i) {
-	    $ssh_post = "'";
-    }
-    if ($ssh{connect_ssh} == 1) {
-	$ssh_pre .= $ssh{login}.' ';	
-	if ($ssh{parameters} ne "") {
-	    $ssh_pre .= $ssh{parameters}.' ';
-	}
-	unless ($ssh{login} =~ m/(plink|putty)/i) {
-	    $ssh_pre .= "'";
-	}
-	if ($ssh{execute_before} ne "") {
-	    $ssh_pre .= $ssh{execute_before}.'; ';
-	}
-    }
+    my ($ssh_pre, $ssh_post) = ssh_get_pre_post ($ssh_ref); 
     # faster if all commands are performed in one SSH-call
     my $get_info_cmd = $ssh_pre.
-        'echo :P:running_jobs:; qstat -u "*" -s r;'.
-        'echo :P:scheduled_jobs:; qstat -u "*" -s p;'.
-        'echo :P:finished_jobs:; qstat -u "*" -s z;'.
+        'echo :P:running_jobs:; qstat -u *,* -s r;'.
+        'echo :P:scheduled_jobs:; qstat -u *,* -s p;'.
+        'echo :P:finished_jobs:; qstat -u *,* -s z;'.
         'echo :P:node_info:; qhost;'.
         'echo :P:node_use:; qstat -g c;echo :P:end:;'. $ssh_post;
     open (OUT, $get_info_cmd." |");
@@ -822,13 +791,13 @@ sub refresh_sge_monitor {
         return($res);
     } else {
         unless (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
-	    $node_info_ref = qstat_get_nodes_info ("qhost |");
+	    $node_info_ref = qstat_get_nodes_info ("qhost |", $ssh_ref);
 	    unless ( @$node_info_ref[0] =~ m/ARRAY/ ) {return (0) }; # SGE probably not installed, don't waste precious time
-	    $job_info_running_ref = qstat_get_nodes_info ("qstat -u '*' -s r |");
-	    $job_info_scheduled_ref = qstat_get_nodes_info ("qstat -u '*' -s p |");
-	    $job_info_finished_ref = qstat_get_nodes_info ("qstat -u '*' -s z |");
-	    $node_info_ref = qstat_get_nodes_info ("qhost |");
-	    $node_use_ref = qstat_get_nodes_info ("qstat -g c |");
+	    $job_info_running_ref = qstat_get_nodes_info ("qstat -u '*' -s r |", $ssh_ref);
+	    $job_info_scheduled_ref = qstat_get_nodes_info ("qstat -u '*' -s p |", $ssh_ref);
+	    $job_info_finished_ref = qstat_get_nodes_info ("qstat -u '*' -s z |", $ssh_ref);
+	    $node_info_ref = qstat_get_nodes_info ("qhost |", $ssh_ref);
+	    $node_use_ref = qstat_get_nodes_info ("qstat -g c |", $ssh_ref);
         } else {
 	    $job_info_running_ref = \@dum;
 	    $job_info_scheduled_ref = \@dum;
@@ -879,13 +848,13 @@ sub tk_table_from_model_output {
 	    my $tabsel = $jobs_hlist -> selectionGet ();
 	    my $job_n = @$tabsel[0];
 	    $job_n =~ s/job\_//;
-	    job_specific_information_window($job_n);
+	    job_specific_information_window($job_n, \%ssh);
         }],
         [Button => " Go to folder", -background=>$bgcol,-font=>$font_normal,  -command => sub{
 	    my $tabsel = $jobs_hlist -> selectionGet ();
 	    my $job_n = @$tabsel[0];
 	    $job_n =~ s/job\_//;
-	    my $folder = sge_get_job_cwd($job_n);
+	    my $folder = sge_get_job_cwd($job_n, \%ssh);
 	    if (chdir ($folder)) {
 		$cwd = $folder;
 		refresh_pirana($cwd);
@@ -895,7 +864,7 @@ sub tk_table_from_model_output {
 	    my $tabsel = $jobs_hlist -> selectionGet ();
 	    my $job_n = @$tabsel[0];
 	    $job_n =~ s/job\_//;
-	    my $folder = sge_get_job_cwd($job_n);
+	    my $folder = sge_get_job_cwd($job_n, \%ssh);
 	    if (chdir ($folder)) {
 		show_inter_window ($folder);
 	    } else {message ("Couldn't read folder. Check permissions.")}
@@ -907,7 +876,7 @@ sub tk_table_from_model_output {
 	    $job_n =~ s/job\_//;
 	    my $kill = message_yesno ("Are you sure you want to kill this job?", $mw, $bgcol, $font_normal);
 	    if ($kill == 1) {
-		stop_job ($job_n);
+		stop_job ($job_n, \%ssh);
 		sleep (1); # short delay to wait for SGE to kill the job (sometimes not enough...);
 		my $job_info_running_ref  = qstat_get_jobs_info ($ssh_add1."qstat -u '*' -s r ".$ssh_add2."|");
 		populate_jobs_hlist ($jobs_hlist, $job_info_running_ref);
@@ -948,7 +917,7 @@ sub tk_table_from_model_output {
 	    $job_n =~ s/job\_//;
 	    my $kill = message_yesno ("Are you sure you want to remove this job from the queue?", $mw, $bgcol, $font_normal);
 	    if ($kill == 1) {
-		stop_job ($job_n);
+		stop_job ($job_n, \%ssh);
 		sleep (1); # short delay to wait for SGE to kill the job (sometimes not enough...);
 		my $job_info_running_ref  = qstat_get_jobs_info ($ssh_add1."qstat -s r ".$ssh_add2."|");
 		populate_jobs_hlist ($jobs_hlist, $job_info_running_ref);
@@ -968,8 +937,8 @@ sub tk_table_from_model_output {
 }
 
 sub job_specific_information_window {
-    $job_n = shift;
-    my $arr_ref = qstat_get_specific_job_info ($job_n);
+    my ($job_n, $ssh_ref) = @_;
+    my $arr_ref = qstat_get_specific_job_info ($job_n, $ssh_ref);
     text_window($mw, join ("\n", @$arr_ref), "Job: ".$job_n, $font_fixed);
     return();
 }
@@ -8327,11 +8296,11 @@ sub show_inter_window {
       $inter_window -> OnDestroy ( sub{
         undef $inter_window; undef $inter_window_frame;
       });
-      $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-ipadx=>10,-ipady=>0);
+      $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-column=>0, -row=>0, -ipadx=>10,-ipady=>0, -sticky=>"nwse");
       our $inter_dirs;
-      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nsw");
+      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nswe");
       $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>1,-row=>1,-sticky=>"w");
-      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wns");
+      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wnse");
       @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
@@ -8387,7 +8356,7 @@ sub show_inter_window {
 
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
-      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -ipadx=>10, -sticky=>"nws");
+      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -columnspan=>7, -ipadx=>10, -sticky=>"nwse");
       $inter_intermed_frame -> Label (
         -text=>"\nNote: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the \$EST block.",
         -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
@@ -8403,7 +8372,7 @@ sub show_inter_window {
         -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
         -height     => 10, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 100, -background => 'white'
-    )->grid(-column => 1, -columnspan=>7,-row => 1, -sticky=>"wens");
+    )->grid(-column => 0, -columnspan=>7,-row => 1, -sticky=>"wens");
 
     my @headers_inter = (" ","Theta", "Grad." , "Desc.", "Omega", "Grad.", "Desc.", "Sigma", "Grad.", "Desc.","");
     my @headers_inter_widths = (24, 60, 60, 100, 60, 60, 100, 60, 60, 100, 100);
@@ -8412,7 +8381,7 @@ sub show_inter_window {
         -columns    => 11, -scrollbars => 'e', -highlightthickness => 0,
         -height     => 15, -border     => 0, -selectbackground => $pirana_orange,
         -width      => 100, -background => 'white',
-    )->grid(-column => 1, -columnspan=>1, -row => 1, -sticky=>"nw");
+    )->grid(-column => 0, -columnspan=>7, -row => 1, -sticky=>"wens");
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
         $grid -> columnWidth($x, @headers_widths[$x]);
@@ -8756,7 +8725,8 @@ sub update_inter_results_dialog {
   my $ext_file = get_current_ext ($dir);
   if ((-e $ext_file)&&(-s $ext_file > 0)) { # sometimes in NM7 with the EM methods, .ext files is not updated; in that case fall back on OUTPUT/INTER
       # try to extract from .ext, if created (NONMEM7+)
-      ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter_ext($ext_file);     
+#      ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter_ext($ext_file);     
+      ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
   } else {
       # try to extract from INTER, maybe NONMEM6 or earlier
       ($thetas_ref, $omegas_ref, $sigmas_ref) = extract_inter($dir);
