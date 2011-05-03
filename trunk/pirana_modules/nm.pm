@@ -8,7 +8,7 @@ use Cwd;
 # use File::Basename;
 use File::stat;
 use Time::localtime;
-use pirana_modules::misc qw(count_numeric om_block_structure time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
+use pirana_modules::misc qw(unique count_numeric om_block_structure time_format rm_spaces block_size generate_random_string get_max_length_in_array lcase replace_string_in_file dir ascend log10 is_float is_integer bin_mode rnd one_dir_up win_path unix_path extract_file_name tab2csv csv2tab read_dirs_win win_start);
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
@@ -59,25 +59,30 @@ sub nm_smart_search {
     }
 
     #1. In the allocated locations, find subfolders that start with nm or nonmem
-    my @loc = ("nm", "nonmem", "mod");
+    my @loc = ("nm", "nonmem", "mod", "NONMEM");
     foreach my $main_dir (@dirs) {
 	my $loc_ref = find_nm_possibles ($main_dir, \@loc);
 	push (@loc_dir, @$loc_ref);
     }
 
     #2. within the located folders, look if a nmfex file or nmfex.bat can be found
-    File::Find::find ( \&wanted, '/opt/NONMEM');
     my @nm_found;
-    foreach (@collect_nm) { 
-	if (unix_path($_) =~ m/\/util\//i) {
-	    push (@nm_found, $_);
+    foreach my $loc (@loc_dir) {
+	File::Find::find ( \&wanted, $loc);
+	foreach (@collect_nm) { 
+	    if (unix_path($_) =~ m/\/util\//i) {
+		push (@nm_found, one_dir_up(one_dir_up($_)));
+	    }
 	}
     }
-    return (\@nm_found);
+    @nm_found = sort (ascend @nm_found);
+    my $nm_found_ref = unique (\@nm_found);
+    return ($nm_found_ref);
 }
 
 sub wanted {
-    /^nmfe.?\z/s 
+#    /^nmfe.?\z/s 
+    /^nmfe*/s 
     && push(@collect_nm, $File::Find::name);
 }
 
