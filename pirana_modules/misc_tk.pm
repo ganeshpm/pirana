@@ -75,8 +75,10 @@ sub center_window {
 ### Purpose : Center dialog window
 ### Compat  : W+L+M-
 ### Notes   : Doesn't work properly on mac correct yet, and on Linux only Ubuntu nseems to get it right...
-    my $win = shift;
-    if ($^O =~ m/MSWin/i) {
+    my ($win, $center_window) = @_;
+    # On windows this works fine, but on Linux this has been reported to not work correctly
+    # so on linux this only works if you set the setting "center_window" to 1
+    if (($^O =~ m/MSWin/i)||($center_window == 1)) {
 	$win -> withdraw;   # Hide the window while we move it about
 	$win -> update;     # Make sure width and height are current
 	my $width = $win->width;
