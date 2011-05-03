@@ -89,6 +89,7 @@ sub center_window {
 	my $ypos = int(($win->screenheight - $height) / 2);
 	$win -> geometry("+$xpos+$ypos");
 	$win -> deiconify;  # Show the window again
+	$win -> raise();
     }
 }
 
