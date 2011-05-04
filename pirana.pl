@@ -1,6 +1,6 @@
 #    ----------------------------------------------------------------------
 #    Piraña
-#    Copyright Ron Keizer, 2007-2009, Amsterdam, the Netherlands
+#    Copyright Ron Keizer, Coen van Hasselt, 2007-2011, Uppsala/Amsterdam
 #    ----------------------------------------------------------------------
 #
 #    This file is part of Piraña.
