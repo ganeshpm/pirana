@@ -6506,7 +6506,7 @@ sub nmfe_run_window {
     my @pnm_nodes = (2,3,4,5,6,7,8,10,12,16,24);
     my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
 	if ($parallelization == 1) {
-	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes=2]"' ;   
+	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes]=2"' ;   
 	} else {
 	    $parallelization_text = "";
 	}
@@ -6523,7 +6523,7 @@ sub nmfe_run_window {
 	my $pnm_nodes_chosen_clean = $pnm_nodes_chosen;
 	$pnm_nodes_chosen_clean =~ s/\snodes//;
 	unless ($pnm_file_chosen eq "off") {
-	    $parallelization_text .= ' "[nodes='.$pnm_nodes_chosen_clean.']"' ;
+	    $parallelization_text .= ' "[nodes]='.$pnm_nodes_chosen_clean.'"' ;
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
     }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wnse');
@@ -6537,7 +6537,7 @@ sub nmfe_run_window {
 	$pnm_nodes_chosen_clean =~ s/\snodes//;
 	$parallelization_text = '"-parafile='.$pnm_file_chosen.'"';
 	unless ($pnm_file_chosen eq "off") {
-	    $parallelization_text .= ' "[nodes='.$pnm_nodes_chosen_clean.']"' ;
+	    $parallelization_text .= ' "[nodes]='.$pnm_nodes_chosen_clean.'"' ;
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
     }) -> grid(-row=>12,-column=>4,-columnspan=>1,-sticky => 'wnse');
