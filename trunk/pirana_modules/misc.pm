@@ -239,11 +239,18 @@ sub dir {
   return @dirfiles;
 }
 
-sub ascend
-### Purpose : Sort ascending
+sub ascend_num
+### Purpose : Sort ascending numerical
 ### Compat  : W+L+
 {
- $a <=> $b;
+   $a <=> $b;
+}
+
+sub ascend
+### Purpose : Sort ascending alphabetical
+### Compat  : W+L+
+{
+   $b cmp $a;
 }
 
 sub log10 {
@@ -464,6 +471,7 @@ sub linux_start {
     my $curr_dir = cwd();
     system (@_[0]." ".@_[1]." &");
 }
+
 sub darwin_start {
     my $curr_dir = cwd();
     unless ((@_[0] eq "")||(@_[0] eq " ")) {

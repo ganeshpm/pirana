@@ -1450,7 +1450,7 @@ sub R_correlation_plot_command {
       @corr_files = dir ($cwd."/pirana_temp", $model_id.".cor");
   } else {                   # NM 6 or lower: read correlation matrix from results file
        my $lst_file = $model_id.".".$setting{ext_res};
-       print $lst_file;
+#       print $lst_file;
        if (-e $lst_file) {
 	   my ($cov_ref, $inv_cov_ref, $corr_ref, $r_ref, $s_ref, $labels_ref) = get_cov_mat ($lst_file);
 	   my $available = output_matrix ($corr_ref, $labels_ref, "pirana_temp/".$model_id."_matrix_corr.csv");
@@ -1756,7 +1756,7 @@ sub output_matrix {
   my @cov = @$cov_ref;
   my @labels = @$labels_ref;
   if (@cov ==0) {return};
-  print "Writing ".$csv_file."\n";
+#  print "Writing ".$csv_file."\n";
   open (MAT, ">".$csv_file);
   $j=0;
   foreach (@cov) {
@@ -1875,7 +1875,7 @@ sub open_script_in_Rgui {
     print OUT "utils::file.edit('".$scriptfile."')\n";
     close (OUT);
     open (R_OUT, ">$scriptfile");
-    print $scriptfile;
+#    print $scriptfile;
     foreach my $line (@lines) {
 	if ($line =~ m/#PIRANA_OUT/) {
 	    my $script_output = $line;
@@ -2205,7 +2205,7 @@ sub project_info_window {
       $proj_record{$_} = $proj_rec_entry{$_} -> get();
     }
     $proj_record{"notes"} = $proj_notes_text -> get("0.0", "end");
-    db_insert_project_info (\%proj_record, "pirana.dir");print fastgetcwd();
+    db_insert_project_info (\%proj_record, "pirana.dir"); #print fastgetcwd();
     $project_window -> destroy();
   })->grid(-column=>2, -row=>31,-rowspan=>1, -sticky=>"w");
   $project_window_frame -> Button (-text=>'Cancel', -font=>$font, -width=>12, -background=>$button, -activebackground=>$abutton, -border=>$bbw, -command=>sub{
@@ -2806,7 +2806,6 @@ sub show_script_params {
     $help -> attach($descr_label, -msg => $script_desc);
     %defaults = %$defaults_ref;
     our %descr = %$descr_ref;
-    #print keys(%$descr_ref);
     $i=0; %p_entry;
     foreach (keys (%descr)) {
 	$edit_scripts_params -> Label (-text=>substr($_,0,15), -justify=>'left')->grid(-column=>1,-row=>$i+4,-sticky=>"w");
@@ -3150,7 +3149,6 @@ sub install_nonmem_nmq_window {
        system("start /wait ".win_path($base_dir."/internal/nmq_install_nm.bat"));
        # check if the perl file in the /test directory exists
        $perl_file = get_nmq_name ($target);
-       print $target."/test/".$perl_file.".pl";
        if (-e $target."/test/".$perl_file.".pl") {
 	   my $add_to_pirana = message_yesno ("NONMEM installations seems valid.\n Do you want to add this installation to Piraña?", $mw, $bgcol, $font_normal);
            if ($add_to_pirana == 1) {
@@ -3226,7 +3224,6 @@ sub install_nonmem_window {
         $nm_install_drive =~ s/://;
         $nm_to_dir = substr($nm_to_dir,1,length($nm_to_dir)-1);
         if ($def_optimize==1) {$def_optimize="y"} else {$def_optimize="n"};
-        # print "cdsetup6.bat ".$nm_install_drive." ".$nm_to_drive." ".$nm_to_dir." ".$setting{compiler}." ".$def_optimize." link";
         chdir($nm_install_drive.":\\");
         system "start /wait cdsetup6.bat ".$nm_install_drive." ".$nm_to_drive." ".$nm_to_dir." ".$setting{compiler}." ".$def_optimize." link";
         if (-e unix_path($nm_install_to."/util/nmfe6.bat")) {
@@ -4501,6 +4498,32 @@ sub update_run_results {
   return($sql_command);
 }
 
+sub dir_and_sort_model_files {
+### Purpose : Read folder for model files. Sort them, adhering also to the "Uppsala" convention of naming them "run1.mod", "run2.mod" etc instead of "run001.mod" etc.
+### Compat  : W+L+
+    my ($dir, $filter) = @_; 
+    my @models = dir ($dir, $filter);
+    my (@models_copy_num, @models_copy_other, @models_all);
+    foreach my $mod (@models) {
+	my $num = $mod;
+	$num =~ s/run//g;
+	$num =~ s/$filter//g;
+	if ($num =~ m/^\d+$/ ) { # only numerics left
+	    push (@models_copy_num, $num);
+	} else {
+	    push (@models_copy_other, $num);
+	}
+    }
+    @models_copy_num = sort {$a <=> $b} @models_copy_num;
+    foreach (@models_copy_num) {
+	$_ = "run".$_;
+    }
+    @models_copy_other = sort {$a cmp $b} @models_copy_other;
+    push (@models_all, @models_copy_num);
+    push (@models_all, @models_copy_other);
+    return (\@models_all);
+}
+
 sub read_curr_dir {
 ### Purpose : Get all model files and all directories in curr dir and put them in arrays
 ### Compat  : W+
@@ -4533,8 +4556,9 @@ sub read_curr_dir {
 	undef @ctl_files; undef @ctl_descr; undef @firstline; undef @dirs; undef @dirs2; undef @dir_files;
 	undef @ctl_copy; undef @ctl_descr_copy;
 	undef @file_type; undef @file_type_copy;  @ctl_descr="";
-	our @ctl_files = <*.$setting{ext_ctl}>;
-	#our @ctl_files = dir (@_[$load_dir], $setting{ext_ctl}); # faster;
+
+	my $ctl_files_ref = dir_and_sort_model_files ($cwd, '\.'.$setting{ext_ctl});
+	our @ctl_files = @$ctl_files_ref;
 
 	$i=0; if (@ctl_files>0) {
 	    foreach (@ctl_files) {
