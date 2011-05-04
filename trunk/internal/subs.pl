@@ -1,6 +1,6 @@
 #    ----------------------------------------------------------------------
 #    Piraña
-#    Copyright Ron Keizer, 2007-2010, Amsterdam, the Netherlands
+#    Copyright Ron Keizer, Coen van Hasselt, 2007-2011, Uppsala/Amsterdam
 #    ----------------------------------------------------------------------
 #
 #    This file is part of Piraña.
@@ -2682,7 +2682,9 @@ sub add_nm_inst {
 	if ($exists == 1) {
 	    message("A NONMEM installation with that name already exists in Piraña.\nPlease choose another name.")
 	} else {
-	    my $nm_ver = detect_nm_version($nm_dir);
+	    if ($nm_locality eq "local") {
+		$nm_ver = detect_nm_version($nm_dir);
+	    }
 	    $nm_ver =~ s/7\.2/72/; # the command is nmfe72
 	    $valid_nm = 0;
 	    if ($nm_locality eq "local") {
@@ -5069,24 +5071,15 @@ sub build_nmfe_run_command {
     my ($run_script, $script_ref) = create_nm_start_script ($script_file, $nm_inst, os_specific_path($cwd), \@files, $run_in_new_dir, $new_dirs_ref, $clusters_ref, $ssh_ref);
     if (@nm_installations > 0) {
 	my $command;
-	my $ssh_com = "";
+	my $ssh_com;
+	my ($ssh_pre, $ssh_post);
 	if ($ssh{connect_ssh} == 1) { # through SSH
-	    $ssh_com = $ssh{login}." ";
-	    if ($ssh{parameters} ne "") {
-		$ssh_com .= $ssh{parameters};
-	    }
-	    unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
-		$ssh_com .= "'";
-	    }
-	    if ($ssh{execute_before} ne "") {
-		$ssh_com .= $ssh{execute_before}."; ";
-	    }
+	    ($ssh_pre, $ssh_post) = ssh_get_pre_post (\%ssh);
 	    $dir = $dir_entry -> get();
 	    $dir =~ s/$ssh{local_folder}//gi;
             my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
 	    $dir_new =~ s/\s/\\ /g; # put in an escape character before each space
-	    $ssh_com .= "cd ".$dir_new."; ";
-	    $command = $ssh_com;
+	    $ssh_com = "cd ".$dir_new."; ";
 	    $cwd = $dir_entry -> get();
 	    my $l = length($cwd);
 	    unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
@@ -5094,6 +5087,7 @@ sub build_nmfe_run_command {
 		return();
 	    }
 	}
+	$command = $ssh_pre . $ssh_com;
 	if (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
 	    if ($run_in_background == 1) {
 		$command .= $run_script;
@@ -5106,11 +5100,7 @@ sub build_nmfe_run_command {
             }
             $command .= './'.$run_script; #only on linux
         }
-	if ($ssh{connect_ssh}==1) { 
-	    unless ($ssh{login} =~ m/plink/i) { # plink (PuTTY) doesn't like the quotes
-		$ssh_com .= "'";
-	    }
-	};
+	$command .= $ssh_post;
 	unless (($os =~ m/MSWin/ )||($run_in_background==0)) {$command .= " &"}
 	return ($run_script, $command, $script_ref);
     } else {
@@ -6511,7 +6501,7 @@ sub nmfe_run_window {
 
     my $parallelization = 0;
     my $nm_version_chosen;
-    my $pnm_file_chosen;
+    my $pnm_file_chosen = "off";
     my $pnm_nodes_chosen;
     my @pnm_nodes = (2,3,4,5,6,7,8,10,12,16,24);
     my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
@@ -6523,7 +6513,7 @@ sub nmfe_run_window {
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
     }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
 
-    my $pnm_menu = $nmfe_run_frame -> Optionmenu(
+    my $pnm_menu = $nmfe_run_frame -> Optionmenu( -options=> ["off"],
       -border=>$bbw, -variable=> \$pnm_file_chosen,
       -background=>$run_color,-activebackground=>$arun_color,
       -font=>$font_normal, -background=>"#c0c0c0",
