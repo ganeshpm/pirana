@@ -4508,7 +4508,7 @@ sub dir_and_sort_model_files {
 	my $num = $mod;
 	$num =~ s/run//g;
 	$num =~ s/$filter//g;
-	if ($num =~ m/^\d+$/ ) { # only numerics left
+	if ($num =~ m/^\d/ ) { # only numerics left
 	    push (@models_copy_num, $num);
 	} else {
 	    push (@models_copy_other, $num);
@@ -6528,14 +6528,6 @@ sub nmfe_run_window {
     my $pnm_file_chosen = "off";
     my $pnm_nodes_chosen;
     my @pnm_nodes = (2,3,4,5,6,7,8,10,12,16,24);
-    my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
-	if ($parallelization == 1) {
-	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes]=2"' ;   
-	} else {
-	    $parallelization_text = "";
-	}
-	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
-    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
 
     my $pnm_menu = $nmfe_run_frame -> Optionmenu( -options=> ["off"],
       -border=>$bbw, -variable=> \$pnm_file_chosen,
@@ -6565,6 +6557,18 @@ sub nmfe_run_window {
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
     }) -> grid(-row=>12,-column=>4,-columnspan=>1,-sticky => 'wnse');
+    my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+	if ($parallelization == 1) {
+	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes]=2"' ;   
+	    $pnm_menu -> configure (-state=>"normal");
+	    $pnm_nodes_menu -> configure (-state=>"normal");
+	} else {
+	    $parallelization_text = "";
+	    $pnm_menu -> configure (-state=>"disabled");
+	    $pnm_nodes_menu -> configure (-state=>"disabled");
+	}
+	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
+    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
 
     my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
       -variable => \$nm_version_chosen,
@@ -6588,10 +6592,14 @@ sub nmfe_run_window {
 	    $nm_ver = $nm_vers_cluster{$nm_version_chosen};
 	}
 	if ($nm_ver >= 72) {
-	    $pnm_menu -> configure (-state=>"normal");
+	    if ($parallelization == 1) {
+		$pnm_menu -> configure (-state=>"normal");
+		$pnm_nodes_menu -> configure (-state=>"normal");
+	    }
 	    $pnm_choose -> configure (-state=>"normal");
 	} else {
 	    $pnm_menu -> configure (-state=>"disabled");
+	    $pnm_nodes_menu -> configure (-state=>"disabled");
 	    $pnm_choose -> configure (-state=>"disabled");
 	}
 	@pnm_files = ("off");
@@ -6601,6 +6609,18 @@ sub nmfe_run_window {
 	};
 	$pnm_menu -> configure (-options => [@pnm_files]);
     }) -> grid(-row=>3,-column=>2,-columnspan=>1,-sticky => 'wens');
+
+    if ($nm_ver >= 72) {
+	if ($parallelization == 1) {
+	    $pnm_menu -> configure (-state=>"normal");
+	    $pnm_nodes_menu -> configure (-state=>"normal");
+	}
+	$pnm_choose -> configure (-state=>"normal");
+    } else {
+	$pnm_menu -> configure (-state=>"disabled");
+	$pnm_nodes_menu -> configure (-state=>"disabled");
+	$pnm_choose -> configure (-state=>"disabled");
+    }
 
     $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"e");
     $nmfe_run_frame -> Label (-text=>$file_string, -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>"w");
@@ -6663,9 +6683,7 @@ sub nmfe_run_window {
 
     my @pnm_files = ("off");
     push (@pnm_files, dir($cwd, "\.pnm")) ;  # pnm files in current folder
-    print $nm_dirs{$nm_version_chosen};
     if (-d $nm_dirs{$nm_version_chosen}) {
-	print $nm_dirs{$nm_version_chosen};
 	push (@pnm_files, dir($nm_dirs{$nm_version_chosen}."/run", "\.pnm")) ;  # pnm files in Nonmem folder
     }
     $pnm_menu -> configure (-options => [@pnm_files] );
