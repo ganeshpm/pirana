@@ -8,7 +8,19 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub filter_array {
+    my ($array_ref, $filter) = @_;
+    my @array1 = @$array_ref;
+    my @array2;
+    foreach my $row (@array1) {
+	if ($row =~ m/$filter/i) {
+	    push (@array2, $row);
+	}
+    }
+    return (\@array2);
+}
 
 sub sort_table {
     my ($table_ref, $order_col, $index) = @_;
@@ -230,7 +242,7 @@ sub dir {
   opendir ( DIR, $dir) || die "Error in opening dir $dir\n";
   while( (my $filename = readdir(DIR))){
     my $l = length($filename);
-    if ($filename =~ m/$filter/i) {
+    if (($filename =~ m/$filter/i)||($filter eq "")) {
       push (@dirfiles, $filename);
     }
   }

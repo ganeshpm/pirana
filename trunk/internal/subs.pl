@@ -4502,7 +4502,17 @@ sub dir_and_sort_model_files {
 ### Purpose : Read folder for model files. Sort them, adhering also to the "Uppsala" convention of naming them "run1.mod", "run2.mod" etc instead of "run001.mod" etc.
 ### Compat  : W+L+
     my ($dir, $filter) = @_; 
-    my @models = dir ($dir, $filter);
+    my @files1 = dir ($dir, "");
+    my @files;
+    foreach (@files1) {
+	unless (($_ eq "\.")||($_ eq "\.\.")) {
+	    push (@files, $_);
+	}
+    }
+    my @files = sort { $a cmp $b} @files;
+    my $models_ref = filter_array(\@files, $filter); 
+    my @models = @$models_ref;
+
     my (@models_copy_num, @models_copy_other, @models_all);
     foreach my $mod (@models) {
 	my $num = $mod;
@@ -4521,7 +4531,7 @@ sub dir_and_sort_model_files {
     @models_copy_other = sort {$a cmp $b} @models_copy_other;
     push (@models_all, @models_copy_num);
     push (@models_all, @models_copy_other);
-    return (\@models_all);
+    return (\@models_all, \@files);
 }
 
 sub read_curr_dir {
@@ -4533,7 +4543,12 @@ sub read_curr_dir {
     status ("Checking db file...");
     check_db_file_correct ("pirana.dir");
 
-    my @bat_remove = dir($cwd,"pirana_start");
+    status ("Reading all files...");
+    my ($ctl_files_ref, $all_files_ref) = dir_and_sort_model_files ($cwd, '\.'.$setting{ext_ctl});
+    our @ctl_files = @$ctl_files_ref;
+    our @all_files = @$all_files_ref;
+
+    my @bat_remove = @{filter_array(\@all_files, 'pirana_start')} ;
     foreach(@bat_remove) {unlink ($_)};
 
     # arguments (dir, filter, reload?)
@@ -4546,19 +4561,15 @@ sub read_curr_dir {
 	chdir @_[$load_dir];
 
 	status ("Reading output files...");
-
 	our %models_descr = {}; our %models_refmod = {};
 	our %file_type = {}; our %models_notes = {};  our %models_colors = {};
 	our %models_dates = {}; our %models_dates_db = {}; our %models_resdates_db = {}; our %models_resdates = {};
 	our %models_ofv = {}; our %models_suc = {}; our %models_bnd = {}; our %models_cov = {}; our %models_sig = {};
 
 	status ("Looking for new model files and results...");
-	undef @ctl_files; undef @ctl_descr; undef @firstline; undef @dirs; undef @dirs2; undef @dir_files;
+	undef @dirs; my @firstline; undef @dirs2; undef @dir_files;
 	undef @ctl_copy; undef @ctl_descr_copy;
-	undef @file_type; undef @file_type_copy;  @ctl_descr="";
-
-	my $ctl_files_ref = dir_and_sort_model_files ($cwd, '\.'.$setting{ext_ctl});
-	our @ctl_files = @$ctl_files_ref;
+	undef @file_type; undef @file_type_copy;  undef @ctl_descr;
 
 	$i=0; if (@ctl_files>0) {
 	    foreach (@ctl_files) {
@@ -4614,9 +4625,8 @@ sub read_curr_dir {
 	# Get directories in the current folder
 	status ("Reading folders...");
 	our @dirs;
-	our @dir_files = <*>;
 #    our @dir_files = dir ("."); # is faster than a regular <*>  ?
-	foreach(@dir_files) {
+	foreach(@all_files) {
 	    if (-d $_) {
 #		unless ($_ =~ /\./) {
 		    push (@dirs, "dir-".$_);
@@ -4786,6 +4796,8 @@ sub populate_models_hlist {
 	   my $dofv_temp   = $ofv_diff;
 	   my $succ_temp; my $cov_temp; my $bnd_temp; my $sig_temp;
 	   my @meth = split (",",$method_temp);
+	   my $descr = $models_descr{$runno};
+	   chomp($descr);
 	   if ($condensed == 0) {
 	       foreach (@meth) { # put the SUUCCESSFUL MINIMIZATION from FO methods on the correct line
 		   if ($_ =~ m/FO/) {
@@ -4808,6 +4820,7 @@ sub populate_models_hlist {
 	       $ofv_temp =~ s/\,/\n/g;
 	       $dofv_temp =~ s/\,/\n/g;
  	   } else {
+	       $descr =~ s/[\r\n]/, /g; 
 	       $method_temp = return_last ($method_temp);
 	       $ofv_temp = return_last ($ofv_temp);
 	       $dofv_temp = return_last ($dofv_temp);
@@ -4822,7 +4835,7 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 0, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $runno_text.$add_condensed, -style=>$style);
           $models_hlist -> itemCreate($i, 2, -text => $models_refmod{$runno}, -style=>$style);
-          $models_hlist -> itemCreate($i, 3, -text => $models_descr{$runno}, -style=>$style );
+          $models_hlist -> itemCreate($i, 3, -text => $descr, -style=>$style );
           $models_hlist -> itemCreate($i, 4, -text => $method_temp, -style=>$style);
           $models_hlist -> itemCreate($i, 5, -text => $dataset_temp, -style=>$style);
           $models_hlist -> itemCreate($i, 6, -text => $ofv_temp, -style=>$style);
@@ -4859,13 +4872,15 @@ sub read_tab_files {
     }
     my $flag = 0;
     if (chdir ($dir)) {
+	my @tab_all = @all_files;
 	if ($show_data eq "tab") {
-	    my @tab_files = dir ("./", '\.'.$setting{ext_tab}) ;
-	    my @xp_tabs1  = dir ("./", 'sdtab') ;
-	    push (@xp_tabs1, dir ("./", 'patab')) ;
-	    push (@xp_tabs1, dir ("./", 'catab')) ;
-	    push (@xp_tabs1, dir ("./", 'vpctab'));
-	    push (@xp_tabs1, dir ("./", 'npctab'));
+	    my @tab_files = @{filter_array(\@tab_all, '\.'.$setting{ext_tab})} ;
+	    my @xp_tabs1  = @{filter_array(\@tab_all, 'sdtab')} ;
+	    push (@xp_tabs1, @{filter_array(\@tab_all, 'patab')}) ;
+	    push (@xp_tabs1, @{filter_array(\@tab_all, 'catab')}) ;
+	    push (@xp_tabs1, @{filter_array(\@tab_all, 'cotab')}) ;
+	    push (@xp_tabs1, @{filter_array(\@tab_all, 'vpctab')}) ;
+	    push (@xp_tabs1, @{filter_array(\@tab_all, 'npctab')}) ;
 	    for ($i=0; $i<@xp_tabs1; $i++) {
 		unless (grep {$_ eq @xp_tabs1[$i]} @tab_files) {
 		    push (@xp_tabs, @xp_tabs1[$i] );
@@ -4888,13 +4903,13 @@ sub read_tab_files {
 	    $flag = 1;
 	}
 	if ($show_data eq "csv") {
-	    my @csv_files = <*.$setting{ext_csv}>;
+	    my @csv_files = @{filter_array(\@all_files, '\.'.$setting{ext_csv})} ;
 	    @tabcsv_files = @csv_files;
 	    @tabcsv_files_loc = @csv_files;
 	    $flag = 1;
 	}
 	if ($show_data eq "xpose") {
-	    my @xp_tabs = <??tab*>;
+	    my @xp_tabs  = @{filter_array(\@all_files, "..tab")} ;
 	    my @xp_tabsnos = ();
 	    foreach(@xp_tabs) {
 		$no = $_;
@@ -4904,7 +4919,6 @@ sub read_tab_files {
 		$no =~ s/cotab//i;
 		$no =~ s/cwtab//i;
 		@test = grep (/$no/, @xp_tabsnos);
-		#print int(@test)."\n";
 		unless (int(@test)>0) {
 		    unless (($no =~ m/.$setting{ext_tab}/ig)||($no =~ m/\.csv/ig)||($no =~ m/\.deriv/ig)||($no =~ m/\.est/ig)) {
 			push (@xp_tabsnos, $no);
@@ -4915,13 +4929,12 @@ sub read_tab_files {
 	    $flag = 1;
 	}
 	if ($show_data eq "R") {
-	    my @R_files = <*\.[RSrs]>;
+	    my @R_files  = @{filter_array(\@all_files, '\.[RSrs]')} ;
 	    @tabcsv_files = @R_files;
 	    @tabcsv_files_loc = @R_files;
 	    $flag = 1;
 	}
 	if ($show_data eq "*") {
-	    my @all_files = <*>;
 	    foreach (@all_files) {
 		unless (-d $_) {
 		    push(@tabcsv_files, $_);
@@ -4931,7 +4944,7 @@ sub read_tab_files {
 	    $flag = 1;
 	}
 	if ($flag == 0) { # not the default file-types, but user supplied
-	    my @all_files = <*.$show_data>;
+	    my @all_files = @{filter_array(\@all_files, $show_data)};
 	    foreach (@all_files) {
 		unless (-d $_) {
 		    push(@tabcsv_files, $_);
@@ -5606,7 +5619,7 @@ sub copy_dir_res {
         $i++;
       }
       $copy_dir_res_window -> destroy;
-      read_curr_dir($cwd,$filter,1);
+      read_curr_dir($cwd, $filter, 1);
       return();
     })->grid(-row=>7,-column=>3,-sticky=>'nwse');
     $copy_dir_res_frame -> Button (-text=>"Cancel", -width=>10, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub {
@@ -7367,8 +7380,6 @@ sub frame_models_show {
         -command    => sub { models_hlist_action () },
          -browsecmd   => sub{
            my @sel = $models_hlist -> selectionGet ();
-#           update_psn_lst_param ();
-#           if (($run_method eq "NONMEM")&&(@file_type_copy[@sel[0]]==2)) { update_new_dir(@ctl_show[@sel])};
           # get note from SQL
 	   if (@file_type_copy[@sel[0]] < 2) {
 	       $save_note_button -> configure (-state=>'disabled');
