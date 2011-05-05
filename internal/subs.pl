@@ -4513,20 +4513,30 @@ sub dir_and_sort_model_files {
     my $models_ref = filter_array(\@files, $filter); 
     my @models = @$models_ref;
 
-    my (@models_copy_num, @models_copy_other, @models_all);
+    my (@models_copy_num, @models_copy_other, @models_all, %add_run);
+    my $add_run_flag;
     foreach my $mod (@models) {
 	my $num = $mod;
+	$add_run_flag = 0;
+	if ($num =~ m/run/) {
+	    $add_run_flag = 1;
+	}
 	$num =~ s/run//g;
 	$num =~ s/$filter//g;
 	if ($num =~ m/^\d/ ) { # only numerics left
 	    push (@models_copy_num, $num);
 	} else {
-	    push (@models_copy_other, $num);
+	    unless ($num =~ m/\#/) {
+		push (@models_copy_other, $num);
+	    }
+	}
+        if ($add_run_flag == 1) {
+	    $add_run{$num} = "run";
 	}
     }
     @models_copy_num = sort {$a <=> $b} @models_copy_num;
     foreach (@models_copy_num) {
-	$_ = "run".$_;
+	$_ = $add_run{$_}.$_;
     }
     @models_copy_other = sort {$a cmp $b} @models_copy_other;
     push (@models_all, @models_copy_num);
