@@ -1767,6 +1767,8 @@ sub extract_from_model {
       }
       if ((substr(@ctl_lines[$j], 0,2) eq ";;")&&(@ctl_lines[$j] =~ m/description:/i)) {  # Census uses 'Parent', but you can also use anything containing Ref
 	  $descr_area = 1;
+	  @ctl_lines[$j] =~ s/2\.//;
+	  $description = "" ; # reset description as it is supplied in the PsN run record
       }
       if ($descr_area == 1) {
 	  if ((@ctl_lines[$j] =~ m/;;/)&&(@ctl_lines[$j] =~ m/(based on:|label:|structural model:|covariate model:|inter-individual variability:|inter-occasion variability:|residual variability:|estimation:)/i)) {
@@ -1787,6 +1789,7 @@ sub extract_from_model {
       }
     }
   }
+  $description =~ s/^\s+//; #remove leading spaces
   if ($what eq "all") {
     # loop through model file to extract parameter names
       my $theta_area=0; my $omega_area=0; my $sigma_area=0; my $prior=0;
