@@ -117,11 +117,10 @@ foreach (@ARGV) {
 }
 if ($portable_mode == 0) {
     if ($os =~ m/MSWin/i) {
-	if ($ENV{APPDATA} eq "") {
+	if ($ENV{USERPROFILE} eq "") {
 	    our $home_dir = $base_dir;
 	} else {
-	    our $home_dir = $ENV{USERPROFILE}."/Application Data/pirana";
-	    unless (-d $home_dir) { $home_dir = $base_dir };
+	    our $home_dir = $ENV{USERPROFILE}."/.pirana";
 	}
     } else { # Linux
 	our $home_dir = $ENV{HOME}."/.pirana";
