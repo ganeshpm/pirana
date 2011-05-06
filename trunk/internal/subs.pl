@@ -3488,7 +3488,11 @@ sub setup_ini_dir {
     @txt_comm = ("commands_before.txt", "commands_after.txt");
     foreach my $ini (@dir) {
 	unless (-e $home_dir."/ini/".$ini) {
-	    copy ($base_dir."/ini_defaults/".$ini, $home_dir."/ini/".$ini);
+	    if (-e $base_dir."/ini/".$ini) { # check if ini files from portable use are present.
+		copy ($base_dir."/ini/".$ini, $home_dir."/ini/".$ini);
+	    } else {
+		copy ($base_dir."/ini_defaults/".$ini, $home_dir."/ini/".$ini);
+	    }
 	}
     }
     foreach my $ini (@check_inis) {
