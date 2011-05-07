@@ -2410,7 +2410,7 @@ sub grid_to_csv {
     }
     close OUT;
     if (-e $csv_file) {
-	if (-e $software{spreadsheet}) {
+	if ((-e $software{spreadsheet})||($^O =~ m/darwin/i)) {
 	    start_command($software{spreadsheet},'"'.$csv_file.'"');
 	} else {message("Spreadsheet application not found. Please check settings.")};
     }
@@ -2419,8 +2419,17 @@ sub grid_to_csv {
 sub grid_to_latex {
     my ($grid, $csv_file, $headers_ref, $nrow, $ncol) = @_;
     my @headers = @$headers_ref;
+    pop (@headers);
     my $tex = "\\begin{tabular}[t]{*{".$ncol."}{l}}\n";
-    for ($j = 1; $j <= $nrow; $j++) {
+    
+    for (my $i = 0; $i < int(@headers); $i++) {
+	$tex .= @headers[$i];
+	unless ($i == (@headers-1)) {
+	    $tex .= " & ";
+	}
+    } 
+    $tex .= " \\\\ \n";
+    for (my $j = 1; $j <= $nrow; $j++) {
 	if ($grid -> infoExists($j)) {
 	for ($i = 0; $i < $ncol; $i++) {
 	    if ($grid -> itemExists($j, $i)) {
@@ -2437,7 +2446,11 @@ sub grid_to_latex {
 	$tex .= " \\\\ \n";
     }
     $tex .= "\\end{tabular}\n";
-    text_window($mw, $tex, "LaTeX code");    
+    unless (-d $cwd."/pirana_temp") { mkdir ($cwd."/pirana_temp") };
+    text_to_file (\$tex, $cwd."/par_estimates.tmp");
+    if (-e $cwd."/par_estimates.tmp") {
+	edit_model ($cwd."/par_estimates.tmp");
+    }    
 }
 
 sub show_estim_multiple {
@@ -2485,7 +2498,7 @@ sub show_estim_multiple {
     my $sigma_names_ref = $mod{si_descr}; my @sigma_names = @$sigma_names_ref;
     my $max_th_names = int(@theta_names);
 
-    my $cols = int(@lst) + 1; # calculate no of columns in window
+    my $cols = int(@lst) + 2; # calculate no of columns in window
 
     unless ($estim_window) {
 	our $estim_window = $mw -> Toplevel();
@@ -2533,11 +2546,11 @@ sub show_estim_multiple {
 	    ['All Files','*',  ], ];
 	my $csv_file_choose = $mw-> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
 	unless ($csv_file_choose eq "") {
-	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2), $cols );
+	    grid_to_csv($estim_grid, $csv_file_choose, \@estim_grid_headers, ($max_th+$max_om+$max_si+2+2), $cols );
 	}
     })->grid(-column=>1, -row=>3, -sticky=>"nwse");
     $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
-	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int($max_th)+int($max_om)+int($max_si)), $cols);
+	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int($max_th)+int($max_om)+int($max_si)+2+2), $cols);
     })->grid(-column=>2, -row=>3, -sticky=>"nwse");
     
 # First create the correct number of entries for theta/om/si
@@ -2571,6 +2584,7 @@ sub show_estim_multiple {
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
 	}
      }
+    $total_rows = $max_th+$max_om+2+$i+$prerows;
     my $col = 2;
     foreach my $lst_temp (@lst) {
 	my $th_ref = shift(@th_all);
