@@ -4803,6 +4803,7 @@ sub populate_models_hlist {
 	   for ($sp=0; $sp<$model_indent{$runno}; $sp++) {$runno_text .= "   "};
 	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
 	   $runno_text .= $runno;
+	   $runno_text =~ s/run//i;
 	   my $method_temp = $models_method{$runno};
 	   my $dataset_temp = extract_file_name ($models_dataset{$runno});
 	   
@@ -5782,9 +5783,9 @@ sub frame_tab_show {
   $tab_frame_info = $mw -> Frame(-background=>$bgcol
   )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
   our $tab_file_info = $tab_frame_info -> Text (
-      -width=>24, -relief=>'groove', -border=>1, -height=>4,
-      -font=>$font_fixed_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>1, -row=>1, -sticky=>'nwes', -ipadx=>0, -ipady=>0);
+      -width=>24, -relief=>'groove', -border=>2, -height=>4,
+      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+  )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
       my $tabsel = $tab_hlist -> selectionGet ();
       my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
@@ -6275,7 +6276,7 @@ sub show_links {
   # Filter
   our $filter = "";
   $frame_command -> Label(-text=>"   Filter:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -sticky=>'ew');
-  $filter_entry = $frame_command -> Entry(-width=>12,-textvariable=>\$filter, -background=>$white, -border=>2, -relief=>'groove' )
+  $filter_entry = $frame_command -> Entry(-width=>12, -textvariable=>\$filter, -background=>$white, -border=>2, -relief=>'groove' )
     -> grid(-row=>1,-column=>6,-columnspan=>2, -sticky => 'we',-ipadx=>1);
   $filter_entry -> bind('<Any-KeyPress>' => sub {
      if (length($filter)>0) {$filter_entry -> configure(-background=>$lightyellow )} else {$filter_entry -> configure(-background=>$white)};
@@ -6286,7 +6287,7 @@ sub show_links {
   our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
 						-arrowimage => $gif{down}, -border=>1, -relief=>"groove",
-						-choices => [ qw/tab csv xpose R pdf phi pnm */ ],
+						-choices => [ qw/tab csv R * pdf phi ext cov coi pnm xpose sdtab mod lst/ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
   }) -> grid(-row=>2, -column=>1, -columnspan => 10, -sticky=>"nwse");
@@ -7447,7 +7448,7 @@ sub frame_models_show {
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
 $mw -> gridColumnconfigure(2, -weight => 100, -minsize=>580);
-$mw -> gridColumnconfigure(3, -weight => 1, -minsize=>150);
+$mw -> gridColumnconfigure(3, -weight => 1, -minsize=>180);
 $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
 $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);

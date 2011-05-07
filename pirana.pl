@@ -236,9 +236,9 @@ our $font_bold =  $font_family.' '.$setting{font_size}.' bold';
 # I don't know why this is necessary, but the following line prevents X-window tunneling from minimizing the window...
 $mw -> Label (-text=> "                                                       ", -background=>$bgcol) -> grid (-row=>2, -column=>1,-columnspan=>2);
 
-our $nrows = 28;
-if ($setting{n_rows} > 28) {
-  our $nrows = 28;
+our $nrows = 30;
+if ($setting{n_rows} > 30) {
+  our $nrows = 30;
 }
 our $models_hlist_width=112;
 our $help = $mw->Balloon();
