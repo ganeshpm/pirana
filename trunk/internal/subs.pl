@@ -2261,6 +2261,7 @@ sub show_estim_window {
     my $cols = ((floor(@theta/10)+1)*3)-1; # calculate no of columns in window
     if (int(@om) > $cols) {$cols = int(@om+1)};
     if (int(@si) > $cols) {$cols = int(@si+1)};
+    my $prerows = 2;
 
     unless ($estim_window) {
 	our $estim_window = $mw -> Toplevel();
@@ -2310,41 +2311,41 @@ sub show_estim_window {
     })->grid(-column=>2, -row=>3, -sticky=>"nwse");
 
 
-    $i = 3; $j=1; my $max_i = 1;
+    my $i = 1; my $j=1; my $max_i = 1;
     if (@th>0) {
 	$estim_window ->configure (-title=>$lstfile." (".$last_method.")");
 	$estim_grid -> delete("all");
 
 # OFV
 	$estim_grid -> add(1);
-	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right);
+	$estim_grid -> itemCreate(1, 0, -text => "OFV", -style=>$header_right2);
 	$estim_grid -> itemCreate(1, 1, -text => "Objective function value", -style=>$align_left);
 	$estim_grid -> itemCreate(1, 2, -text => $ofv_val, -style=>$estim_style_red);
 	$estim_grid -> add(2);
-	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$align_left);
+	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 
 	foreach my $th (@th) {
-	    $estim_grid -> add($i);
-	    $estim_grid -> itemCreate($i, 0, -text => "TH ".$i, -style=>$header_right);
+	    $estim_grid -> add($i+$prerows);
+	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "TH ".$i, -style=>$header_right2);
 	    my $th_text = rnd($th,4);
 	    my $th_rse = "";
 	    if (($th!=0)&&(@th_se[$i-1]!=0)) {
 		$th_rse = " (".rnd((@th_se[$i-1]/$th*100),3)."%)";
 	    }
-	    $estim_grid -> itemCreate($i, 2, -text => $th_text, -style=>$estim_style);
-	    $estim_grid -> itemCreate($i, 3, -text => $th_rse, -style=>$estim_style_light);
-	    $estim_grid -> itemCreate($i, 1, -text => @theta_names[$i-1], -style=>$align_left);
+	    $estim_grid -> itemCreate($i+$prerows, 2, -text => $th_text, -style=>$estim_style);
+	    $estim_grid -> itemCreate($i+$prerows, 3, -text => $th_rse, -style=>$estim_style_light);
+	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @theta_names[$i-1], -style=>$align_left);
 	    $i++;
 	}
 	if ($max_i > $i) {$i = $max_i};
-	$estim_grid -> add($i);
-	$estim_grid -> itemCreate($i, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> add($i+$prerows);
+	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $om (@om) {
 	    @om_x = @$om; $j = 1;
-	    $estim_grid -> add($i);
-	    $estim_grid -> itemCreate($i, 0, -text => "OM ".$cnt, -style=>$header_right);
-	    $estim_grid -> itemCreate($i, 1, -text => @omega_names[$cnt-1], -style=>$align_left);
+	    $estim_grid -> add($i+$prerows);
+	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "OM ".$cnt, -style=>$header_right2);
+	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @omega_names[$cnt-1], -style=>$align_left);
 	    foreach $om_cov (@om_x) {
 		if ($om_cov == 0) {$style = $estim_style_light} else {$style = $estim_style};
 		my $om_text = rnd ($om_cov,4);
@@ -2356,19 +2357,19 @@ sub show_estim_window {
 #              $estim_grid -> itemCreate($i, $j+2, -text => "(".rnd((@om_cov_se[$cnt-1]/$om_cov*100),3)."%)", -style=>$estim_style_se);
 		    }
 		}
-		$estim_grid -> itemCreate($i, $j+1, -text => $om_text, -style=>$style);
+		$estim_grid -> itemCreate($i+$prerows, $j+1, -text => $om_text, -style=>$style);
 		$j++;
 	    }
 	    $i++; $cnt++;
 	}
-	$estim_grid -> add($i);
-	$estim_grid -> itemCreate($i, 0, -text => " ", -style=>$header_right);
+	$estim_grid -> add($i+$prerows);
+	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $si (@si) {
 	    @si_x = @$si; $j = 1;
-	    $estim_grid -> add($i);
-	    $estim_grid -> itemCreate($i, 0, -text => "SI ".$cnt, -style=>$header_right);
-	    $estim_grid -> itemCreate($i, 1, -text => @sigma_names[$cnt-1], -style=>$align_left);
+	    $estim_grid -> add($i+$prerows);
+	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "SI ".$cnt, -style=>$header_right2);
+	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @sigma_names[$cnt-1], -style=>$align_left);
 	    foreach $si_cov (@si_x) {
 		if ($si_cov == 0) {$style = $estim_style_light} else {$style = $estim_style};
 		my $si_text = rnd($si_cov,4);
@@ -2379,7 +2380,7 @@ sub show_estim_window {
 			$si_text .= "(".rnd((@si_cov_se[$cnt-1]/$si_cov*100),3)."%)";
 		    }
 		}
-		$estim_grid -> itemCreate($i, $j+1, -text => $si_text, -style=>$estim_style);
+		$estim_grid -> itemCreate($i+$prerows, $j+1, -text => $si_text, -style=>$estim_style);
 		$j++;
 	    }
 	    $i++; $cnt++;
@@ -3550,9 +3551,9 @@ sub renew_pirana {
     if ($frame_links) {$frame_links -> gridForget()};
     if ($frame_status) {$frame_status -> gridForget()};
     frame_models_show(1);
-    frame_tab_show(1);
     show_run_frame();
     frame_statusbar(1);
+    frame_tab_show(1);
     project_buttons_show();
     our $project_optionmenu = project_optionmenu ();
     refresh_pirana ($cwd, $filter, 1);
@@ -3580,10 +3581,10 @@ sub refresh_pirana {
   $dir_entry -> configure(-textvariable=>$cwd);
   $dir_entry -> update;
 #  if ($frame_links) {$frame_links -> destroy()};
-  show_links ();
   read_curr_dir (@_[0], $filter, 1);
   status ("Reading table files...");
   tab_dir(@_[0]);
+  show_links ();
   populate_tab_hlist ($tab_hlist);
   status ();
 }
@@ -5741,7 +5742,9 @@ sub frame_tab_show {
   
   #table file listbox
   #our $tab_hlist_color = "#f5FAFF";
-  our $tab_hlist = $mw ->Scrolled('HList',
+ # our $tab_frame = $mw -> Frame(-background=>"#000000", -padx=>0, -pady=>0
+ #  ) ->grid(-row=>3, -column=>3, -columnspan=>1, -rowspan=>1, -ipadx=>0,-ipady=>0,-sticky=>'wnse');
+  our $tab_hlist = $mw -> Scrolled('HList',
         -head       => 0,
         -selectmode => "extended",
         -highlightthickness => 0,
@@ -5749,10 +5752,10 @@ sub frame_tab_show {
         -columns    => 1, # int(@models_hlist_headers),
         -scrollbars => 'se',
         -width      => 20,
-        -height     => $nrows,
+        -height     => $nrows+4,
         -border     => 1,
-        -pady       => $hlist_pady,
-        -padx       => 0,
+   #     -pady       => $hlist_pady,
+   #     -padx       => 0,
         -background => $tab_hlist_color,
         -selectbackground => $pirana_orange,
         -font       => $font_normal,
@@ -5786,28 +5789,27 @@ sub frame_tab_show {
 #            update_text_box(\$tab_file_info, (-s $tab_file)." kB");
 #            update_text_box(\$tab_file_mod, $mod_time);
         }
-      )->grid(-column => 3, -columnspan=>1, -row => 3, -rowspan=>1, -sticky=>'nswe', -ipady=>0);
+      )->grid(-column => 3, -columnspan=>2, -row => 3, -rowspan=>1, -sticky=>'nswe', -ipadx=>0, -ipady=>0);
     $help->attach($tab_hlist, -msg => "Data files\n*\\ = in alternate directory");
     my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled);
     bind_tab_menu(\@tab_menu_enabled);
   
   our $show_data="tab";
-  my $tab_frame = $mw -> Frame (-background=>$bgcol)-> grid (-row=>2, -column=>3);
 
-  $tab_frame_info = $mw -> Frame(-background=>$bgcol
-  )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
-  our $tab_file_info = $tab_frame_info -> Text (
-      -width=>24, -relief=>'groove', -border=>2, -height=>4,
-      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-  )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
-  our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
-      my $tabsel = $tab_hlist -> selectionGet ();
-      my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
-      if (-e $tab_file) {
-	  table_info_window($tab_file);
-      }
-    })->grid(-column=>2,-row=>1, -sticky => 'wen');
-  $help->attach($edit_tab_info_button, -msg => "File properties");
+  $tab_frame_info = $mw -> Frame(-background=>$bgcol, -padx=>0,-pady=>0
+   )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
+   our $tab_file_info = $tab_frame_info -> Text (
+       -width=>24, -relief=>'groove', -border=>2, -height=>5,
+       -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+   )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
+   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
+       my $tabsel = $tab_hlist -> selectionGet ();
+       my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
+       if (-e $tab_file) {
+   	  table_info_window($tab_file);
+       }
+     })->grid(-column=>2,-row=>1, -sticky => 'wen');
+   $help->attach($edit_tab_info_button, -msg => "File properties");
   $show_ofv=0;
   $show_successful=0;
   $show_covar=0;
@@ -6279,8 +6281,8 @@ sub nm_help_filter_keywords {
 
 sub show_links {
   my $links_height = 24;
-  our $frame_command = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>7, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
-  our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>2, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
+  our $frame_command = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>7, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wnes');
+  our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>2, -ipadx=>'0',-ipady=>'0',-sticky=>'wns');
 
   our $missing = 0;
   $frame_command -> Label(-text=>'    Cmd:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>1, -column=>1, -sticky => 'wns');
@@ -6300,7 +6302,7 @@ sub show_links {
 
   our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
-						-arrowimage => $gif{down}, -border=>1, -relief=>"groove",
+						-arrowimage => $gif{down}, -border=>1, -relief=>"groove", -width=>20,
 						-choices => [ qw/tab csv R * pdf phi ext cov coi pnm xpose sdtab mod lst/ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
@@ -7723,7 +7725,7 @@ sub show_run_frame {
   # Notes
   my $spacer = 0;
 #  if ($os =~ m/MSWin/i) {$spacer = 14; };
-  $run_frame = $mw -> Frame(-background=>$bgcol)->grid(-row=>4,-column=>1,-columnspan=>2,-sticky => 'wens', -ipady=>0);
+  $run_frame = $mw -> Frame(-background=>$bgcol)->grid(-row=>4,-column=>1,-columnspan=>2, -rowspan=>1, -sticky => 'wens', -ipady=>0);
   $run_frame -> Label(-text=>" ", -width=>$spacer, -font=>"Courier 1", -background=>$bgcol)->grid(-column=>6, -row=>1);  #spacer
   create_mod_buttons(); 
   $run_frame -> gridColumnconfigure(1, -weight => 1, -minsize=>30);
@@ -7733,7 +7735,7 @@ sub show_run_frame {
   if ($setting{font_size} == 2) {$note_width=40} else {$note_width = 29};
   if ($full_screen==0) {$entry_width = 72};
   our $notes_text = $run_frame -> Scrolled ('Text', -scrollbars=>'e',
-      -width=>$entry_width, -relief=>'groove', -border=>2, -height=>4,
+      -width=>$entry_width, -relief=>'groove', -border=>2, -height=>5,
       -font=>$font_small, -background=>$entry_color, -state=>'normal'
   )->grid(-column=>2, -row=>1, -rowspan=>2, -columnspan=>2, -sticky=>'nwse', -ipadx=>0, -ipady=>0);
 
@@ -7745,31 +7747,31 @@ sub show_run_frame {
     note_color ($lightred);
     status();
   })->grid(-column=>2, -row=>2,-rowspan=>1,-sticky=>'nwse');
-  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$lighterblue, -activebackground=>$lightestblue, -font=>'Arial 5', -command=> sub {
-    status("Saving color information...");
-    note_color ($lighterblue);
-    status();
-  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nwse');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$darkgreen, -activebackground=>$lightgreen, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightgreen);
     status();
-  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nwes');
+  })->grid(-column=>3, -row=>2,-rowspan=>1,-sticky=>'nwes');
+  $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$lighterblue, -activebackground=>$lightestblue, -font=>'Arial 5', -command=> sub {
+    status("Saving color information...");
+    note_color ($lighterblue);
+    status();
+  })->grid(-column=>4, -row=>2,-rowspan=>1,-sticky=>'nwse');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>'white', -activebackground=>'white', -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ("#FFFFFF");
     status();
   })->grid(-column=>2, -row=>3,-rowspan=>1,-sticky=>'nwse');
-    $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>$colorbox_height,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
-    status("Saving color information...");
-    note_color ($button);
-    status();
-  })->grid(-column=>3, -row=>3,-rowspan=>1,-sticky=>'nwse');
   $colors_frame -> Button (-text=>'', -border=>0,-width=>$colorbox_width, -height=>$colorbox_height, -background=>$darkyellow, -activebackground=>$lightyellow, -font=>'Arial 5', -command=> sub {
     status("Saving color information...");
     note_color ($lightyellow);
     status();
-  })->grid(-column=>4, -row=>3,-rowspan=>1,-sticky=>'nwes');
+  })->grid(-column=>3, -row=>3,-rowspan=>1,-sticky=>'nwes');
+  $colors_frame -> Button (-text=>'',-border=>0,-width=>$colorbox_width, -height=>$colorbox_height,-background=>$abutton, -activebackground=>$button, -font=>'Arial 5', -command=> sub {
+    status("Saving color information...");
+    note_color ($button);
+    status();
+  })->grid(-column=>4, -row=>3,-rowspan=>1,-sticky=>'nwse');
   our $save_note_button = $colors_frame -> Button (-text => "Save note", -border=>$bbw, -background=>$button,
     -activebackground=>$abutton, -font=>$font_normal, -command=> sub{
 	my @sel = $models_hlist -> selectionGet ();
