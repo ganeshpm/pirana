@@ -1412,12 +1412,24 @@ sub send_model_info_to_R_command {
       my @models_sel = @ctl_show[@sel];
       send_object_to_piranaR (\@models_sel);
 }
+
 sub view_outputfile_command {
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model / result file."); return(); }
   my $model_id = @ctl_show[@sel[0]];
   edit_model(unix_path($cwd."\\".$model_id.".".$setting{ext_res}));
 }
+
+sub show_param_estim_command {
+    my @lst = @ctl_show[$models_hlist -> selectionGet ()];
+    if (int(@lst) > 1) { 
+	show_estim_multiple (\@lst); 
+    } else {
+	show_estim_window (\@lst);
+    }
+    $estim_window -> raise();
+}
+
 sub R_plot_etas_distribution_command {
   my @sel = $models_hlist -> selectionGet ();
   if (@sel == 0) { message("First select a model / result file."); return(); }
@@ -7458,6 +7470,12 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
     $models_hlist -> bind ('<Control-L>' => sub {
         view_outputfile_command();
     });
+    $models_hlist -> bind ('<Control-p>' => sub {
+        show_param_estim_command();
+    });
+    $models_hlist -> bind ('<Control-P>' => sub {
+        show_param_estim_command();
+    });
     $models_hlist -> bind ('<Control-plus>' => sub {
 	$setting{font_size}++;
 	reload_font_sizes();
@@ -7572,13 +7590,7 @@ $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
   $help->attach($show_inter_button, -msg => "Show intermediate results for models\ncurrently running in this directory");
 
   our $show_estim_button = $show_buttons_sub->Button(-image=>$gif{estim},-width=>26, -height=>24, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-        my @lst = @ctl_show[$models_hlist -> selectionGet ()];
-	if (int(@lst) > 1) { 
-	    show_estim_multiple (\@lst); 
-	} else {
-	    show_estim_window (\@lst);
-	}
-        $estim_window -> raise();
+      show_param_estim_command ();
       })->grid(-row=>1,-column=>6,-sticky=>'wens');
   $help->attach($show_estim_button, -msg => "Show/compare parameter estimates from runs");
 
