@@ -4959,7 +4959,7 @@ sub read_tab_files {
 	    $flag = 1;
 	}
 	if ($show_data eq "R") {
-	    my @R_files  = @{filter_array(\@all_files, '\.[RSrs]')} ;
+	    my @R_files  = @{filter_array(\@all_files, '\.[RSrs]$')} ;
 	    @tabcsv_files = @R_files;
 	    @tabcsv_files_loc = @R_files;
 	    $flag = 1;
@@ -5028,6 +5028,7 @@ sub tab_dir {
   }
   }
 }
+
 sub populate_tab_hlist {
 ### Purpose : Put the tables/files in the current (and data-)dir in the listbox that was created earlier
 ### Compat  : W+
@@ -5824,7 +5825,7 @@ sub tab_browse_entry_update {
     if($selected_file eq "tab") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
     if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
     if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
-    if($selected_file eq "r") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
+    if($selected_file eq "R") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
     if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal)};
     bind_tab_menu(\@tab_menu_enabled);
 }
@@ -5992,104 +5993,63 @@ sub bind_tab_menu {
  	     }
          } else {message("Spreadsheet application not found. Please check settings.")};
        }],
-       [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{pirana_r},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
+       [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{rgui},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);
-	   my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
-	   if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
-	   if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
-	   if (-e $script_file) {
+	   
+	   my $r_gui_command = get_R_gui_command (\%software);
+	   my $r_script;
+	   if ($r_gui_command ne "") {
 	       if ($show_data eq "R") {
-		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
-			   open (RPROF, ">.Rprofile");
-			   print RPROF "utils::file.edit('".$script_file."')";
-			   close (RPROF);
-			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
-		       } else {
-			   message ("RGUI was not found.");
-		       }
-		   } else {
-		       edit_model ($script_file);
-		   }
+		   $r_script = $script_file;
 	       }
-	       if ($show_data eq "csv") {
+	       if ($show_data eq "csv") {   
 		   my $script = "library(utils)\n";
 		   $script .= "utils::file.edit('.Rprofile')\n\n";
+		   $script .= "setwd('".unix_path($cwd)."')\n";
 		   $script .= "csv <- data.frame(read.csv (file='".unix_path($cwd."/".$script_file)."'))\n";
 		   $script .= "head(csv)\n";
-#		   create_window_piranaR ($mw, $script, 1, "temp");
-		   open (RPROF, ">.Rprofile");
-		   print RPROF $script;
-		   close (RPROF);
-		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
-			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
-		       } else {
-			   message ("RGUI was not found.");
-		       }
-		   } else {
-		       edit_model (".Rprofile");
-		   }
+		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
+		   text_to_file (\$script, $r_script);
 	       }
 	       if ($show_data eq "tab") {
 		   open (DATA, "<".$script_file);
 		   my @dat = <DATA>;
 		   close DATA;
-		   my $script = "library(utils)\n";
-		   $script .= "utils::file.edit('.Rprofile')\n\n";
+		   $script .= "setwd('".unix_path($cwd)."')\n";
 		   if (@dat[0] =~ m/TABLE.NO/) {
 		       $script .= "tab <- data.frame(read.table (file='".unix_path($script_file)."',\n\t\t skip=1, header=T))\n";
 		   } else {
 		       $script .= "tab <- data.frame(read.table (file='".unix_path($script_file)."',\n\t\t skip=0, header=F))\n";
 		   };
 		   $script .= "head(tab)\n";
-		   open (RPROF, ">.Rprofile");
-		   print RPROF $script;
-		   close (RPROF);
-		   if ($^O =~ m/MSWin/i) {
-		       if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
-			   start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
-		       } else {
-			   message ("RGUI was not found.");
-		       }
-		   } else {
-		       edit_model (".Rprofile");
-		   }
-		   #create_window_piranaR ($mw, $script, 1);
+		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
+		   text_to_file (\$script, $r_script);
 	       }
-	   }
-	   if ($show_data eq "xpose") {
-	       my $xpdb = @tabcsv_files[@$scriptsel[0]];
-	       my $script = "library(utils)\n";
-	       $script .= "library(xpose4)\n";
-	       $script .= "utils::file.edit('.Rprofile')\n\n";
-	       $script .= "# Load Xpose from Pirana\n".
-		   "library(grDevices) \nlibrary(utils) \nlibrary(xpose4)\n".
-		   "new.runno <- '".$xpdb."' \n".
-		   "newdb <- xpose.data(new.runno)\n".
-		   "if (is.null(newdb)) {\n".
-		   "    cat('No new database read')\n".
-		   "    return()\n".
-		   "} else {\n".
-		   "    newnam <- paste('xpdb', new.runno, sep = '')\n".
-		   "    assign(pos = 1, newnam, newdb)\n".
-		   "    assign(pos = 1, '.cur.db', newdb)\n".
-		   "}\n".
-		   "main.menu()";
-#		   create_window_piranaR ($mw, $script, 1, "temp");
-	       open (RPROF, ">.Rprofile");
-	       print RPROF $script;
-	       close (RPROF);
-	       if ($^O =~ m/MSWin/i) {
-		   if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
-		       start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
-		   } else {
-		       message ("RGUI was not found.");
-		   }
-	       } else {
-		   edit_model (".Rprofile");
+  
+	       if ($show_data eq "xpose") {
+		   my $xpdb = @tabcsv_files[@$scriptsel[0]];
+#		   my $script = "library(utils)\n";
+#		   $script .= "library(xpose4)\n";
+#		   $script .= "utils::file.edit('.Rprofile')\n\n";
+		   $script .= "setwd('".unix_path($cwd)."')\n";
+		   $script .= "# Load Xpose from Pirana\n".
+		       "library(grDevices) \nlibrary(utils) \nlibrary(xpose4)\n".
+		       "new.runno <- '".$xpdb."' \n".
+		       "newdb <- xpose.data(new.runno)\n".
+		       "if (is.null(newdb)) {\n".
+		       "    cat('No new database read')\n".
+		       "    return()\n".
+		       "} else {\n".
+		       "    newnam <- paste('xpdb', new.runno, sep = '')\n".
+		       "    assign(pos = 1, newnam, newdb)\n".
+		       "    assign(pos = 1, '.cur.db', newdb)\n".
+		       "}\n".
+		       "main.menu()";
+		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
+		   text_to_file (\$script, $r_script);
 	       }
+	       start_command($r_gui_command. " ". $r_script);
 	   }
 	}],
        [Button => " Open in code editor",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{notepad},-compound=>"left", -state=>@tab_menu_enabled[1], -command => sub{
@@ -6330,30 +6290,18 @@ sub show_links {
     $help->attach($putty_button, -msg => $software_descr{tty});
     $i++;
 #  }
-  if ($^O =~ m/MSWin/i) {
-      my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
-      if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
-      if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
-      if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") {
-	  our $r_button = $frame_links -> Button(-image=>$gif{r}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
-	      chdir ($cwd);
-	      unlink ($cwd."/.Rprofile");
-	      start_command($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe', '--no-init-file');
-						 })->grid(-row=>1,-column=>$i,-sticky=>'news');
-	  $help->attach($r_button, -msg => "Open the R-GUI");
-	  $i++;
-      }
-  } else {
-      if (-e $software{r_exec}) {
-	  our $r_button = $frame_links -> Button(-image=>$gif{r}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
-	      chdir ($cwd);
-	      unlink ($cwd."/.Rprofile");
-	      run_command($software{r_exec});
-          }) -> grid(-row=>1,-column=>$i,-sticky=>'news');
-	  $help->attach($r_button, -msg => "Open R in terminal");
-	  $i++;
-      }
+  my $r_start = get_R_gui_command (\%software);
+  unless ($r_start eq "") {
+      our $r_button = $frame_links -> Button(-image=>$gif{rgui}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
+	  chdir ($cwd);
+	  unlink ($cwd."/.Rprofile");
+	  print $r_start;
+	  start_command($r_start);
+       })->grid(-row=>1,-column=>$i,-sticky=>'news');
+      $i++;
+      $help->attach($r_button, -msg => "Open the R-GUI / R command line");
   }
+
   if (-e $software{splus}) {
     $splus_button = $frame_links -> Button(-image=>$gif{splus}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     chdir ($cwd);
