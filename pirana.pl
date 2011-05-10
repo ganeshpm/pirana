@@ -216,6 +216,7 @@ if ($^O =~ m/Linux/i) {
 }; 
 our $font_fixed_family = "Courier";
 if ($^O =~ m/Darwin/i) {
+    $font_family = "Helvetica"; # a little bit more dense than Verdana
     $font_fixed_family = "System";
 }; 
 # Font face can always be overriden by user from settings
