@@ -34,7 +34,7 @@ sub get_R_gui_command {
 	}
     }
     if ($^O =~ m/darwin/i) {
-	$r_start = $software{r_exec};  # just assume it is correctly installed. Is there a way to check it?
+	$r_start = $software{r_gui};  # just assume it is correctly installed. Is there a way to check it?
     }
     return ($r_start);
 }
