@@ -1869,35 +1869,25 @@ sub open_script_in_Rgui {
     $scriptfile = shift;
     open (R, "<$scriptfile");
     my @lines = <R>;
-    open (OUT, ">.Rprofile");
-    print OUT "library(utils)\n";
-    print OUT "library(grDevices)\n";
-    print OUT "utils::file.edit('".$scriptfile."')\n";
-    close (OUT);
+#    open (OUT, ">.Rprofile");
+#    print OUT "library(utils)\n";
+#    print OUT "library(grDevices)\n";
+#    print OUT "utils::file.edit('".$scriptfile."')\n";
+#    close (OUT);
     open (R_OUT, ">$scriptfile");
 #    print $scriptfile;
     foreach my $line (@lines) {
-	if ($line =~ m/#PIRANA_OUT/) {
-	    my $script_output = $line;
-	    $script_output =~ s/#PIRANA_OUT//;
-	    $script_output = substr ($script_output, length($`), -1) ;
-	    $script_output =~ s/\>//; #remove >
-	    $script_output =~ s/\"//; #remove quotes
-	    $script_output =~ s/^\s+//; #remove leading spaces
-	    chomp ($script_output);
-	    my $viewer = "";
-	    $line = $script_output;
-	};
-	print R_OUT $line;
+	unless ($line =~ m/quit|PIRANA_OUT/) {
+	    print R_OUT $line;
+	}
     }
     close R_OUT;
-    if ($^O =~ m/MSWin/i) {
-	my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
-	if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
-	if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
-	start_command(win_path($software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe'));
+    my $r_gui_command = get_R_gui_command (\%software);
+    unless ($r_gui_command eq "") {
+	start_command ($r_gui_command . " " . $scriptfile);
     } else {
 	edit_model ($scriptfile);
+#	message ("R GUI not found. Please check software settings!");   
     }
 }
 
@@ -5923,14 +5913,11 @@ sub bind_models_menu {
     $models_menu -> separator ( -background=>$bgcol) ;
 
   if($use_scripts == 1) { # possibility to be switched off, since unstable on Mac (memory issue)
-    my $models_menu_scripts = create_scripts_menu ($models_menu, "pirana_r", 1, $base_dir."/scripts", " Run script", 0);
+    my $models_menu_scripts = create_scripts_menu ($models_menu, "r", 1, $base_dir."/scripts", " Run script", 0);
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
 
-    my $edit_script_text = " Open script in editor";
-    if ($^O =~ m/MSWin/i) {
-       $edit_script_text = " Open script in RGUI";
-    }
-    my $models_menu_scripts = create_scripts_menu ($models_menu, "pirana_r", 1, $base_dir."/scripts", $edit_script_text, 2);
+    my $edit_script_text = " Open script in R GUI";
+    my $models_menu_scripts = create_scripts_menu ($models_menu, "rgui", 1, $base_dir."/scripts", $edit_script_text, 2);
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
   }
 
@@ -6004,8 +5991,8 @@ sub bind_tab_menu {
 		   $r_script = $script_file;
 	       }
 	       if ($show_data eq "csv") {   
-		   my $script = "library(utils)\n";
-		   $script .= "utils::file.edit('.Rprofile')\n\n";
+#		   my $script = "library(utils)\n";
+#		   $script .= "utils::file.edit('.Rprofile')\n\n";
 		   $script .= "setwd('".unix_path($cwd)."')\n";
 		   $script .= "csv <- data.frame(read.csv (file='".unix_path($cwd."/".$script_file)."'))\n";
 		   $script .= "head(csv)\n";
