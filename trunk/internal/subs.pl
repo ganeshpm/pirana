@@ -1896,7 +1896,7 @@ sub open_script_in_Rgui {
     close R_OUT;
     my $r_gui_command = get_R_gui_command (\%software);
     unless ($r_gui_command eq "") {
-	start_command ($r_gui_command . " " . $scriptfile);
+	start_command ($r_gui_command, $scriptfile);
     } else {
 	edit_model ($scriptfile);
 #	message ("R GUI not found. Please check software settings!");   
@@ -5802,7 +5802,7 @@ sub frame_tab_show {
   $tab_frame_info = $mw -> Frame(-background=>$bgcol, -padx=>0,-pady=>0
    )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
    our $tab_file_info = $tab_frame_info -> Text (
-       -width=>24, -relief=>'groove', -border=>2, -height=>5,
+       -width=>21, -relief=>'groove', -border=>2, -height=>5,
        -font=>$font_small, -background=>$entry_color, -state=>'disabled'
    )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
    our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
@@ -6048,7 +6048,7 @@ sub bind_tab_menu {
 		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
 		   text_to_file (\$script, $r_script);
 	       }
-	       start_command($r_gui_command. " ". $r_script);
+	       start_command($r_gui_command, $r_script);
 	   }
 	}],
        [Button => " Open in code editor",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{notepad},-compound=>"left", -state=>@tab_menu_enabled[1], -command => sub{
