@@ -1332,17 +1332,19 @@ sub output_results_HTML {
       print HTML join("<BR>\n", @tables);
       print HTML "</TD><TD></TD></TR>\n";
   }
-  if ($include_html{notes_and_comments} == 1 ) {
+  if ($include_html{notes} == 1 ) {
+  #    if ($pirana_notes ne "") {
+	  $pirana_notes =~ s/\n/<BR>/g;
+	  print HTML "<TR><TD valign=top>Notes in Pirana:</TD><TD><FONT FACE=verdana,arial size=2>".$pirana_notes."</FONT></TD></TR>\n";
+  #    }
+  }
+  if ($include_html{comments} == 1 ) {
       my $comments_ref = $mod{comment_lines};
       my @comments = @$comments_ref;
-      if (@comments > 0) {
+  #    if (@comments > 0) {
 	  my $comments_join = join("<BR>", @comments);
-	  print HTML "<TR><TD valign=top>Comment lines:</TD><TD><FONT FACE=verdana,arial size=2>".$comments_join."</FONT></TD></TR>\n";
-      }
-      if ($pirana_notes ne "") {
-	  $pirana_notes =~ s/\n/<BR>/g;
-	  print HTML "<TR><TD valign=top>Pirana notes:</TD><TD><FONT FACE=verdana,arial size=2>".$pirana_notes."</FONT></TD></TR>\n";
-      }
+	  print HTML "<TR><TD valign=top>Comments in model:</TD><TD><FONT FACE=verdana,arial size=2>".$comments_join."</FONT></TD></TR>\n";
+  #    }
   }
   if ($include_html{model_file} == 1) {
       open (MOD, "<".$mod{mod}.".".$setting{ext_ctl});

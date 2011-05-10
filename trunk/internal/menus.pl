@@ -126,7 +126,10 @@ sub create_menu_bar {
   $mbar_results_html -> checkbutton (-label => "Basic run info",-font=>$font, -variable=>\$run_reports{basic_run_info}, -command=> sub{
       save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
-  $mbar_results_html -> checkbutton (-label => "Notes and comments",-font=>$font, -variable=>\$run_reports{notes_and_comments}, -command => sub{
+  $mbar_results_html -> checkbutton (-label => "Notes from Pirana",-font=>$font, -variable=>\$run_reports{notes}, -command => sub{
+      save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
+  });
+  $mbar_results_html -> checkbutton (-label => "Comments from modelfile",-font=>$font, -variable=>\$run_reports{comments}, -command => sub{
       save_ini ($home_dir."/ini/run_reports.ini", \%run_reports, \%run_reports_descr, $base_dir."/ini_defaults/run_reports.ini");
   });
   $mbar_results_html -> checkbutton (-label => "Model file",-font=>$font, -variable=>\$run_reports{model_file}, -command=>sub{
