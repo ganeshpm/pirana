@@ -8,7 +8,36 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub get_R_gui_command {
+    my $software_ref = shift;
+    my %software = %$software_ref;
+    my $r_start;
+    if ($^O =~ m/MSWin/i) {
+	if (-e $software{r_gui}) { # if RGUI found start it, else fall back to command line R
+	    my $r_start = $software{r_gui}; 
+	} else {
+	    my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
+	    if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
+	    if (-d $software{r_dir}."/bin/x86") {$rgui_dir = "x86/"}
+	    if (-e $software{r_dir}."/bin/".$rgui_dir."rgui.exe") { $r_start = $software{r_dir}.'/bin/'.$rgui_dir.'rgui.exe', '--no-init-file'; }
+	}
+    } 
+    if ($^O =~ m/linux/i) {
+	if (-e $software{r_gui}) { # if RGUI found start it, else fall back to command line R
+	    $r_start = $software{r_gui}; 
+	} else {
+	    if (-e $software{r_exec}) {
+		$r_start = $software{r_exec};
+	    }
+	}
+    }
+    if ($^O =~ m/darwin/i) {
+	$r_start = $software{r_exec};  # just assume it is correctly installed. Is there a way to check it?
+    }
+    return ($r_start);
+}
 
 sub filter_array {
     my ($array_ref, $filter) = @_;
