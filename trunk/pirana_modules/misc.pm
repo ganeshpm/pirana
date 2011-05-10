@@ -353,6 +353,7 @@ sub win_path {
   $win_dir =~ s/\\\\/\\/g;  # if '\\' occurs then '\'
   return $win_dir;
 }
+
 sub unix_path {
 ### Purpose : Return a path with only /
 ### Compat  : W+L+
@@ -361,6 +362,7 @@ sub unix_path {
   $unix_dir =~ s/\/\//\//g; # remove double //
   return $unix_dir;
 }
+
 sub os_specific_path {
   my $str = shift;
   if ($^O =~ m/MSWin/i) {
@@ -370,6 +372,7 @@ sub os_specific_path {
   }
   return $str;
 }
+
 sub extract_file_name {
 ### Purpose : Return only the filename from a full given path
 ### Compat  : W+L+
@@ -508,6 +511,7 @@ sub win_start {
 	return("Cannot find ".$program.". Please check software settings.");
     }
 }
+
 sub linux_start {
     my $curr_dir = cwd();
     system (@_[0]." ".@_[1]." &");

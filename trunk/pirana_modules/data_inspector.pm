@@ -3,9 +3,10 @@
 package pirana_modules::data_inspector;
 
 use strict;
+use File::Basename;
 use Tk::Balloon;
 use List::Util qw(max min);
-use pirana_modules::misc  qw(win_path unix_path win_start start_command);
+use pirana_modules::misc  qw(get_R_gui_command text_to_file generate_random_string extract_file_name win_path unix_path win_start start_command);
 use pirana_modules::misc_tk  qw(center_window);
 
 require Exporter;
@@ -15,20 +16,20 @@ our @EXPORT_OK = qw(create_plot_window read_table);
 our $lighterblue    = "#b3c3ea";
 our $lightblue      = "#4060D0";
 our $darkblue2      = "#7190c9";
-our $darkblue = "#4271c9";
+our $darkblue       = "#4271c9";
 our $lightred       = "#FFC9a4";
 our $darkred        = "#efb894";
 our $darkerred      = "#BE5040";
 our $lightyellow    = "#ececd4";
-our $yellow    = "#e3e3e6";
+our $yellow         = "#e3e3e6";
 our $darkyellow     = "#DFDF95";
 our $lightgreen     = "#b8e3b8";
 our $darkgreen      = "#a5d3a5";
 our $white          = "#ffffff";
-our $bgcol          = "#efebe7";
+our $bgcol          = "#efefef";
 our $button         = "#dad7d3";
 our $abutton        = "#c6c3c0";
-our $listbox_col    = "#f0f0f0";
+our $listbox_col    = "#f6f6f6";
 
 # our $bgcol      = "#ece9d8";
 # our $button     = "#dddac9";
@@ -54,16 +55,18 @@ our (@filter_match, @filter_type, @filter_var, @filter_entry, @border,
      @xdata, @ydata, @colname, @x_sel, @y_sel, @plot_colors, @pointstyles,
      $table_type, $log_x, $log_y, $x_var_list, $y_var_list, $unity_line,
      $show_unity, $plot_table, $main_window, $r_dir, $skip_lines, $cnames,
-     $x_var, $y_var, $xType, $yType, $plot_frame, $r_text, $r_filter,$r_in_gif_ref, $read_what,
+     $x_var, $y_var, $xType, $yType, $plot_frame, $r_text, $r_filter, $read_what,
      $r_delete_ref, $y_var_list, $x_var_list, $help_box,
      %values);
 
 sub create_plot_window {
 ### Purpose : Create the dataInspector window
 ### Compat  : W+L?
-    ($main_window, $plot_table, $table_type, my $software_ref, $r_in_gif_ref, $r_delete_ref) = @_;
+    my ($main_window, $plot_table_file, $table_type, $software_ref,  $gif_ref) = @_;
     my %software = %$software_ref;
     my $r_dir = $software{r_dir};
+    my %gif = %$gif_ref;
+    our $plot_table = $plot_table_file;
     unless (-e $plot_table) {return()};
     our $plot_window = $main_window -> Toplevel(-title=>"Pirana Data Inspector (".$plot_table.")", -background=>$bgcol);
     $plot_window -> resizable( 0, 0 );
@@ -71,32 +74,30 @@ sub create_plot_window {
     @plot_colors = qw/darkblue darkred darkgreen/;
     @pointstyles = qw/circle square triangle/;
     $plot_frame = $plot_window -> Frame (-relief=>'groove', -border=>2, -background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
-    our $r_in_gif  = $$r_in_gif_ref;
-    our $delete_gif = $$r_delete_ref;
     if ($table_type eq "*") {
 	$table_type = "tab"; # assume it is a table
 	if ($plot_table =~ m/\.csv/i) {$table_type = "csv"}
     }
 
-    my $var_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7, -background=>$bgcol) -> grid(-column=>1, -rowspan=>1,-row=>1,-sticky=>'nw');
-    my $add_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>7, -pady=>7, -background=>$bgcol) -> grid(-column=>1, -rowspan=>1,-row=>2,-sticky=>'nwe');
-    my $r_frame = $plot_window -> Frame (-width=>510, -relief=>'groove', -border=>0, -pady=>7, -background=>$bgcol) -> grid(-column=>2, -row=>2,-sticky=>'nw');
+    my $var_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>5, -pady=>5, -background=>$bgcol) -> grid(-column=>1, -rowspan=>2,-row=>1,-sticky=>'nwse');
+    my $filter_frame = $plot_window -> Frame (-background=>$bgcol, -padx=>5, -pady=>5) -> grid(-column=>1,-row=>3, -rowspan=>1,-sticky=>"wes");
+    my $add_frame = $plot_window -> Frame (-relief=>'groove', -border=>0, -padx=>5, -pady=>5, -background=>$bgcol) -> grid(-column=>2, -rowspan=>1,-row=>2,-sticky=>'nw');
+    my $r_frame = $plot_window -> Frame (-width=>510, -relief=>'groove', -border=>0, -pady=>5, -background=>$bgcol) -> grid(-column=>2, -row=>3, -columnspan=>1, -sticky=>'nwse');
+#    my $r_text_frame = $plot_window -> Frame (-width=>510, -relief=>'groove', -border=>0, -pady=>5, -background=>$bgcol) -> grid(-column=>1, -row=>3, -columnspan=>1, -sticky=>'ne');
     $var_frame -> Label (-text=>"X-axis",-font=>$font_normal, -background=>$bgcol) -> grid(-column=>1, -row=>1, -sticky=>'nwe');
     $var_frame -> Label (-text=>"Y-axis",-font=>$font_normal, -background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nwe');
-    $add_frame -> Label (-text=>"Additional graphic parameters:      ",-font=>$font_normal, -background=>$bgcol)-> grid(-column=>1, -row=>3, -columnspan=>2, -sticky=>'nw');
-    $add_frame -> Checkbutton(-text=>"Show unity line",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$show_unity, -command=> sub{refresh_plot($table_type) ;})->grid(-column=>1,-columnspan=>2,-row=>4, -sticky=>"w");
-    $add_frame -> Checkbutton(-text=>"Log X-axis",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_x, -command=>sub{refresh_plot($table_type);})->grid(-column=>1,-columnspan=>2,-row=>6, -sticky=>"w");
-    $add_frame -> Checkbutton(-text=>"Log Y-axis",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_y, -command=>sub{refresh_plot($table_type);})->grid(-column=>1,-columnspan=>2,-row=>7, -sticky=>"w");
-    $add_frame -> Label (-text=>"   ", -background=>$bgcol)-> grid(-column=>1, -row=>8, -sticky=>'nw');
-
-    $x_var_list = $var_frame -> Listbox (-width=>10, -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
+    $add_frame -> Label (-text=>"Additional plot specifications:      ",-font=>$font_normal, -background=>$bgcol)-> grid(-column=>1, -row=>1, -columnspan=>2, -sticky=>'nw');
+    $add_frame -> Checkbutton(-text=>"Show unity line",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$show_unity, -command=> sub{refresh_plot($table_type) ;})->grid(-column=>2,-columnspan=>1,-row=>2, -sticky=>"w");
+    $add_frame -> Checkbutton(-text=>"Log X-axis",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_x, -command=>sub{refresh_plot($table_type);})->grid(-column=>1,-columnspan=>1,-row=>2, -sticky=>"w");
+    $add_frame -> Checkbutton(-text=>"Log Y-axis",-font=>$font_normal, -background=>$bgcol, -selectcolor=>'#ffffff', -variable=>\$log_y, -command=>sub{refresh_plot($table_type);})->grid(-column=>1,-columnspan=>1,-row=>3, -sticky=>"w");
+ 
+    $x_var_list = $var_frame -> Listbox (-width=>12, -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
 					 -selectbackground=>'#AAAAAA',-highlightthickness =>0, -background=>$listbox_col, -font=>$font_normal) -> grid(-column=>1,-row=>2, -sticky=>'nwe');
-    $y_var_list = $var_frame -> Listbox (-width=>10,  -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
+    $y_var_list = $var_frame -> Listbox (-width=>12,  -font=>$font_normal, -height=>26, -activestyle=> 'none', -exportselection => 0, -relief=>'groove', -border=>2,
 					 -selectbackground=>'#AAAAAA',-selectmode=>'extended', -highlightthickness => 0, -background=>$listbox_col,-font=>$font_normal) -> grid(-column=>2,-row=>2, -sticky=>'nwe');
     $help_box = $plot_window -> Balloon();
     $help_box -> attach($y_var_list, -msg => "Multiple columns for Y can be selected by holding control-key.");
-    $var_frame -> Label (-text=>" ") -> grid(-column=>1,-row=>3, -columnspan=>2, -sticky=>'nwe');
-
+ 
     # read the table file
     #status ("Reading table file...");
     my ($colname_ref, $values_ref, $cols) = read_table ($plot_table, $table_type);
@@ -114,29 +115,28 @@ sub create_plot_window {
     $y_var_list -> selectionSet(1,1);
 
     # Filter
-    my $filter_frame = $var_frame -> Frame (-background=>$bgcol) -> grid(-column=>1,-row=>4, -columnspan=>2);
     $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[0],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>1,-row=>1, -sticky=>'nwe');
     $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[0], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>2,-row=>1, -sticky=>'nwe');
-    @filter_entry[0] = $filter_frame -> Entry (-background=>"#FFFFFF",-width=>10, -relief=>'groove',-font=>$font_normal, -border=>1) -> grid(-column=>3,-row=>1, -columnspan=>2,-sticky=>'nwes');
+    @filter_entry[0] = $filter_frame -> Entry (-background=>$listbox_col,-width=>10, -relief=>'groove',-font=>$font_normal, -border=>1) -> grid(-column=>3,-row=>1, -columnspan=>1,-sticky=>'nwes');
     $filter_frame -> Optionmenu (-options => [@colname],-variable => \@filter_var[1], -font=>$font_normal,-border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>1,-row=>2, -sticky=>'nwe');
     $filter_frame -> Optionmenu (-options => ['=','<','>','!='],-variable => \@filter_type[1],-font=>$font_normal, -border=>0, -background=>$lightblue, -activebackground=>$darkblue, -foreground=>'white') -> grid(-column=>2,-row=>2, -sticky=>'nwe');
-    @filter_entry[1] = $filter_frame -> Entry (-background=>"#FFFFFF", -width=>10, -relief=>'groove', -font=>$font_normal,-border=>1) -> grid(-column=>3,-row=>2, -columnspan=>2,-sticky=>'nwes');
-
+    @filter_entry[1] = $filter_frame -> Entry (-background=>$listbox_col, -width=>10, -relief=>'groove', -font=>$font_normal,-border=>1) -> grid(-column=>3,-row=>2, -columnspan=>1,-sticky=>'nwes');
+ 
     $filter_frame -> Button ( -text=>"Filter",-font=>$font_normal,-border=>0, -background=>$button,-activebackground=>$abutton,-command=>sub{
 	@filter_match[0] = @filter_entry[0] -> get();
 	@filter_match[1] = @filter_entry[1] -> get();
 	refresh_plot($table_type);
-			      }) -> grid(-column=>3,-row=>3, -columnspan=>1, -sticky=>'wens');
-    $filter_frame -> Button ( -image=>$delete_gif,-font=>$font_normal, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
+			      }) -> grid(-column=>3,-row=>3, -columnspan=>2, -sticky=>'wens');
+    $filter_frame -> Button ( -image=>$gif{trash}, -width=>12, -border=>0, -background=>$button,-activebackground=>$abutton,-command=>sub{
 	@filter_match[0] = "";
 	@filter_entry[0] -> configure(-textvariable=>\@filter_match[0]);
 	refresh_plot($table_type);
-			      }) -> grid(-column=>4,-row=>1, -columnspan=>1, -sticky=>'wens');
-    $filter_frame -> Button ( -image=>$delete_gif,-font=>$font_normal, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=>sub{
+			      }) -> grid(-column=>4,-row=>1, -columnspan=>1, -sticky=>'ens');
+    $filter_frame -> Button ( -image=>$gif{trash}, -width=>12, -border=>0, -background=>$button,-activebackground=>$abutton,-command=>sub{
 	@filter_match[1] = "";
 	@filter_entry[1] -> configure(-textvariable=>\@filter_match[1]);
 	refresh_plot($table_type);
-			      }) -> grid(-column=>4,-row=>2, -columnspan=>1, -sticky=>'wens');
+			      }) -> grid(-column=>4,-row=>2, -columnspan=>1, -sticky=>'ens');
 
     # add some bindings
     $x_var_list->bind('<Button>', sub{
@@ -158,31 +158,25 @@ sub create_plot_window {
 	refresh_plot($table_type);
 		      });
 
-    $r_frame -> Label(-text=>"R command to generate this plot:",-font=>$font_normal,-background=>$bgcol) -> grid(-column=>2, -row=>0, -sticky=>'nw');
-    $r_text = $r_frame -> Scrolled("Text", -scrollbars=>"e", -width=>60, -height=>5, -background=>"#fffeee",-exportselection => 0, -relief=>'groove', -border=>2,
+    $r_frame -> Label(-text=>"R code:",-font=>$font_normal,-background=>$bgcol) -> grid(-column=>2, -row=>1, -sticky=>'nw');
+    $r_text = $r_frame -> Scrolled("Text", -scrollbars=>"e", -width=>60, -height=>5, -background=>$listbox_col,-exportselection => 0, -relief=>'groove', -border=>2,
 				   -selectbackground=>'#606060',-highlightthickness =>0) -> grid(-column=>2, -row=>2, -sticky=>'nwes');
-    my $r_button_plot = $r_frame -> Button(-image=>$r_in_gif, -font=>$font_normal,
+    my $r_button_plot = $r_frame -> Button(-image=> $gif{rgui}, -font=>$font_normal,
 					       -width=>26,
 					       -height=>26,
 					       -border=>$bbw,
 					       -background=>$button,-activebackground=>$abutton,
 					       -command=> sub {
 						   my $r_code = $r_text -> get("0.0", "end");
-						   open (OUT, ">.Rprofile");
-						   print OUT "library(graphics)\n";
-						   print OUT "library(utils)\n";
-						   print OUT "utils::file.edit('.Rprofile')\n";
 						   $r_code =~ s/\'/\"/g;
-						   print OUT $r_code;
-						   close OUT;
-						   if ($^O =~ m/MSWin/i) {
-						       win_start($r_dir."/bin/rgui.exe");
-						   } else {
-						       start_command($software{editor}, '".Rprofile"');
-						   }
+						   my ($table_file, $cwd) = fileparse ($plot_table); 
+						   my $r_script = $cwd."/pirana_temp/tmp_" . generate_random_string(5) . "\.R";
+						   text_to_file (\$r_code, $r_script);
+						   my $r_gui_command = get_R_gui_command (\%software);
+						   start_command($r_gui_command, $r_script);
 					       }
     )->grid(-row=>2,-column=>3,-sticky=>'nw');
-    $help_box -> attach($r_button_plot, -msg => "Send script to Rgui");
+    $help_box -> attach($r_button_plot, -msg => "Open code in R GUI");
 
     refresh_plot($table_type);
     center_window ($plot_window);
@@ -209,11 +203,21 @@ sub refresh_plot {
     } else {
 	$read_what = "csv";
     }
-    my $r_command = "dat <- read.".$read_what." (file='".unix_path($plot_table)."',"
+#    my $table_file = extract_file_name ($plot_table);
+#    my $cwd = File::Spec -> rel2abs ($plot_table);
+    my ($table_file, $cwd) = fileparse ($plot_table); 
+    my $y_axis_label; 
+    my $i=0; foreach(@y_sel) {
+	$y_axis_label .= @colname[@y_sel[$i]];
+	unless ($i == (@y_sel-1)) {$y_axis_label .= "+" ; }
+	$i++;
+    }
+    my $r_command = "setwd('".$cwd."')\n" 
+	."dat <- read.".$read_what." (file='".unix_path($table_file)."',"
 	." skip=".$skip_lines.", header=".$cnames.")\n"
 	.$r_filter
 	."plot (x=dat\$".@colname[@x_sel[0]].", y=dat\$".@colname[@y_sel[0]].", type='p', pch=19, col='".@plot_colors[0]."',"
-	." xlab='".@colname[@x_sel[0]]."', ylab='".@colname[@y_sel[0]]."', main='".unix_path($plot_table)."' ";
+	." xlab='".@colname[@x_sel[0]]."', ylab='".$y_axis_label."', main='".$table_file."' ";
     my $log = "";
     if ($log_x==1) {$log .= "x"};
     if ($log_y==1) {$log .= "y"};
@@ -344,7 +348,7 @@ sub show_plot {
     my $graph = $plot_frame -> PlotDataset
 	(
 	 -width => 460,
-	 -height => 460,
+	 -height => 400,
 	 -background => 'white',
 	 -plotTitle => \@title,
 	 -autoScaleX=> "On",
