@@ -5973,7 +5973,7 @@ sub bind_tab_menu {
 	          $open_bool = message_yesno ($tab_file." is quite large (".rnd(($fsize/(1024*1024)),1)." Mb)\nAre you sure you want to open this file?\n(DataInspector may become really slow...)", $mw, $bgcol, $font_normal);
 	       }
 	       if ($open_bool == 1 ) {
-		   unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, \%software, \$gif{pirana_r}, \$gif{close} );}
+		   unless($show_data eq "xpose") {create_plot_window($mw, $tab_file, $show_data, \%software, \%gif );}
 	       }
 	   }
         }],
