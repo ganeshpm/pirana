@@ -1,0 +1,99 @@
+; Pirana wizard-file for the creation of text files
+[TYPE]Dataset template (R-script)[/TYPE]
+ 
+; ##########################################################################
+; Arguments are supplied to the wizard script from Pirana, which can be 
+; used in both the building of the wizard and the construction of the 
+; output text file 
+[ARG] os, cwd, model_no_sel, model_file_sel [/ARG]
+; ##########################################################################
+
+; ##########################################################################
+; In the first part, the questions for the Wizard are implemented.
+; Basically, here you start to collect all information in variables,
+; which are then stored in a hash, and can be used afterwards.
+; [S] = create new screen in wizard
+; [M] = Message (plain text)
+; [Q] = Question 
+; [E] = Entry [key_name, width of entry-widget]
+; [F] = File-entry [key_name, width of entry-widget] (also implements browse button)
+; [O] = Optionmenu [key_name, options]
+; [C] = Checkbox
+; ##########################################################################
+
+; ##########################################################################
+; Note: some variables are required: output_file
+; Note: some variables are reserved: os
+; ##########################################################################
+
+[WIZ]
+[S] Basic information
+
+[M] [basic_msg] This wizard helps you to quickly create an R script,
+which creates a template dataset\nfor simulations from NONMEM.  [/M]
+
+[Q] [output_file] R script name: 
+[E] [output_file,40] sim_template.R [/E]
+[/Q]
+
+[Q] [output_csv] CSV output file: 
+[E] [output_csv,40] sim_001.csv [/E]
+[/Q]
+
+[/S]
+
+[S]
+
+[Q] [n_ids] Number of patients:
+[E] [n_ids,5] 30 [/E]
+[/Q]
+
+[Q] [dose] Dose amount:
+[E] [dose,5] 100 [/E]
+[/Q]
+
+[Q] [t_dos] Dosing times:
+[E] [t_dos,32] 0 [/E]
+[/Q]
+
+[Q] [t_obs] Observation times:
+[E] [t_obs,32] 0.25, 0.5, 1, 2, 4, 6, 8, 12, 16, 20, 24 [/E]
+[/Q]
+
+[/S]
+
+[/WIZ]
+
+; ##########################################################################
+; In the second part, the text file is built based on the gathered data.
+; The variables can be used when put between [[...]] 
+; For string-variables, you can specify how much of the string you want to 
+; use, by putting ", n", with n specifying the number. 
+; You can also create IF / ELSE structures and FOR loops, which need to be 
+; specified between brackets. See examples.
+; ##########################################################################
+
+[OUT] ; Starts output
+
+setwd("[[cwd]]")
+
+t.obs <- c([[t_obs]])
+t.dos <- c([[t_dos]])
+n_ids <- [[n_ids]]
+amt <- rep (n_ids, [[dose]])
+
+rec.dos <- cbind ("id" = 1, "time" = t.dos, "dv" = 0, "mdv" = 1,"evid" = 1, "cmt" = 1, "amt" = 0)
+rec.obs <- cbind ("id" = 1, "time" = t.obs, "dv" = 0, "mdv" = 0,"evid" = 0, "cmt" = 2, "amt" = 0)
+rec.comb <- data.frame ( rbind ( rec.dos, rec.obs) )
+rec.comb <- rec.comb[order(rec.comb$id, rec.comb$time, -rec.comb$evid),] 
+
+rec.all <- c()
+for (i in 1:n_ids) {
+    rec.comb [rec.comb$evid==1,]$amt <- amt[i]
+    rec.comb$id <- i
+    rec.all <- rbind (rec.all, rec.comb)     
+}
+
+write.csv (rec.all, file = "[[output_csv]]", quote=F, row.names=F)
+
+[/OUT]
