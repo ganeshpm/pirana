@@ -31,19 +31,30 @@ sub get_key {
 }
 
 sub wizard_read_pwiz_file {
-    my ($wiz_file, @args) = @_;
+    my ($wiz_file, $arg_ref) = @_;
+    my @args = @$arg_ref;
     open (WIZ, "<".$wiz_file);
     my @lines = <WIZ>;
     close WIZ;
-    my $s_area; my $q_area; my $screen_name; my $wiz_area = 0; my $out_area = 0;
+    my $s_area; my $q_area; my $screen_name; my $wiz_area = 0; my $out_area = 0; 
     my @screens; my %wiz_variables; my $q_key; my @out_text = ();
-    my %questions; our @question_keys; my %screen_questions;
+    my %questions; our @question_keys; my %screen_questions; my %arg_values;
     my @answer_keys; my %answers; my %question_answers; my %answer_defaults;  my %answer_widths;
     my %optionmenu_options; my %checkboxes; my %messages; my %file_entries;
     foreach my $line (@lines) {
 	if (substr($line, 0, 5) =~ m/\[WIZ\]/i) {
 	    $wiz_area = 1;
 	} 
+	if (substr($line, 0, 5) =~ m/\[ARG\]/i) {
+	    $line =~ s/\[ARG\]//i;
+	    $line =~ s/\[\/ARG\]//i;
+	    $line = rm_spaces($line);
+	    my @arg_keys = split (",", $line);
+	    foreach my $arg (@arg_keys) {
+		$arg =~ s/\s//g;
+		$arg_values{$arg} = shift (@args);
+	    }
+	}
 	if (substr($line, 0, 6) =~ m/\[TYPE\]/i) {
 	    $line =~ s/\[TYPE\]//i;
 	    $line =~ s/\[\/TYPE\]//i;
@@ -155,6 +166,7 @@ sub wizard_read_pwiz_file {
     $wiz_variables{screen_questions} = \%screen_questions;
     $wiz_variables{questions} = \%questions;
     $wiz_variables{messages} = \%messages;
+    $wiz_variables{arg_values} = \%arg_values;
 #    $wiz_variables{question_keys} = \@questions;
     $wiz_variables{question_answers} = \%question_answers;
     $wiz_variables{answers} = \%answers;

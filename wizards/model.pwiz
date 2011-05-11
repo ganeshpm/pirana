@@ -5,7 +5,7 @@
 ; Arguments are supplied to the wizard script from Pirana, which can be 
 ; used in both the building of the wizard and the construction of the 
 ; output text file 
-; [ARG] os [/ARG]
+[ARG] os, cwd, model_no_sel, model_file_sel [/ARG]
 ; ##########################################################################
 
 

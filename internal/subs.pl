@@ -111,9 +111,10 @@ sub wizard_window {
     $wizard_frame -> Button (-text=>'Run wizard',  -font=>$font, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -command=>sub{
 	my @sel = $wizard_listbox -> curselection ();
 	my $sel_wizard = @wizards[@sel[0]];
-	my @args = ($^O);
+	my $mod_no = @ctl_show[@$sel_ref[0]];
+	my $mod_file = @ctl_show[@$sel_ref[0]].".".$setting{ext_ctl};
+	my @args = ($^O, $cwd, $mod_no, $mod_file);
 	my $variables_ref = wizard_read_pwiz_file ($base_dir."/wizards/".$sel_wizard, \@args);
-	my %var = %$variables_ref;
 	my $wizard_run_dialog = $mw -> Toplevel(-title=>'Wizards');
 	wizard_build_dialog ($wizard_run_dialog, $variables_ref);
 	$wizard_run_dialog -> raise;
@@ -144,13 +145,13 @@ sub get_pwiz_description {
 
 sub wizard_build_dialog {
     my ($window, $variables_ref, $entry_values_ref) = @_;
-    center_window($window, $setting{center_window}); # center after adding frame 
     my %var = %$variables_ref;
 
     # put all variables in correct hashes and arrays again;
     my @screens = @{$var{screens}};
     my %screen_questions = %{$var{screen_questions}};
     my %messages =  %{$var{messages}};
+    my %arg_values =  %{$var{arg_values}};
     my %questions = %{$var{questions}};
     my @question_keys = @{$var{question_keys}};
     my %question_answers = %{$var{question_answers}};
@@ -201,7 +202,7 @@ sub wizard_build_dialog {
 	    $entry_values{$a} = $answer_defaults{$a};
 	    unless ($answer_widths{$a} eq "") { # test, if no value here, than the key does not refer to an entry
 		$frame -> Entry (-width=> $answer_widths{$a}, -font=>$font_normal, -textvariable => \$entry_values{$a}, -border=>$bbw, -background=>$white
-		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nwe");	       
+		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw");	       
 	    };
 	    unless ($file_entries{$a} eq "") { # test, if no value here, than the key does not refer to an entry
 		$frame -> Button (-image=> $gif{browse}, -font=>$font_normal, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub {
@@ -255,6 +256,9 @@ sub wizard_build_dialog {
 		$values{$a} = @opt[$entry_values{$a}];
 	    }
 	}
+	foreach my $a (keys (%arg_values) ) { # Arguments passed by Pirana
+	    $values{$a} = $arg_values{$a};
+	}
 	$values{output_file} = rm_spaces($values{output_file});
 	wizard_write_output ($out_text_ref, \%values);
 	edit_model (os_specific_path($cwd."/".$values{output_file}));
@@ -267,6 +271,8 @@ sub wizard_build_dialog {
 	$finish_button -> configure (-state=>'normal');
 	$next_button -> configure (-state=>'disabled');
     }
+    center_window($window, $setting{center_window}); 
+
     return(1);
 }
 
@@ -1687,22 +1693,22 @@ sub cov_calc_window {
   my $cov_calc_dialog = $mw -> Toplevel(-title=>'Cov Calculator');
   no_resize($cov_calc_dialog);
   my $cov_calc_frame = $cov_calc_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
-  $cov_calc_frame -> Label (-text=>"Covariance block:",-background=>$bgcol) -> grid(-row=>1, -column=>1);
+  $cov_calc_frame -> Label (-text=>"Covariance block:",-background=>$bgcol, -font=>$font_normal) -> grid(-row=>1, -column=>1);
   my $var1=1; my $covar=1; my $var2=1;
-  $var1_entry  = $cov_calc_frame -> Entry (-width=>6, -background=>'white',-textvariable=>\$var1, -justify=>"right") -> grid(-row=>1, -column=>2);
-  $covar_entry = $cov_calc_frame -> Entry (-width=>6, -background=>'white', -textvariable=>\$covar,-justify=>"right") -> grid(-row=>2, -column=>2);
-  $var2_entry  = $cov_calc_frame -> Entry (-width=>6, -background=>'white', -textvariable=>\$var2,-justify=>"right") -> grid(-row=>2, -column=>3);
+  $var1_entry  = $cov_calc_frame -> Entry (-width=>6, -background=>'white',-textvariable=>\$var1, -justify=>"right", -font=>$font_normal) -> grid(-row=>1, -column=>2);
+  $covar_entry = $cov_calc_frame -> Entry (-width=>6, -background=>'white', -textvariable=>\$covar,-justify=>"right", -font=>$font_normal) -> grid(-row=>2, -column=>2);
+  $var2_entry  = $cov_calc_frame -> Entry (-width=>6, -background=>'white', -textvariable=>\$var2,-justify=>"right", -font=>$font_normal) -> grid(-row=>2, -column=>3);
   $var1_entry -> bind('<Any-KeyPress>' => sub { recalc_cov($var1,$var2,$covar)});
   $var2_entry -> bind('<Any-KeyPress>' => sub { recalc_cov($var1,$var2,$covar)});
   $covar_entry -> bind('<Any-KeyPress>' => sub {recalc_cov($var1,$var2,$covar)});
   $cov_calc_frame -> Label (-text=>" ",-background=>$bgcol) -> grid(-row=>3, -column=>1);
-  $cov_calc_frame -> Label (-text=>"SD1:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>4, -column=>1,-sticky=>'e');
-  $cov_calc_frame -> Label (-text=>"SD2:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>5, -column=>1,,-sticky=>'e');
-  $cov_calc_frame -> Label (-text=>"Correlation:", -foreground=>"#666666",-background=>$bgcol) -> grid(-row=>6, -column=>1,,-sticky=>'e');
+  $cov_calc_frame -> Label (-text=>"SD1:", -foreground=>"#666666",-background=>$bgcol, -font=>$font_normal) -> grid(-row=>4, -column=>1,-sticky=>'e');
+  $cov_calc_frame -> Label (-text=>"SD2:", -foreground=>"#666666",-background=>$bgcol, -font=>$font_normal) -> grid(-row=>5, -column=>1,,-sticky=>'e');
+  $cov_calc_frame -> Label (-text=>"Correlation:", -foreground=>"#666666",-background=>$bgcol, -font=>$font_normal) -> grid(-row=>6, -column=>1,,-sticky=>'e');
   our $var1_sd=rnd(sqrt($var1),3); our $var2_sd=rnd(sqrt($var1),3); our $covar_sd=rnd(sqrt($covar/($var1_sd*$var2_sd)),3);
-  $var1_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var1_sd, -justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>4, -column=>2);
-  $var2_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$covar_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>6, -column=>2);
-  $covar_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var2_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666') -> grid(-row=>5, -column=>2);
+  $var1_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var1_sd, -justify=>"right", -background=>$bgcol, -foreground=>'#666666', -font=>$font_normal) -> grid(-row=>4, -column=>2);
+  $var2_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$covar_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666', -font=>$font_normal) -> grid(-row=>6, -column=>2);
+  $covar_sd_entr = $cov_calc_frame -> Entry (-width=>6, -textvariable=>\$var2_sd,-justify=>"right", -background=>$bgcol, -foreground=>'#666666', -font=>$font_normal) -> grid(-row=>5, -column=>2);
   center_window($cov_calc_dialog, $setting{center_window});
 }
 
@@ -5801,18 +5807,19 @@ sub frame_tab_show {
 
   $tab_frame_info = $mw -> Frame(-background=>$bgcol, -padx=>0,-pady=>0
    )->grid(-row=>4, -column=>3, -rowspan=>1, -columnspan=>1, -ipady=>0,-sticky=>"nwse");
-   our $tab_file_info = $tab_frame_info -> Text (
-       -width=>21, -relief=>'groove', -border=>2, -height=>5,
-       -font=>$font_small, -background=>$entry_color, -state=>'disabled'
-   )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
-   our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
+  my $width = 24; if ($^O =~ m/(darwin)/i) {$width = 21};
+  our $tab_file_info = $tab_frame_info -> Text (
+      -width=>$width, -relief=>'groove', -border=>2, -height=>5,
+      -font=>$font_small, -background=>$entry_color, -state=>'disabled'
+      )->grid(-column=>1, -row=>1, -sticky=>'nwes', -rowspan=>2, -ipadx=>0, -ipady=>0);
+  our $edit_tab_info_button = $tab_frame_info -> Button(-image=>$gif{edit_info_green}, -border=>$bbw, -background=>$button,-activebackground=>$abutton, -width=>22, -height=>22, -command=> sub{
        my $tabsel = $tab_hlist -> selectionGet ();
        my $tab_file = unix_path(@tabcsv_files[@$tabsel[0]]);
        if (-e $tab_file) {
    	  table_info_window($tab_file);
        }
-     })->grid(-column=>2,-row=>1, -sticky => 'wen');
-   $help->attach($edit_tab_info_button, -msg => "File properties");
+  })->grid(-column=>2,-row=>1, -sticky => 'wen');
+  $help->attach($edit_tab_info_button, -msg => "File properties");
   $show_ofv=0;
   $show_successful=0;
   $show_covar=0;
