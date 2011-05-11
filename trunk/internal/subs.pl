@@ -4137,7 +4137,12 @@ sub delete_models_window {
   my $del_dialog_frame = $del_dialog-> Frame(-background=>$bgcol)->grid(-ipadx=>'10',-ipady=>'10',-sticky=>'n');
   my $type = @file_type_copy[@runs];
 
-  $del_dialog_frame -> Label (-text=>"Models / folders:",  -font=>$font,-background=>$bgcol) -> grid(-row=>0, -column=>1,-sticky=>"nws"); # spacer
+  my $del_folders_check = 1;
+  my $del_models_check = 1;
+  my $del_results_check = 1;
+  my $del_tables_check = 1;
+
+  $del_dialog_frame -> Label (-text=>"Selected:",  -font=>$font,-background=>$bgcol) -> grid(-row=>0, -column=>1,-sticky=>"nws"); # spacer
   $del_dialog_frame -> Label (-text=>"Files / folders to delete:", -font=>$font, -background=>$bgcol) -> grid(-row=>0, -column=>2, -columnspan=>2,-sticky=>"nws"); # spacer
   my $delete_models_listbox = $del_dialog_frame -> Scrolled('Listbox',
         -selectmode => "single", -highlightthickness => 0,
@@ -4170,10 +4175,6 @@ sub delete_models_window {
   center_window($del_dialog, $setting{center_window}); # center after adding frame (redhat)
   $del_dialog -> raise();
 
-  my $del_folders_check = 1;
-  my $del_models_check = 1;
-  my $del_results_check = 1;
-  my $del_tables_check = 1;
 # filter out folders
   my @folders;
   foreach my $num (@$sel_ref) {
@@ -6010,17 +6011,16 @@ sub bind_tab_menu {
        }],
        [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{rgui},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 	   my $scriptsel = $tab_hlist -> selectionGet ();
-	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);
-	   
+	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);   
 	   my $r_gui_command = get_R_gui_command (\%software);
 	   my $r_script;
+	   my $script;
+	   unless (-d "pirana_temp") {mkdir "pirana_temp";}
 	   if ($r_gui_command ne "") {
 	       if ($show_data eq "R") {
 		   $r_script = $script_file;
 	       }
 	       if ($show_data eq "csv") {   
-#		   my $script = "library(utils)\n";
-#		   $script .= "utils::file.edit('.Rprofile')\n\n";
 		   $script .= "setwd('".unix_path($cwd)."')\n";
 		   $script .= "csv <- data.frame(read.csv (file='".unix_path($cwd."/".$script_file)."'))\n";
 		   $script .= "head(csv)\n";
@@ -6041,7 +6041,6 @@ sub bind_tab_menu {
 		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
 		   text_to_file (\$script, $r_script);
 	       }
-  
 	       if ($show_data eq "xpose") {
 		   my $xpdb = @tabcsv_files[@$scriptsel[0]];
 #		   my $script = "library(utils)\n";
