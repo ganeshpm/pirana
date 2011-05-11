@@ -261,7 +261,16 @@ sub wizard_build_dialog {
 	}
 	$values{output_file} = rm_spaces($values{output_file});
 	wizard_write_output ($out_text_ref, \%values);
-	edit_model (os_specific_path($cwd."/".$values{output_file}));
+	if ($values{output_file} =~ m/\.[Rr]$/) {
+	    my $r_gui_command = get_R_gui_command (\%software);
+	    unless ($r_gui_command eq "") {
+		start_command ($r_gui_command, $cwd."/".$values{output_file});
+	    } else {
+		edit_model (os_specific_path($cwd."/".$values{output_file}));
+	    }
+	} else {
+	    edit_model (os_specific_path($cwd."/".$values{output_file}));
+	}
 	$window -> destroy();
     }) -> grid(-row=>1, -column=>3,-sticky=>"nwse"); 
     if ($var{i_screen} == 0) {
