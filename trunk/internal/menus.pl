@@ -164,7 +164,7 @@ sub create_menu_bar {
     my $mbar_scripts_user = create_scripts_menu ($mbar_scripts_run, "", 1, $home_dir."/scripts", "My scripts", 0);
     $mbar_scripts_run -> separator;
     
-    my $mbar_scripts_rgui = create_scripts_menu ($mbar_scripts, "", 1, $base_dir."/scripts", "Open in RGUI", 2);
+    my $mbar_scripts_rgui = create_scripts_menu ($mbar_scripts, "", 1, $base_dir."/scripts", "Output script to RGUI", 2);
     $mbar_scripts_rgui -> separator;
     my $mbar_scripts_rgui_user = create_scripts_menu ($mbar_scripts_rgui, "", 1, $home_dir."/scripts", "My scripts", 2);
     $mbar_scripts_rgui -> separator;

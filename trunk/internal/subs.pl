@@ -644,37 +644,53 @@ sub ssh_setup_window {
     my $ssh_connection_window = $mw -> Toplevel (-title => "SSH connection setup", -background=> $bgcol);
     my $ssh_connection_frame = $ssh_connection_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
 
-    my ($ssh_ref, $ssh_descr_ref) = read_ini($home_dir."/ini/clusters/ssh1.ini");
+    my $ssh_ref = $ssh_all{$setting_internal{cluster_default}};
     our %ssh = %$ssh_ref;
     my %ssh_new = %ssh;
     my %ssh_descr = %$ssh_descr_ref;
+    my @ssh_names = keys (%ssh_all);
+    my $ssh_chosen = $setting_internal{cluster_default};
+   # $ssh_connection_frame -> Label (-text=> "Use SSH-mode by default ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 1, -sticky=>"nes");
 
-    $ssh_connection_frame -> Label (-text=> "Use SSH-mode by default ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Clustername ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
+#    $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame->Optionmenu(-background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white, -activeforeground=>$white, -width=>16, -border=>$bbw, -font=>$font_normal, 
+				 -options=>\@ssh_names, -textvariable => \$ssh_chosen,
+				 -command=>sub{
+				     my $ssh_ref = $ssh_all{$ssh_chosen};
+				     my %ssh = %$ssh_ref;
+				     foreach my $key (%ssh) {
+					 $ssh_new{$key} = $ssh{$key};
+				     }
+				      })->grid(-row=>3,-column=>2,-sticky=>'w');
 
-    $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{name}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>2, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>3, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>12,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Label (-text=> "Cluster ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Clustername ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>9, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>10, -column=>1, -columnspan => 1, -sticky=>"nes");
+
+#    $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{name}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>12,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>8, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>9, -column=>2, -sticky=>"w");
 #    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
  
     $ssh_connection_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$ssh_connection_window -> destroy();
-    }) -> grid(-row=>9, -column=>1, -sticky=>"e");
+    }) -> grid(-row=>11, -column=>1, -sticky=>"e");
     $ssh_connection_frame -> Button (-text=>"Save",-width=>8,  -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
-	our %ssh = %ssh_new;
-        save_ini ($home_dir."/ini/clusters/ssh1.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
+	my %ssh = %ssh_new;
+	delete ($ssh_all{$ssh_chosen});
+	$ssh_all{$ssh_new{name}} = \%ssh_new;
+        save_ini ($home_dir."/ini/clusters/".$ssh_new{ini_file}, \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
 	$ssh_connection_window -> destroy();
-    }) -> grid(-row=>9, -column=>2, -sticky=>"w");
+    }) -> grid(-row=>11, -column=>2, -sticky=>"w");
     $ssh_connection_window -> focus ();
     $ssh_connection_window -> waitWindow; # wait until destroyed
 
@@ -3874,8 +3890,18 @@ sub initialize {
     };
 
     print LOG "Reading SSH settings\n";
-    my ($ssh_ref, $ssh_descr) = read_ini($home_dir."/ini/clusters/ssh1.ini");
-    our %ssh = %$ssh_ref;
+    my @ssh_ini = dir ($home_dir."/ini/clusters", "ssh");
+    our %ssh_all; my $i = 0;
+    foreach my $ini (@ssh_ini) {
+	my ($ssh_ref, $ssh_descr) = read_ini($home_dir."/ini/clusters/".$ini);
+	my %ssh = %$ssh_ref;
+	$ssh{ini_file} = $ini;
+        $ssh_all{$ssh{name}} = \%ssh;
+	if ($i == 0) {
+	    $setting_internal{cluster_default} = $ssh{name};
+	};
+	$i++;
+    }
 
     print LOG "Reading Sun Grid Engine settings\n";
     my ($sge_ref, $sge_descr_ref) = read_ini($home_dir."/ini/sge.ini");
@@ -5954,7 +5980,7 @@ sub bind_models_menu {
     my $models_menu_scripts = create_scripts_menu ($models_menu, "r", 1, $base_dir."/scripts", " Run script", 0);
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
 
-    my $edit_script_text = " Open script in R GUI";
+    my $edit_script_text = " Output script to R GUI";
     my $models_menu_scripts = create_scripts_menu ($models_menu, "rgui", 1, $base_dir."/scripts", $edit_script_text, 2);
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
   }
@@ -6022,6 +6048,7 @@ sub bind_tab_menu {
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);   
 	   my $r_gui_command = get_R_gui_command (\%software);
+	   print $r_gui_command;
 	   my $r_script;
 	   my $script;
 	   unless (-d "pirana_temp") {mkdir "pirana_temp";}

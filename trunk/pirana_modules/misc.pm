@@ -16,7 +16,7 @@ sub get_R_gui_command {
     my $r_start;
     if ($^O =~ m/MSWin/i) {
 	if (-e $software{r_gui}) { # if RGUI found start it, else fall back to command line R
-	    my $r_start = $software{r_gui}; 
+	    $r_start = $software{r_gui}; 
 	} else {
 	    my $rgui_dir = "";  # R >= 2.12.0 has new folders for the RGUI
 	    if (-d $software{r_dir}."/bin/i386") {$rgui_dir = "i386/"}
