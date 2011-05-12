@@ -228,11 +228,16 @@ sub parse_lines {
 	    my ($if_str, $if_key, $if_answer, $rest) = split (",", $newline);
 	    my $answer = rm_spaces($if_answer);
 	    my $l = length($answer);
-	    my $value = substr(rm_spaces($values{$if_key}),0,($l));
+	    my $value = rm_spaces($values{$if_key});
  	    $if_area = 1;
 	    $if_print = 0;
+	    if ($answer =~ m/\$/) {
+	    	$answer =~ s/\$//g;	
+	    } else {
+	    	$value = substr($value, 0, $l);
+	    }
 	    if ($value eq $answer) {
-		$if_print = 1;
+	    	$if_print = 1;
 	    } 
 	}	
 

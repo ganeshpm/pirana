@@ -177,7 +177,7 @@ sub wizard_build_dialog {
     if (@screens > 1) {
 	$button_text = "Next";
     }
-    my $frame = $window -> Frame (-background => $bgcol, -width=>580, -height=>400) -> grid(-ipadx => 10, -ipady => 10); 
+    my $frame = $window -> Frame (-background => $bgcol, -width=>580, -height=>400) -> grid(-ipadx => 10, -ipady => 10, -row=>1, -column=>1,-sticky=>"wes"); 
     for ($i = 0; $i < 16; $i++) {
 	$frame -> Label (-background=>$bgcol, -font=>$font_normal, -width=>80, -text=> "  "
 	    ) -> grid (-row=>$i, -column=>1, -rowspan=>1, -columnspan=>2);
@@ -193,7 +193,7 @@ sub wizard_build_dialog {
     foreach my $q_key (@curr_questions) {
 	if (exists $messages{$q_key}) {
 	   $frame -> Label (-text=> $messages{$q_key}, -font=>$font_normal, -background=>$bgcol, -justify=>"left"
-	    ) -> grid (-row=> (3+($i_row*2)), -column=>1, -columnspan=>2, -sticky=> "nw");	       
+	    ) -> grid (-row=> (3+($i_row*2)), -column=>1, -columnspan=>2, -rowspan=>1, -sticky=> "nw");	       
 	} else {
 	$frame -> Label (-text => $questions{$q_key}, -justify=> "right", -font=>$font_normal, -background=>$bgcol
 	    ) -> grid (-row=> (3+($i_row*2)), -column=>1, -sticky => "nes");
@@ -217,6 +217,7 @@ sub wizard_build_dialog {
 		foreach (@opt) {$_ = substr($_, 0, 32)}
 		$entry_values{$a} = int($entry_values{$a});
 		$optionmenu_answers{$a} = @opt[$entry_values{$a}];
+		$var{optionmenu_answers} = \%optionmenu_answers;
 		my $optionmenu = $frame -> Optionmenu (-font=>$font_small, -background=>$darkblue, -activebackground=>$darkblue2, -foreground=>$white, -activeforeground=>$white, -options => \@opt, -justify=>"left", -font=>$font_normal, -border=>$bbw
 		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw"); 
 		$optionmenu -> configure (-variable => \$optionmenu_answers{$a}, -command => sub {
@@ -242,17 +243,17 @@ sub wizard_build_dialog {
 	$i_row++;
     }
 
-    my $button_frame = $frame -> Frame (-background=>$bgcol) -> grid (-row => 25, -column => 2, -columnspan=>2, -sticky=>"nse");
+    my $button_frame = $frame -> Frame (-background=>$bgcol) -> grid (-row => 25, -column => 2, -columnspan=>2, -sticky=>"se");
     my $prv_button = $button_frame -> Button (-text=> "Previous", -background => $bgcol, -font=>$font_normal,  -command => sub {
 	$var{i_screen} = $var{i_screen} - 1;    
 	$frame -> destroy();
 	wizard_build_dialog($window, \%var, \%entry_values);
-    }) -> grid(-row=>1, -column=>1,-sticky=>"nwse"); 
+					      }) -> grid(-row=>1, -column=>1,-sticky=>"nwse"); 
     my $next_button = $button_frame -> Button (-text=> "Next", -background => $bgcol, -font=>$font_normal,  -command => sub {
 	$var{i_screen}++;
 	$frame -> destroy();
 	wizard_build_dialog($window, \%var, \%entry_values);
-    }) -> grid(-row=>1, -column=>2,-sticky=>"nwse"); 
+					       }) -> grid(-row=>1, -column=>2,-sticky=>"nwse"); 
     my $finish_button = $button_frame -> Button (-text=> "Finish", -background => $bgcol, -font=>$font_normal, -state=>'disabled', -command => sub {
 	my @keys = keys(%entry_values);
 	my %values = %entry_values;
@@ -275,7 +276,7 @@ sub wizard_build_dialog {
 	    edit_model (os_specific_path($cwd."/".$values{output_file}));
 	}
 	$window -> destroy();
-    }) -> grid(-row=>1, -column=>3,-sticky=>"nwse"); 
+						 }) -> grid(-row=>1, -column=>3,-sticky=>"nwse"); 
     if ($var{i_screen} == 0) {
 	$prv_button -> configure (-state=>'disabled');
     }
