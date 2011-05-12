@@ -644,34 +644,35 @@ sub ssh_setup_window {
     my $ssh_connection_window = $mw -> Toplevel (-title => "SSH connection setup", -background=> $bgcol);
     my $ssh_connection_frame = $ssh_connection_window -> Frame (-background=>$bgcol) -> grid(-ipadx => 10, -ipady => 10);
 
-    my ($ssh_ref, $ssh_descr_ref) = read_ini($home_dir."/ini/ssh.ini");
+    my ($ssh_ref, $ssh_descr_ref) = read_ini($home_dir."/ini/clusters/ssh1.ini");
     our %ssh = %$ssh_ref;
     my %ssh_new = %ssh;
     my %ssh_descr = %$ssh_descr_ref;
 
     $ssh_connection_frame -> Label (-text=> "Use SSH-mode by default ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>1, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Location of psn.conf on remote system", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Clustername ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>2, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
 
     $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>2, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>12,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>3, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{name}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>2, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>3, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>12,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"w");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
+#    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
  
     $ssh_connection_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$ssh_connection_window -> destroy();
     }) -> grid(-row=>9, -column=>1, -sticky=>"e");
     $ssh_connection_frame -> Button (-text=>"Save",-width=>8,  -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	our %ssh = %ssh_new;
-        save_ini ($home_dir."/ini/ssh.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
+        save_ini ($home_dir."/ini/clusters/ssh1.ini", \%ssh, \%ssh_descr, $base_dir."/ini_defaults/ssh.ini");
 	$ssh_connection_window -> destroy();
     }) -> grid(-row=>9, -column=>2, -sticky=>"w");
     $ssh_connection_window -> focus ();
@@ -3513,12 +3514,13 @@ sub setup_ini_dir {
     my ($user, $home_dir) = @_;
     unless (-d $home_dir) {mkdir $home_dir};
     unless (-d $home_dir."/ini") {mkdir $home_dir."/ini"};
+    unless (-d $home_dir."/ini/clusters") {mkdir $home_dir."/ini/clusters"};
     unless (-d $home_dir."/log") {mkdir $home_dir."/log"};
     my @dir = dir ($base_dir."/ini_defaults", ".ini");
 
     # check if all settings are in place
     my @check_inis = ("settings.ini", "software_win.ini", "software_linux.ini", "software_osx.ini", "psn.ini", 
-		      "ssh.ini", "sge.ini", "run_reports.ini", "internal.ini"
+		      "sge.ini", "run_reports.ini", "internal.ini"
 		     );
     @txt_comm = ("commands_before.txt", "commands_after.txt");
     foreach my $ini (@dir) {
@@ -3532,6 +3534,10 @@ sub setup_ini_dir {
     }
     foreach my $ini (@check_inis) {
         check_ini_file ($home_dir."/ini/".$ini, $base_dir."/ini_defaults/".$ini)
+    }
+    my @ssh_ini = ("ssh1.ini");
+    foreach my $ini (@ssh_ini) {
+        check_ini_file ($home_dir."/ini/clusters/".$ini, $base_dir."/ini_defaults/ssh.ini");
     }
     foreach my $txt (@txt_comm) {
 	copy ($base_dir."/ini_defaults/".$txt, $home_dir."/ini/".$txt);
@@ -3868,7 +3874,7 @@ sub initialize {
     };
 
     print LOG "Reading SSH settings\n";
-    my ($ssh_ref, $ssh_descr) = read_ini($home_dir."/ini/ssh.ini");
+    my ($ssh_ref, $ssh_descr) = read_ini($home_dir."/ini/clusters/ssh1.ini");
     our %ssh = %$ssh_ref;
 
     print LOG "Reading Sun Grid Engine settings\n";
@@ -6892,7 +6898,8 @@ sub psn_run_window {
     $psn_run_window -> OnDestroy ( sub{
         undef $unmfe_run_window; undef $nmfe_run_frame;
                                    });
-    $ssh{connect_ssh} = $ssh{default};
+    $ssh{connect_ssh} = $setting_internal{ssh_connect};
+
     my $len = length($ssh{local_folder}); 
     unless (substr($cwd, 0, $len) =~ m/$ssh{local_folder}/i ) { # if not on mounted cluster location, switch to local mode
 	$ssh{connect_ssh} = 0;
@@ -7111,34 +7118,45 @@ sub psn_run_window {
     $psn_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
         # update
 #       $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-	$ssh{default} = $ssh{connect_ssh};
-	
-	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
+	my $loc = unix_path($ssh{local_folder});
+	my $rem = unix_path($ssh{remote_folder});
+	$run_dir = unix_path($cwd);
+	unless ( $run_dir =~ s/$loc/$rem/i ){
+	    message ("Current folder not located on cluster, can't use SSH connect mode.\nPlease check settings.");
+	    $ssh{connect_ssh} = 0;
+	} else {
+	    $setting_internal{ssh_connect} = $ssh{connect_ssh};
+	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 
-	$pre_text_formatted = $text_pre.$ssh_add;
-	if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
-	$ssh_label_pre -> configure (-text=>$pre_text_formatted);
-	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
+	    ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
 
-        $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
-	$psn_command_line_entry -> delete("1.0","end");
-        $psn_command_line_entry =~ s/\n//g;
-        $psn_command_line_entry -> insert("1.0", $psn_command_line);
+	    $pre_text_formatted = $text_pre.$ssh_add;
+	    if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
+	    $ssh_label_pre -> configure (-text=>$pre_text_formatted);
+	    $ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
 
-        # update NM installations
-        my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software, \%ssh);
-        %psn_nm_versions = %$psn_nm_versions_ref;
-        # bit of a workaround to get "default" option as first option...
-        my %psn_nm_versions_copy = %psn_nm_versions;
-        delete ($psn_nm_versions_copy {"default"});
-        my @psn_nm_installations = keys(%psn_nm_versions_copy);
-        unshift (@psn_nm_installations, "default");
-        $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
- 
-        # update psn.conf window
-        my ($text, $conf_file) = update_psn_conf_window ();
-        $psn_conf_text_filename -> destroy();
-        ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
+	    $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
+	    $psn_command_line_entry -> delete("1.0","end");
+	    $psn_command_line_entry =~ s/\n//g;
+	    $psn_command_line_entry -> insert("1.0", $psn_command_line);
+
+	    # update NM installations
+	    my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software, \%ssh);
+	    %psn_nm_versions = %$psn_nm_versions_ref;
+	    # bit of a workaround to get "default" option as first option...
+	    my %psn_nm_versions_copy = %psn_nm_versions;
+	    delete ($psn_nm_versions_copy {"default"});
+	    my @psn_nm_installations = keys(%psn_nm_versions_copy);
+	    unshift (@psn_nm_installations, "default");
+	    $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
+	    
+	    # update psn.conf window
+	    unless ($ssh{connect_ssh} == 1) {
+		my ($text, $conf_file) = update_psn_conf_window ();
+		$psn_conf_text_filename -> destroy();
+		($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
+	    }
+	}
    }) -> grid(-row=>7,-column=>2,-columnspan=>2,-sticky=>"nw");
 
     $psn_run_button -> configure ( -border=>$bbw, -state=> "normal",-command=> sub {
