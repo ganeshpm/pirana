@@ -115,8 +115,9 @@ sub wizard_window {
 	my $mod_file = @ctl_show[@$sel_ref[0]].".".$setting{ext_ctl};
 	my @args = ($^O, $cwd, $mod_no, $mod_file);
 	my $variables_ref = wizard_read_pwiz_file ($base_dir."/wizards/".$sel_wizard, \@args);
-	my $wizard_run_dialog = $mw -> Toplevel(-title=>'Wizards');
+	my $wizard_run_dialog = $mw -> Toplevel(-title=>'Wizard');
 	wizard_build_dialog ($wizard_run_dialog, $variables_ref);
+	center_window($wizard_run_dialog, $setting{center_window}); 
 	$wizard_run_dialog -> raise;
 	$wizard_dialog -> destroy();
      }) -> grid(-row=> 3, -column=>3, -sticky=>"nwse");
@@ -163,6 +164,7 @@ sub wizard_build_dialog {
     my %optionmenu_options = %{$var{optionmenu_options}};
     my %checkboxes = %{$var{checkboxes}};
     my $out_text_ref = $var{out_text};
+    my %optionmenu_answers = %{$var{optionmenu_answers}};
 
     # create new hashes to collect the information entered
     my %entry_values = %$entry_values_ref;
@@ -175,7 +177,7 @@ sub wizard_build_dialog {
     if (@screens > 1) {
 	$button_text = "Next";
     }
-    my $frame = $window -> Frame (-background => $bgcol) -> grid(-ipadx => 10, -ipady => 10); 
+    my $frame = $window -> Frame (-background => $bgcol, -width=>580, -height=>400) -> grid(-ipadx => 10, -ipady => 10); 
     for ($i = 0; $i < 16; $i++) {
 	$frame -> Label (-background=>$bgcol, -font=>$font_normal, -width=>80, -text=> "  "
 	    ) -> grid (-row=>$i, -column=>1, -rowspan=>1, -columnspan=>2);
@@ -212,10 +214,14 @@ sub wizard_build_dialog {
 	    };
 	    unless ($optionmenu_options{$a} eq "") { # test, if options specified, implement optionmenu
 		my @opt = quotewords(",", 0, $optionmenu_options{$a});
+		foreach (@opt) {$_ = substr($_, 0, 32)}
 		$entry_values{$a} = int($entry_values{$a});
-		my $optionmenu = $frame -> Optionmenu (-background=>$darkblue, -activebackground=>$darkblue2, -foreground=>$white, -activeforeground=>$white, -options => \@opt, -justify=>"left", -font=>$font_normal, -border=>$bbw
+		$optionmenu_answers{$a} = @opt[$entry_values{$a}];
+		my $optionmenu = $frame -> Optionmenu (-font=>$font_small, -background=>$darkblue, -activebackground=>$darkblue2, -foreground=>$white, -activeforeground=>$white, -options => \@opt, -justify=>"left", -font=>$font_normal, -border=>$bbw
 		    ) -> grid (-row=> (3+($i_row*2)), -column=>2, -sticky => "nw"); 
-		$optionmenu -> configure (-textvariable => \$opt[$entry_values{$a}]);
+		$optionmenu -> configure (-variable => \$optionmenu_answers{$a}, -command => sub {
+		      $var{optionmenu_answers} = \%optionmenu_answers;
+		    });
 	    }
 	    unless ($checkboxes{$a} eq "") { # test, if options specified, implement checkbox
 		my @chkboxes = quotewords (",", 0, $checkboxes{$a});
@@ -250,11 +256,8 @@ sub wizard_build_dialog {
     my $finish_button = $button_frame -> Button (-text=> "Finish", -background => $bgcol, -font=>$font_normal, -state=>'disabled', -command => sub {
 	my @keys = keys(%entry_values);
 	my %values = %entry_values;
-	foreach my $a (@keys) {
-	    unless ($optionmenu_options{$a} eq "") {
-		my @opt = quotewords(",", 0, $optionmenu_options{$a});
-		$values{$a} = @opt[$entry_values{$a}];
-	    }
+	foreach my $a (keys (%optionmenu_answers)) {
+	    $values{$a} = $optionmenu_answers{$a};    
 	}
 	foreach my $a (keys (%arg_values) ) { # Arguments passed by Pirana
 	    $values{$a} = $arg_values{$a};
@@ -280,8 +283,6 @@ sub wizard_build_dialog {
 	$finish_button -> configure (-state=>'normal');
 	$next_button -> configure (-state=>'disabled');
     }
-    center_window($window, $setting{center_window}); 
-
     return(1);
 }
 
@@ -6044,9 +6045,6 @@ sub bind_tab_menu {
 	       }
 	       if ($show_data eq "xpose") {
 		   my $xpdb = @tabcsv_files[@$scriptsel[0]];
-#		   my $script = "library(utils)\n";
-#		   $script .= "library(xpose4)\n";
-#		   $script .= "utils::file.edit('.Rprofile')\n\n";
 		   $script .= "setwd('".unix_path($cwd)."')\n";
 		   $script .= "# Load Xpose from Pirana\n".
 		       "library(grDevices) \nlibrary(utils) \nlibrary(xpose4)\n".

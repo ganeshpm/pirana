@@ -228,7 +228,7 @@ sub parse_lines {
 	    my ($if_str, $if_key, $if_answer, $rest) = split (",", $newline);
 	    my $answer = rm_spaces($if_answer);
 	    my $l = length($answer);
-	    my $value = substr(rm_spaces($values{$if_key}),0,$l);
+	    my $value = substr(rm_spaces($values{$if_key}),0,($l));
  	    $if_area = 1;
 	    $if_print = 0;
 	    if ($value eq $answer) {
