@@ -1,5 +1,5 @@
 ### R script supplied with Pirana
-### by Ron Keizer, 2010
+### by Ron Keizer, 2011
 ###
 ### Required: - R package 'ellipse' installed
 ###           - NONMEM 7 output ( .cor file )
@@ -30,29 +30,29 @@ all          <- list()
 
 # filter out info
 methods      <- cor[grep("TABLE", cor)]
-cor          <- cor[-grep("TABLE", cor)]
+cor          <- cor[-(grep("TABLE", cor))]
 methods_idx  <- grep ("NAME", cor)
-cor          <- cor[-grep("NAME", cor)]
-methods_idx  <- methods_idx - (seq(1:length(methods_idx))-1)
+cor          <- cor[-methods_idx]
 methods_idx2 <- methods_idx - 1
 methods_idx2 <- c(methods_idx2, length(cor))
 methods_idx2 <- methods_idx2[-1]
+n_thetas     <- grep("SIGMA", cor)[1]-1
 
 if (!(file.exists("pirana_temp"))) { dir.create("pirana_temp") }
 write.table(cor, file=paste("pirana_temp/",model,"_temp.cor",sep=""), quote=F, row.names=F, col.names=T, sep=",")
-co <- data.frame ( read.fwf (file=paste("pirana_temp/",model,"_temp.cor", sep=""), widths=c(rep(13, (length(cor)+1))), skip=1 ) )
+co <- data.frame ( read.fwf (file=paste("pirana_temp/",model,"_temp.cor", sep=""), widths=c(rep(13, (length(cor)))), skip=1 ) )
 co <- co[,1:length( co[1, !is.na(co[1,]) ] )]
 
-col_names <- gsub (" ", "", as.matrix( data.frame(co[methods_idx[1]:(methods_idx2[1]),1])) )
+col_names <- gsub (" ", "", as.matrix( data.frame(co[1:n_thetas,1])) )
 co <- co[, -1]
 colnames (co) <- c(col_names)
-n_par     <- length(col_names)
+n_par <- length(col_names)
 n_methods <- length(methods_idx)
 
-pdf (file=paste("pirana_temp/corr_matrix_",model,".pdf",sep=""))
+pdf (file=paste("pirana_temp/corr_matrix_th_",model,".pdf",sep=""))
 for (i in 1:n_methods) {
-    co_method <- co[methods_idx[i]:(methods_idx2[i]),]
-    rownames (co_method) <- c((col_names))
+    co_method <- co[methods_idx[i]:(methods_idx[i]+n_thetas-1), 1:n_thetas]
+    rownames (co_method) <- c(col_names)
     plotcorr(as.matrix(co_method[1:n_par,1:n_par]),
          col = colors[5*as.matrix(co_method[1:n_par,1:n_par])+6],
          type = "lower",
@@ -62,7 +62,7 @@ for (i in 1:n_methods) {
 }
 dev.off()
 
-print (paste("#", "PIRANA_OUT ","pirana_temp/corr_matrix_",model, ".pdf", sep=""))
+print (paste("#", "PIRANA_OUT ","pirana_temp/corr_matrix_th_",model, ".pdf", sep=""))
 
 quit()
 
