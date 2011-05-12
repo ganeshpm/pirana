@@ -1812,7 +1812,7 @@ sub run_script {
     my ($scriptfile, $models_ref, $edit) = @_;
     unless (-d "pirana_temp") {mkdir ("pirana_temp")}
     my @spl = split (/\//, $scriptfile);
-    my $scriptfile_nopath = pop(@spl) ;
+    my $scriptfile_nopath = "tmp_".generate_random_string(4)."_".pop(@spl);
     copy ($scriptfile, "pirana_temp/".$scriptfile_nopath);
     update_script_with_parameters ("pirana_temp/".$scriptfile_nopath, $models_ref);
     my @spl = split (/\./, $scriptfile);
@@ -1850,6 +1850,7 @@ sub create_R_object_from_models {
 	$model_text .= '    "description"     = "'.$mod{description}.'",'."\n";
 	$mod{refmod} .= s/\\/\//g;
 	$model_text .= '    "reference_model" = "'.$mod{refmod}.'",'."\n";
+	$model_text .= '    "working_dir"     = "'.$cwd.'",'."\n";
 	$mod{dataset} .= s/\\/\//g;
 	$model_text .= '    "data_file"       = "'.$mod{dataset}.'",'."\n";
 	$model_text .= '    "output_file"     = "'.$model_id.".".$setting{ext_res}.'",'."\n";
