@@ -8,7 +8,43 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(get_nmfe_number get_highest_file_number get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub get_nmfe_number {
+### Purpose : Get the highest number of nmfe_ directories (and add one)
+### Compat  : W+L+
+    my @dirs = <*>;
+    my $file = shift;
+    my $max = 0;
+    foreach (@dirs) {
+	if ((-d $_)&&($_ =~ s/nmfe\_//)) {
+	    my @spl = split (/\_/, $_);
+	    my $num = pop (@spl);
+	    my $run = join ("_",@spl);
+	    if ($run eq $file) {
+		if ($num =~ /^-?\d/) {  # check if number
+		    if ($num > $max) {$max = $num;};
+		}
+	    }
+	}
+    }
+    my $max = sprintf("%03d", ($max+1));
+    return($max);
+}
+
+sub get_highest_file_number {
+### Purpose : Get the highest number of a specific file (e.g. ssh?.ini)
+### Compat  : W+L+
+    my ($wd, $filter) = @_;
+    @dir = dir($wd, $filter);
+    my $max = 0;
+    foreach my $file (@dir) {
+	$num = $file;
+	$num =~ s/[^\d]//g;
+	if ($num > $max) {$max = $num}
+    }
+   return($max);
+}
 
 sub get_R_gui_command {
     my $software_ref = shift;
