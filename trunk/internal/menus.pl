@@ -27,7 +27,7 @@ sub create_menu_bar {
   #     }
   #  } );
 
-  $mbar_file_settings -> command (-label => "SSH settings",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
+  $mbar_file_settings -> command (-label => "Cluster settings",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
        ssh_setup_window();
     });
   $mbar_file_settings -> command (-label => "Sun Grid Engine settings",-font=>$font, -background=>$bgcol,-underline=>1, -command=> sub {
