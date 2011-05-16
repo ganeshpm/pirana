@@ -698,7 +698,6 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Button (-image=>$gif{trash}, -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
 	my $ssh_ref = $ssh_all{$ssh_chosen};
 	my %ssh = %$ssh_ref;
-	print $home_dir."/ini/clusters/".$ssh{ini_file};
 	unlink ($home_dir."/ini/clusters/".$ssh{ini_file});
 	delete ($ssh_all{$ssh_chosen});
 	my ($ssh_ref_tmp, $ssh_chosen_tmp) = get_ssh_settings_and_default();
@@ -5237,6 +5236,8 @@ sub update_psn_run_script_area {
 
 sub build_nmfe_run_command {
     ($script_file, $model_list_ref, $nm_inst, $method, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref) = @_;
+    my %ssh = %$ssh_ref;
+    print $ssh{connect_ssh};
     my @files = @$model_list_ref;
     my @nm_installations;
     if ($ssh{connect_ssh} == 1) {
@@ -5249,21 +5250,8 @@ sub build_nmfe_run_command {
 	my $command;
 	my $ssh_com;
 	my ($ssh_pre, $ssh_post);
-	if ($ssh{connect_ssh} == 1) { # through SSH
-	    ($ssh_pre, $ssh_post) = ssh_get_pre_post (\%ssh);
-	    $dir = $dir_entry -> get();
-	    $dir =~ s/$ssh{local_folder}//gi;
-            my $dir_new = unix_path( $ssh{remote_folder}."/".$dir );
-	    $dir_new =~ s/\s/\\ /g; # put in an escape character before each space
-	    $ssh_com = "cd ".$dir_new."; ";
-	    $cwd = $dir_entry -> get();
-	    my $l = length($cwd);
-	    unless (lcase(substr($cwd,0,$l)) eq lcase($setting{cluster_drive})) {
-		message ("Your current working directory is not located on the cluster.\nChange to your cluster-drive or change your preferences.");
-		return();
-	    }
-	}
-	$command = $ssh_pre . $ssh_com;
+	($ssh_pre, $ssh_post) = build_ssh_connection (\%ssh, $cwd, \%setting);	
+	$command = $ssh_pre ; #. $ssh_com;
 	if (($os =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
 	    if ($run_in_background == 1) {
 		$command .= $run_script;
@@ -6556,11 +6544,32 @@ sub nmfe_run_window {
     }
     $clusters{run_on_sge} = $sge{sge_default};
     $clusters{run_on_pcluster} = 0;
-    $ssh{connect_ssh} = $ssh{default};
+
     my $len = length($ssh{local_folder}); 
     unless (substr($cwd, 0, $len) =~ m/$ssh{local_folder}/i ) { # if not on mounted cluster location, switch to local mode
 	$ssh{connect_ssh} = 0;
     };
+
+# ssh
+    my $local_run = "None (local)";
+    my $ssh_ref = $ssh_all{$setting_internal{cluster_default}};
+    our %ssh = %$ssh_ref;
+    my %ssh_new = %ssh;
+    my %ssh_descr = %$ssh_descr_ref;
+    my @ssh_names = keys (%ssh_all);
+    unshift (@ssh_names, $local_run);
+    my $ssh_chosen = $setting_internal{cluster_default};
+    if ($ssh_chosen eq $local_run) {
+	$ssh{connect_ssh} = 0;
+    } else {
+	$ssh{connect_ssh} = 1;
+    }
+    my $loc = unix_path($ssh{local_folder});
+    my $rem = unix_path($ssh{remote_folder});
+    if ((!( $run_dir =~ s/$loc/$rem/i )) && (!($ssh_chosen eq $local_run))) {
+	$ssh{connect_ssh} = 0;
+	$ssh_chosen = $local_run;
+    }
 
     # build dialog window
     my $run_in_new_dir = 0;
@@ -6694,40 +6703,55 @@ sub nmfe_run_window {
 	$pnm_choose -> configure (-state=>"disabled");
     }
 
-    $nmfe_run_frame -> Label (-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"e");
-    $nmfe_run_frame -> Label (-text=>$file_string, -font=>$font_normal,-background=>$bgcol) -> grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>"w");
+    $nmfe_run_frame -> Label (
+	-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol
+	) -> grid(-row=>1,-column=>1,-sticky=>"e");
+    $nmfe_run_frame -> Label (
+	-text=>$file_string, -font=>$font_normal,-background=>$bgcol
+	) -> grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>"w");
 
-    $nmfe_run_frame -> Label (-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
+    $nmfe_run_frame -> Label (
+	-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
     my $dir = $cwd;
-    my $run_directory = $nmfe_run_frame -> Entry (-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50
+    my $run_directory = $nmfe_run_frame -> Entry (
+	-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50
 	) -> grid(-row=>4,-column=>2,-columnspan=>3,-sticky=>"w");
     if ($clusters{run_on_sge} == 1) {
          $run_in_new_dir = 1;
     }
-    $nmfe_run_frame -> Checkbutton (-text=>"Run in separate folder(s)", -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_new_dir, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
-	update_nmfe_run_script_area ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
-    }) -> grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>"w");
+    $nmfe_run_frame -> Checkbutton (
+	-text=>"Run in separate folder(s)", -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_new_dir, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> 
+	sub{
+	    update_nmfe_run_script_area ($command_area, $script_file,\@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
+	}) -> grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>"w");
     if (($clusters{run_on_pcluster} == 1)||($clusters{run_on_sge}==1)) {
 	$run_in_new_dir = 1;
     }
 
     ### Run command and start script
-    $nmfe_run_frame -> Label (-text=>"Script contents:\n", -font=>$font_normal, -background=>$bgcol
+    $nmfe_run_frame -> Label (
+	-text=>"Script contents:\n", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>16,-column=>1,-sticky=>"ne");
-    my $nmfe_run_script = $nmfe_run_frame -> Entry (-textvariable=> \$nmfe_run_command,
-       -background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
-    ) -> grid(-row=>14,-column=>2,-columnspan=>3,-sticky=>"nwe");
-    $nmfe_run_frame -> Label (-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
+    my $nmfe_run_script = $nmfe_run_frame -> Entry (
+	-textvariable=> \$nmfe_run_command,
+	-background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
+	) -> grid(-row=>14,-column=>2,-columnspan=>3,-sticky=>"nwe");
+    $nmfe_run_frame -> Label (
+	-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>14,-column=>1,-sticky=>"ne");
 
-    $nmfe_run_frame -> Checkbutton (-text=>"Run in background",-font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_background,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
+    $nmfe_run_frame -> Checkbutton (
+	-text=>"Run in background",-font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -variable=>\$run_in_background,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=> sub{
 	 my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
 	 $nmfe_run_command = $run_command;
-    }) -> grid(-row=>6,-column=>2,-columnspan=>2,-sticky=>"w");
+	}) -> grid(-row=>6,-column=>2,-columnspan=>2,-sticky=>"w");
 
-    $nmfe_run_frame -> Label (-text=>"NB. If runs are started in the background, execution will continue\nwhen Pirana is closed, or when logging out from a cluster.",
-			    -font=>$font_normal, -background=>$bgcol, -justify=>"left") -> grid(-row=>7,-column=>2,-columnspan=>2,-sticky=>"w");
-    $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
+    $nmfe_run_frame -> Label (
+	-text=>"NB. If runs are started in the background, execution will continue\nwhen Pirana is closed, or when logging out from a cluster.",
+	-font=>$font_normal, -background=>$bgcol, -justify=>"left"
+	) -> grid(-row=>7,-column=>2,-columnspan=>2,-sticky=>"w");
+    $nmfe_run_frame -> Label (
+	-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
 
     # NM installations
     my $nm_text = "NM installation";
@@ -6762,29 +6786,72 @@ sub nmfe_run_window {
 
     my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  
-    $nmfe_run_frame -> Label (-text=>"Connect SSH:", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
+    $nmfe_run_frame -> Label (
+	-text=>"Cluster: ", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>9,-column=>1,-sticky=>"ne");
 
-    $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
-        # update
-	$ssh{default} = $ssh{connect_ssh};
-	my $ext = "sh";
-	if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
-	    $ext = "bat";
-	}
-	my $script_file = "pirana_start_".$rand_str.".".$ext;
-	if ($ssh{connect_ssh} == 0) {
-	    @nm_installations = keys(%nm_dirs);
-	} else {
+   #  $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+   #      # update
+   # 	$ssh{default} = $ssh{connect_ssh};
+    # 	my $ext = "sh";
+   # 	if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
+   # 	    $ext = "bat";
+   # 	}
+   # 	my $script_file = "pirana_start_".$rand_str.".".$ext;
+   # 	if ($ssh{connect_ssh} == 0) {
+   # 	    @nm_installations = keys(%nm_dirs);
+   # 	} else {
+   # 	    @nm_installations = keys(%nm_dirs_cluster);
+   # 	}
+   # 	my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
+   #      $nmfe_run_command = $run_command;
+   #      update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); 
+ #   }) -> grid(-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
+    my $ssh_cluster_optionmenu = $nmfe_run_frame -> Optionmenu (
+	-options=> \@ssh_names, -textvariable => \$ssh_chosen, 
+	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
+#	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
+	-width=>32, -border=>$bbw, -font=>$font_normal, 
+	-command=>
+	sub{
+	    # update
+	    my $ssh_ref = $ssh_all{$ssh_chosen};
+	    our %ssh = %$ssh_ref;
+	    my $loc = unix_path($ssh{local_folder});
+	    my $rem = unix_path($ssh{remote_folder});
+	    $run_dir = unix_path($cwd);
+	    if ((!( $run_dir =~ s/$loc/$rem/i )) && (!($ssh_chosen eq $local_run))) {
+		message ("Current folder not located on cluster, can't use SSH connect mode.\nPlease check settings.");
+		$ssh{connect_ssh} = 0;
+		$ssh_chosen = $local_run;
+		@nm_installations = keys(%nm_dirs);
+	    } else {
+		$ssh{connect_ssh} = 1;
+	    }
+#	    if ($ssh_chosen eq $local_run) {
+	    if ($ssh_chosen =~ m/none/ig) {
+		$ssh{connect_ssh} = 0;
+		print $ssh{connect_ssh};
+	    }
+	    
+	    $setting_internal{ssh_connect} = $ssh{connect_ssh};
+	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
+	    
+	    # update
+	    my $ext = "sh";
+	    if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
+		$ext = "bat";
+	    }
+	    my $script_file = "pirana_start_".$rand_str.".".$ext;
 	    @nm_installations = keys(%nm_dirs_cluster);
-	}
-	my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
-        $nmfe_run_command = $run_command;
-        update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); 
-   }) -> grid(-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
-
-    $nmfe_run_frame -> Label (-text=>"Submit to:", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>10,-column=>1,-sticky=>"ne");
+	    my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
+	    $nmfe_run_command = $run_command;
+	    update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);    
+	} 
+	) -> grid (-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
+    $nmfe_run_frame -> Label (
+	-text=>"Submit to:", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>10,-column=>1,-sticky=>"ne");
     my $sun_grid_engine = "Sun Grid Engine";
 #    if ($^O =~ m/MSWin/i){
 #	$sun_grid_engine .= " (connect to SGE using SSH)"
@@ -7037,6 +7104,8 @@ sub psn_run_window {
     } else {
 	$ssh{connect_ssh} = 1;
     }
+    my $loc = unix_path($ssh{local_folder});
+    my $rem = unix_path($ssh{remote_folder});
     if ((!( $run_dir =~ s/$loc/$rem/i )) && (!($ssh_chosen eq $local_run))) {
 	$ssh{connect_ssh} = 0;
 	$ssh_chosen = $local_run;
@@ -7197,11 +7266,11 @@ sub psn_run_window {
     my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
 
     my $ssh_cluster_optionmenu = $psn_run_frame -> Optionmenu(
-							      -background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
+	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
 #							      -background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
-							      -width=>16, -border=>$bbw, -font=>$font_normal, 
-				 -options=>\@ssh_names, -textvariable => \$ssh_chosen, -width=>32, -state=>"normal",
-				 -command=>
+	-width=>16, -border=>$bbw, -font=>$font_normal, 
+	-options=>\@ssh_names, -textvariable => \$ssh_chosen, -width=>32, -state=>"normal",
+	-command=>
     sub{
         # update
 	my $ssh_ref = $ssh_all{$ssh_chosen};
