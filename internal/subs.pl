@@ -714,19 +714,24 @@ sub ssh_setup_window {
     $ssh_connection_frame -> Label (-text=> "Cluster ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>3, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "Clustername ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>4, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> "SSH login ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>5, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
-    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>9, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Additional parameters for SSH ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Execute remote command before ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>9, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Grid submit command for PsN ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>10, -column=>1, -columnspan => 1, -sticky=>"nes");
+    for ($i = 1; $i <= 3; $i++) {
+	$ssh_connection_frame -> Label (-text=> "[Optional]", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7+$i, -column=>3, -columnspan => 1, -sticky=>"nws");
+    }
+    $ssh_connection_frame -> Label (-text=> "Remote mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6, -column=>1, -columnspan => 1, -sticky=>"nes");
+    $ssh_connection_frame -> Label (-text=> "Local mount location ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>7, -column=>1, -columnspan => 1, -sticky=>"nes");
     $ssh_connection_frame -> Label (-text=> " ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>10, -column=>1, -columnspan => 1, -sticky=>"nes");
 
 #    $ssh_connection_frame -> Checkbutton (-text=>"", -variable=> \$ssh_new{default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol) -> grid(-row=>1, -column=>2, -sticky=>"w");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{name}, -width=>12, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>4, -column=>2, -columnspan=>3, -sticky=>"wns");
     $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{login}, -width=>40, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>5, -column=>2, -columnspan=>3, -sticky=>"wnse");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>20,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -sticky=>"wns");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2,  -columnspan=>3,-sticky=>"wns");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>40, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>8, -column=>2, -columnspan=>3, -sticky=>"wnse");
-    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>40, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>9, -column=>2, -columnspan=>3, -sticky=>"wnse");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{parameters}, -width=>20,-font=>$font_normal, -background=>'#ffffff') -> grid(-row=>8, -column=>2, -sticky=>"wens");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{execute_before}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>9, -column=>2,  -columnspan=>1,-sticky=>"wens");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{submit_cmd}, -width=>20, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>10, -column=>2,  -columnspan=>1,-sticky=>"wens");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{remote_folder}, -width=>40, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>6, -column=>2, -columnspan=>3, -sticky=>"wnse");
+    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{local_folder}, -width=>40, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -columnspan=>3, -sticky=>"wnse");
 #    $ssh_connection_frame -> Entry (-textvariable=> \$ssh_new{psn_dir}, -width=>32, -font=>$font_normal, -background=>'#ffffff') -> grid(-row=>7, -column=>2, -sticky=>"w");
  
     $ssh_connection_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
@@ -5336,6 +5341,7 @@ sub update_psn_run_command {
     my @com = split (" ",$command_line);
     my $parameter_found=0;
     my $eq="=";
+    my %ssh = %$ssh_ref;
     if ($value eq "") {$eq = ""};
     foreach (@com) {
 	if ($_ =~ m/$parameter/g) {
@@ -5390,7 +5396,6 @@ sub build_psn_run_command {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", "default", 0, \%ssh, \%clusters);
 	$psn_command_line .= " ".$modelfile;
     }
-
 #    $psn_command_line = $ssh_add.$psn_command_line.$ssh_add2 ;
 #    print $psn_command_line."\n";
     return( $psn_command_line);
@@ -7044,7 +7049,7 @@ sub psn_run_window {
     my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
-                                                   -font=>$font, -background=>"#f6f6e6", -state=>'normal'
+                                                   -font=>$font, -background=>"#f5f5f5", -state=>'normal'
         )->grid(-column=>1, -row=>0, -columnspan=>3, -sticky=>'nwe');
  
    # Get PsN help information 
@@ -7293,7 +7298,12 @@ sub psn_run_window {
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	    ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
 
-	    $pre_text_formatted = $text_pre.$ssh_add;
+	    $pre_text_formatted = $text_pre . $ssh_add;
+	    if (($ssh{connect_ssh} == 1)&&(($ssh{submit_cmd} ne "")&&($ssh{submit_cmd} ne " "))) {
+		$pre_text_formatted = $pre_text_formatted. " " . $ssh{submit_cmd};
+	    }
+	    print $pre_text_formatted."\n";
+
 	    if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
 	    $ssh_label_pre -> configure (-text=>$pre_text_formatted);
 	    $ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
