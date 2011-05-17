@@ -1517,57 +1517,6 @@ sub show_param_estim_command {
     $estim_window -> raise();
 }
 
-sub R_plot_etas_distribution_command {
-  my @sel = $models_hlist -> selectionGet ();
-  if (@sel == 0) { message("First select a model / result file."); return(); }
-  my $model_id = @ctl_show[@sel[0]];
-  my $eta_file = $cwd."/".$model_id.".ETA" ;
-  unless (-e $eta_file) {
-      message ($model_id.".ETA was not found.\nNote that this feature is only available\when using NM version 7 or higher.");
-  };
-  unless (-d "pirana_temp") {mkdir ("pirana_temp")};
-  my $png = $cwd."/pirana_temp/model_id_etas.png" ;
-  my @args = ($eta_file, $png);
-  my $res = R_run_script ($R, $base_dir."/R/plot_etas.R", \@args);
-  if (-e $png) {
-      system ($png);
-  } else {
-      message ("For some reason, a plot could not be created. Please check R installation and Pirana settings.");
-  }
-}
-sub R_correlation_plot_command {
-### Purpose : create a csv file with the correlation matrix, feed it to R+ellipse and create a PDF.
-### Compat  : W+L-
-  unless (-d $software{r_dir}."/library/ellipse") {message ("You need to have the R-package 'ellipse' installed\nto use this function."); return();};
-  my @sel = $models_hlist -> selectionGet();
-  if (@sel == 0) { message("First select a model / result file."); return(); }
-  my $model_id = @ctl_show[@sel[0]];
-  make_clean_dir ($cwd."/pirana_temp");
-  my @corr_files;
-  if (-e $model_id.".cor") { # NM 7 or higher exports the corr.matrix to a file
-      convert_nm_table_file ($model_id.".cor");
-      @corr_files = dir ($cwd."/pirana_temp", $model_id.".cor");
-  } else {                   # NM 6 or lower: read correlation matrix from results file
-       my $lst_file = $model_id.".".$setting{ext_res};
-#       print $lst_file;
-       if (-e $lst_file) {
-	   my ($cov_ref, $inv_cov_ref, $corr_ref, $r_ref, $s_ref, $labels_ref) = get_cov_mat ($lst_file);
-	   my $available = output_matrix ($corr_ref, $labels_ref, "pirana_temp/".$model_id."_matrix_corr.csv");
-       } else {message ("Please select a model of which a result file exists (*.".$setting{ext_res}.")")}
-       @corr_files = dir ("pirana_temp", $model_id.".cor");
-  }
-  if (@corr_files == 0) {
-      message ("Error finding information for correlation matrix.")
-  } else {
-      my $png = $cwd."/pirana_temp/".$corr_file."matrix_corr.png";
-      my @args = ($cwd."/pirana_temp/", $png, $model_id);
-      my $res = R_run_script ($R, $base_dir."/R/plot_corr_matrix.R", \@args);
-      generate_HTML_from_images ($cwd."/pirana_temp/", "correlation.html");
-      start_command($software{browser}, '"file:///'.$cwd."/pirana_temp/correlation.html");
-  }
-  return();
-}
-
 sub generate_HTML_from_images {
     my ($dir, $html_file) = @_;
     open (HTML, ">".$dir."/".$html_file);
@@ -4925,12 +4874,17 @@ sub populate_models_hlist {
              #  $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -foreground=>'#A0A000', -background=>$mod_background,-font => $font_small);
              #}
              #$ofv_diff = rnd(-$ofv_diff,3); # round before printing
-	   } else {$ofv_diff=""; $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -pady=>$hlist_pady, -foreground=>'#000000', -background=>$mod_background,-font => $font_small);}
+	   } else {
+	       $ofv_diff=""; 
+	       $style_ofv = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -pady=>$hlist_pady, -foreground=>'#000000', -background=>$mod_background,-font => $font_small);
+	   }
 	   my $runno_text = "";
 	   for ($sp=0; $sp<$model_indent{$runno}; $sp++) {$runno_text .= "   "};
 	   if ($model_indent{$runno}>0) {$runno_text .= "» ";}
 	   $runno_text .= $runno;
 	   $runno_text =~ s/run//i;
+	   my $runno_ref_text = $models_refmod{$runno};
+	   $runno_ref_text =~ s/run//i;
 	   my $method_temp = $models_method{$runno};
 	   my $dataset_temp = extract_file_name ($models_dataset{$runno});
 	   
@@ -4976,7 +4930,7 @@ sub populate_models_hlist {
 	   }
           $models_hlist -> itemCreate($i, 0, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 1, -text => $runno_text.$add_condensed, -style=>$style);
-          $models_hlist -> itemCreate($i, 2, -text => $models_refmod{$runno}, -style=>$style);
+          $models_hlist -> itemCreate($i, 2, -text => $runno_ref_text, -style=>$style);
           $models_hlist -> itemCreate($i, 3, -text => $descr, -style=>$style );
           $models_hlist -> itemCreate($i, 4, -text => $method_temp, -style=>$style);
           $models_hlist -> itemCreate($i, 5, -text => $dataset_temp, -style=>$style);
@@ -5384,11 +5338,6 @@ sub build_psn_run_command {
     } else {
 	$psn_command_line = update_psn_run_command (\$psn_command_line, "-model", $model.".".$setting{ext_ctl}, 1, %ssh, %clusters);
     }
-
-    my $outputfile= $model.".".$setting{ext_res};
-    if ($psn_command eq "execute") {
-	$psn_command_line = update_psn_run_command (\$psn_command_line, "-outputfile", $outputfile, 1, \%ssh, \%clusters);
-    };
     if (($psn_command eq "sumo")||($psn_command eq "update_inits")) {
 	$psn_command_line .= " ".$outputfile;
     } else {
@@ -6887,7 +6836,7 @@ sub nmfe_run_window {
     $nmfe_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>17,-column=>1,-sticky=>"w");
 
     $close_prv = $setting_internal{quit_dialog};
-    $nmfe_run_frame -> Checkbutton (-text=>"Close this window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+    $nmfe_run_frame -> Checkbutton (-text=>"Close this dialog window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
 	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	}
@@ -7039,10 +6988,6 @@ sub psn_run_window {
 
     # build notebook
     my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
-    my $psn_notebook = $psn_run_frame -> NoteBook(-tabpadx=>5, -font=>$font, -border=>1, -backpagecolor=>$bgcol,-inactivebackground=>$bgcol, -background=>'#FFFFFF') -> grid(-row=>1, -column=>1, -columnspan=>4,-ipadx=>10, -ipady=>10, -sticky=>"nw");
-    my $psn_run_frame = $psn_notebook -> add("general", -label=>"General");
-    my $psn_conf_frame = $psn_notebook -> add("conf", -label=>"Psn.conf");
-
     my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -columnspan=>3, -row=> 0, -sticky=>"nwe");
     my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
@@ -7088,12 +7033,7 @@ sub psn_run_window {
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
     $psn_run_frame -> Label (-text=>"Model file(s):", -font=>$font_bold,-background=>$bgcol
 	) -> grid(-row=>2,-column=>1,-sticky=>"ens");
-#  my $models = @$modelfile;
     $psn_run_frame -> Label (-text => $modelfile, -font=>$font_normal, -background=>$bgcol, -foreground=>$grey) -> grid(-row=>2,-column=>2,-sticky=>"w");
-#    $psn_run_frame -> Entry (-textvariable=> $modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled', -border=>1, -relief=>'groove',) -> grid(-row=>2,-column=>2,-sticky=>"w");
-#    $psn_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
-#    $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50,-border=>1, -relief=>'groove',) -> grid(-row=>3,-column=>2,-sticky=>"wens");
-
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
 
 # ssh
@@ -7104,6 +7044,7 @@ sub psn_run_window {
     my @ssh_names = keys (%ssh_all);
     unshift (@ssh_names, $local_run);
     my $ssh_chosen = $setting_internal{cluster_default};
+
     if ($ssh_chosen eq $local_run) {
 	$ssh{connect_ssh} = 0;
     } else {
@@ -7111,7 +7052,8 @@ sub psn_run_window {
     }
     my $loc = unix_path($ssh{local_folder});
     my $rem = unix_path($ssh{remote_folder});
-    if ((!( $run_dir =~ s/$loc/$rem/i )) && (!($ssh_chosen eq $local_run))) {
+    my $run_dir = unix_path ($cwd);
+    unless ( $run_dir =~ s/$loc/$rem/i ) {
 	$ssh{connect_ssh} = 0;
 	$ssh_chosen = $local_run;
     }
@@ -7134,9 +7076,6 @@ sub psn_run_window {
         -width=>72, -relief=>'sunken', -border=>0, -height=>4, -highlightthickness=>0,
         -font=>$font_fixed_small, -background=>"#FFFFFF", -state=>'normal', -wrap=> 'word'
         )->grid(-column=>2, -row=>12, -columnspan=>1, -rowspan=>2, -sticky=>'nwes', -ipadx=>0);
- #   $psn_command_line_entry -> delete("1.0","end");
- #   print "****".$psn_command_line."###";
- #   $psn_command_line_entry -> insert("1.0", $psn_command_line);
 
     $psn_run_button = $psn_run_frame -> Button (-image=> $gif{run}, -state=>'disabled',-background=>$button, -width=>50,-height=>40, -activebackground=>$abutton, -border=>$bbw)
         -> grid(-row=>12, -column=>3, -rowspan=>2, -columnspan=>2, -sticky=>"wens");
@@ -7196,13 +7135,6 @@ sub psn_run_window {
     $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_bold, -background=>$bgcol
 	) -> grid(-row=>8,-column=>1,-sticky=>"ens");
     $psn_run_frame -> Checkbutton (-text=>"(without console window)", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
-        # update
-        # $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
-        # $psn_command_line = update_psn_run_command (\$psn_command_line, "-nm_version", $nm_version_chosen, 1, \%ssh, \%clusters);
-        # $psn_command_line_entry -> delete("1.0","end");
-        # $psn_command_line_entry =~ s/\n//g;
-        # $psn_command_line_entry -> insert("1.0", $psn_command_line);
-
 	($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
 	($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
 
@@ -7216,7 +7148,7 @@ sub psn_run_window {
      $psn_run_frame -> Label (-text=>" ", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
 
-    $psn_run_frame -> Checkbutton (-text=>"Close this window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
+    $psn_run_frame -> Checkbutton (-text=>"Close this dialog window after starting run", -variable=> \$setting_internal{quit_dialog}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
 	if ($setting_internal{quit_dialog} != $close_prv) { #update internal settings
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	}
@@ -7265,34 +7197,30 @@ sub psn_run_window {
     unshift (@psn_nm_installations, "default");
     $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
 
-    # get PsN.conf and display
-    my $text; my $conf_file;
-    unless ($ssh{connect_ssh} == 1) {
-	($text, $conf_file) = update_psn_conf_window ();
-    }
-    my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
-
     my $ssh_cluster_optionmenu = $psn_run_frame -> Optionmenu(
-#	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
 	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
 	-width=>16, -border=>$bbw, -font=>$font_normal, 
 	-options=>\@ssh_names, -textvariable => \$ssh_chosen, -width=>32, -state=>"normal",
 	-command=>
     sub{
         # update
+	$nm_versions_menu -> configure (-options => ["Loading..."], -variable => \$nm_version_chosen,);   
+	$nm_versions_menu -> update();
 	my $ssh_ref = $ssh_all{$ssh_chosen};
 	our %ssh = %$ssh_ref;
-#       $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
 	if ($ssh_chosen eq $local_run) {
 	    	$ssh{connect_ssh} = 0;
 	} else {
 	    	$ssh{connect_ssh} = 1;
 	}
 	$setting_internal{ssh_connect} = $ssh{connect_ssh};
+	$setting_internal{cluster_default} = $ssh_chosen;
+
 	my $loc = unix_path($ssh{local_folder});
 	my $rem = unix_path($ssh{remote_folder});
-	$run_dir = unix_path($cwd);
+	my $run_dir = unix_path($cwd);
 	if ((!( $run_dir =~ s/$loc/$rem/i )) && (!($ssh_chosen eq $local_run))) {
+	    print $run_dir ."-". $loc ."-". $rem."\n";
 	    message ("Current folder not located on cluster, can't use SSH connect mode.\nPlease check settings.");
 	    $ssh{connect_ssh} = 0;
 	    $ssh_chosen = $local_run;
@@ -7304,7 +7232,6 @@ sub psn_run_window {
 	    if (($ssh{connect_ssh} == 1)&&(($ssh{submit_cmd} ne "")&&($ssh{submit_cmd} ne " "))) {
 		$pre_text_formatted = $pre_text_formatted. " " . $ssh{submit_cmd};
 	    }
-	    print $pre_text_formatted."\n";
 
 	    if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
 	    $ssh_label_pre -> configure (-text=>$pre_text_formatted);
@@ -7324,15 +7251,9 @@ sub psn_run_window {
 	    my @psn_nm_installations = keys(%psn_nm_versions_copy);
 	    unshift (@psn_nm_installations, "default");
 	    $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
-	    
-	    # update psn.conf window
-	    unless ($ssh{connect_ssh} == 1) {
-		my ($text, $conf_file) = update_psn_conf_window ();
-		$psn_conf_text_filename -> destroy();
-		($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
-	    }
+	    	    
 	}
-	 })->grid(-row=>6,-column=>2,-sticky=>'wns');
+	})->grid(-row=>6,-column=>2,-sticky=>'wns');
 
     $psn_run_button -> configure ( -border=>$bbw, -state=> "normal",-command=> sub {
         my $files = "";
@@ -7942,7 +7863,6 @@ sub show_run_frame {
 	$models_notes{$model_id} = $model_notes;
 	my $note_strip = $model_notes;
 	if ($condensed_model_list == 1) {$note_strip =~ s/\n/\ /g;}
-	print $model_strip;
 	$models_hlist -> itemConfigure(@sel[0], 12, -text => $note_strip);
 	$models_hlist -> update();
 	return(1);
@@ -8036,7 +7956,6 @@ sub model_properties_window {
       chomp ($model_notes);
       $model_notes =~ s/\'//g; # strip '
       $model_notes =~ s/\"//g; # strip "
-      print $model_id;
       db_insert_model_info ($model_id, $descr, $model_notes, "pirana.dir");
       if ($descr_new ne $descr) {change_model_description($model_id, $descr_new)};
       $models_notes{$model_id} = $model_notes;
@@ -8253,7 +8172,6 @@ sub update_psn_params_function {
 ### Purpose : Update '-outputfile=xxx.lst' with current model number in the psn parameter entry
 ### Compat  : W+L+?
     my ($param) = @_[1];
-    print $param;
     if ($psn_parameters =~ m/$param\=/i) {
 	$pos1 = length $`;
 	if (substr ($psn_parameters, $pos1, length()-$pos1) =~ m/\s-/) {
