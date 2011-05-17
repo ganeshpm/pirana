@@ -5242,7 +5242,6 @@ sub update_psn_run_script_area {
 sub build_nmfe_run_command {
     ($script_file, $model_list_ref, $nm_inst, $method, $run_in_new_dir, $new_dirs_ref, $run_in_background, $clusters_ref, $ssh_ref) = @_;
     my %ssh = %$ssh_ref;
-    print $ssh{connect_ssh};
     my @files = @$model_list_ref;
     my @nm_installations;
     if ($ssh{connect_ssh} == 1) {
@@ -6543,6 +6542,7 @@ sub nmfe_run_window {
     my @runs = $models_hlist -> selectionGet ();
     my @files = @ctl_show[@runs];
     my $file_string = join (', ',@files);
+    my $font_bold = $font_normal;
 
     unless (%clusters) {
 	our %clusters;
@@ -6628,10 +6628,10 @@ sub nmfe_run_window {
 	    $parallelization_text .= ' "[nodes]='.$pnm_nodes_chosen_clean.'"' ;
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
-    }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wnse');
+    }) -> grid(-row=>11,-column=>3,-columnspan=>1,-sticky => 'wnse');
     foreach (@pnm_nodes) {$_ .= " nodes"};
     my $pnm_nodes_menu = $nmfe_run_frame -> Optionmenu(-options=> [@pnm_nodes],
-      -border=>$bbw, -variable=> \$pnm_nodes_chosen,
+      -border=>$bbw, -variable=> \$pnm_nodes_chosen, 
       -background=>$run_color,-activebackground=>$arun_color,
       -font=>$font_normal, -background=>"#c0c0c0",
       -activebackground=>"#a0a0a0", -command=> sub{
@@ -6642,26 +6642,38 @@ sub nmfe_run_window {
 	    $parallelization_text .= ' "[nodes]='.$pnm_nodes_chosen_clean.'"' ;
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
-    }) -> grid(-row=>12,-column=>4,-columnspan=>1,-sticky => 'wnse');
+    }) -> grid(-row=>12,-column=>3,-columnspan=>1,-sticky => 'wnse');
+    my $para_label = $nmfe_run_frame -> Label (-foreground=>$grey,
+	-text=>"Parafile: ", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>11,-column=>2,-sticky=>"nes");
+    my $nodes_label = $nmfe_run_frame -> Label (-foreground=>$grey,
+	-text=>"Nodes: ", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>12,-column=>2,-sticky=>"nes");
     my $pnm_choose = $nmfe_run_frame -> Checkbutton (-text=>"Parallelization:", -variable=> \$parallelization, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
 	if ($parallelization == 1) {
 	    $parallelization_text = '"-parafile='.$pnm_file_chosen.'" "[nodes]=2"' ;   
 	    $pnm_menu -> configure (-state=>"normal");
 	    $pnm_nodes_menu -> configure (-state=>"normal");
+	    $para_label -> configure (-foreground=>"#000000");
+	    $nodes_label -> configure (-foreground=>"#000000");
 	} else {
 	    $parallelization_text = "";
 	    $pnm_menu -> configure (-state=>"disabled");
 	    $pnm_nodes_menu -> configure (-state=>"disabled");
+	    $para_label -> configure (-foreground=>$grey);
+	    $nodes_label -> configure (-foreground=>$grey);
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu, $parallelization_text);
-    }) -> grid(-row=>12,-column=>2,-columnspan=>1,-sticky=>"nw");
+    }) -> grid(-row=>11,-column=>2,-columnspan=>1,-sticky=>"nws");
 
-    my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(-options=>[],
-      -variable => \$nm_version_chosen,
-      -border=>$bbw,
-      -background=>$run_color,-activebackground=>$arun_color,
-      -font=>$font_normal, -background=>"#c0c0c0",
-      -activebackground=>"#a0a0a0", -command=> sub{
+    my $nm_versions_menu = $nmfe_run_frame -> Optionmenu(
+	-options=>[],
+	-variable => \$nm_version_chosen,
+	-border=>$bbw,-width=>32,
+#      -background=>$run_color,-activebackground=>$arun_color,   -activebackground=>"#a0a0a0", -background=>"#c0c0c0",
+	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
+	-font=>$font_normal, 
+	-command=> sub{
         if (-e unix_path($nm_dirs{$nm_version_chosen}."/test/runtest.pl")) {
           $run_method_nm_type="NMQual";
         } else {$run_method_nm_type="nmfe"};
@@ -6709,14 +6721,14 @@ sub nmfe_run_window {
     }
 
     $nmfe_run_frame -> Label (
-	-text=>"Model file(s):", -font=>$font_normal,-background=>$bgcol
+	-text=>"Model file(s):", -font=>$font_bold,-background=>$bgcol
 	) -> grid(-row=>1,-column=>1,-sticky=>"e");
     $nmfe_run_frame -> Label (
-	-text=>$file_string, -font=>$font_normal,-background=>$bgcol
+	-text=>$file_string, -font=>$font_normal,-background=>$bgcol, -foreground => $grey,
 	) -> grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>"w");
 
     $nmfe_run_frame -> Label (
-	-text=>"Run directory:",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
+	-text=>"Run directory:",-font=>$font_bold, -background=>$bgcol) -> grid(-row=>4,-column=>1,-sticky=>"e");
     my $dir = $cwd;
     my $run_directory = $nmfe_run_frame -> Entry (
 	-textvariable=>\$dir, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50
@@ -6735,14 +6747,14 @@ sub nmfe_run_window {
 
     ### Run command and start script
     $nmfe_run_frame -> Label (
-	-text=>"Script contents:\n", -font=>$font_normal, -background=>$bgcol
+	-text=>"Script contents:\n", -font=>$font_bold, -background=>$bgcol
     ) -> grid(-row=>16,-column=>1,-sticky=>"ne");
     my $nmfe_run_script = $nmfe_run_frame -> Entry (
 	-textvariable=> \$nmfe_run_command,
 	-background=>'#ffffff', -width=>32, -border=>1, -relief=>'groove', -font=>$font_normal
 	) -> grid(-row=>14,-column=>2,-columnspan=>3,-sticky=>"nwe");
     $nmfe_run_frame -> Label (
-	-text=>"Start script:", -font=>$font_normal, -background=>$bgcol
+	-text=>"Start script:", -font=>$font_bold, -background=>$bgcol
     ) -> grid(-row=>14,-column=>1,-sticky=>"ne");
 
     $nmfe_run_frame -> Checkbutton (
@@ -6759,8 +6771,8 @@ sub nmfe_run_window {
 	-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
 
     # NM installations
-    my $nm_text = "NM installation";
-    $nmfe_run_frame -> Label (-text=>$nm_text.":", -font=>$font_normal, -background=>$bgcol
+    my $nm_text = "NONMEM";
+    $nmfe_run_frame -> Label (-text=>$nm_text.":", -font=>$font_bold, -background=>$bgcol
 	) -> grid(-row=>3,-column=>1,-sticky=>"e");
     my $new_nm_button = $nmfe_run_frame -> Button (-image=>$gif{plus}, -font=>$font, -border=>$bbw, -background=>$button, -activebackground=>$abutton, -command=> sub{
         manage_nm_window();
@@ -6792,30 +6804,16 @@ sub nmfe_run_window {
     my @params = ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);
  
     $nmfe_run_frame -> Label (
-	-text=>"Cluster: ", -font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>9,-column=>1,-sticky=>"ne");
+	-text=>"Clusters: ", -font=>$font_bold, -background=>$bgcol
+	) -> grid(-row=>9,-column=>1,-sticky=>"nes");
+    $nmfe_run_frame -> Label (
+	-text=>"Connect to: ", -font=>$font_normal, -background=>$bgcol
+	) -> grid(-row=>9,-column=>2,-sticky=>"nes");
 
-   #  $nmfe_run_frame -> Checkbutton (-text=>"SSH", -variable=> \$ssh{connect_ssh}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol,  -command=>sub{
-   #      # update
-   # 	$ssh{default} = $ssh{connect_ssh};
-    # 	my $ext = "sh";
-   # 	if (($^O =~ m/MSWin/i)&&($ssh{connect_ssh}==0)) {
-   # 	    $ext = "bat";
-   # 	}
-   # 	my $script_file = "pirana_start_".$rand_str.".".$ext;
-   # 	if ($ssh{connect_ssh} == 0) {
-   # 	    @nm_installations = keys(%nm_dirs);
-   # 	} else {
-   # 	    @nm_installations = keys(%nm_dirs_cluster);
-   # 	}
-   # 	my ($script_file, $run_command, $script_ref) = build_nmfe_run_command ($script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh);
-   #      $nmfe_run_command = $run_command;
-   #      update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu); 
- #   }) -> grid(-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
     my $ssh_cluster_optionmenu = $nmfe_run_frame -> Optionmenu (
 	-options=> \@ssh_names, -textvariable => \$ssh_chosen, 
-	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
-#	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
+#	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
+	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
 	-width=>32, -border=>$bbw, -font=>$font_normal, 
 	-command=>
 	sub{
@@ -6836,7 +6834,6 @@ sub nmfe_run_window {
 #	    if ($ssh_chosen eq $local_run) {
 	    if ($ssh_chosen =~ m/none/ig) {
 		$ssh{connect_ssh} = 0;
-		print $ssh{connect_ssh};
 	    }
 	    
 	    $setting_internal{ssh_connect} = $ssh{connect_ssh};
@@ -6853,11 +6850,11 @@ sub nmfe_run_window {
 	    $nmfe_run_command = $run_command;
 	    update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu);    
 	} 
-	) -> grid (-row=>9,-column=>2,-columnspan=>2,-sticky=>"nw");
-    $nmfe_run_frame -> Label (
-	-text=>"Submit to:", -font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>10,-column=>1,-sticky=>"ne");
-    my $sun_grid_engine = "Sun Grid Engine";
+	) -> grid (-row=>9,-column=>3,-columnspan=>1,-sticky=>"nwes");
+    # $nmfe_run_frame -> Label (
+    # 	-text=>"Submit to:", -font=>$font_normal, -background=>$bgcol
+    # 	) -> grid(-row=>10,-column=>1,-sticky=>"ne");
+    my $sun_grid_engine = "Submit to SGE";
 #    if ($^O =~ m/MSWin/i){
 #	$sun_grid_engine .= " (connect to SGE using SSH)"
 #    }
@@ -6868,7 +6865,7 @@ sub nmfe_run_window {
 #	    $nmfe_run_script -> configure (-state=>'normal');
 	}
 	update_nmfe_run_script_area ($command_area, $script_file, \@files, $nm_version_chosen, $method_chosen, $run_in_new_dir, \@new_dirs, $run_in_background, \%clusters, \%ssh, $nm_versions_menu );
-    }) -> grid(-row=>10,-column=>2,-columnspan=>2,-sticky=>"nw");
+    }) -> grid(-row=>9,-column=>2,-columnspan=>1,-sticky=>"nws");
 
     if (($setting{use_pcluster}==1)&&($^O =~ m/MSWin/i)) {
 	$nmfe_run_frame -> Checkbutton (-text=>"PCluster", -variable=> \$clusters{run_on_pcluster}, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
@@ -7028,6 +7025,7 @@ sub psn_run_window {
     my $psn_run_window = $mw -> Toplevel(-title=>'PsN Toolkit ('.$psn_option.")");
     my $psn_help_not_found = "PsN help information not imported into Pirana. Please go to: \n    Tools --> PsN --> Update PsN help files. \n\n";
     my $local_run = "None (local)";
+    my $font_bold = $font_normal;
     
     $psn_run_window -> OnDestroy ( sub{
         undef $unmfe_run_window; undef $nmfe_run_frame;
@@ -7088,11 +7086,13 @@ sub psn_run_window {
 	}) -> grid (-column=>1, -row=> 2, -columnspan=>1, -sticky=>"nswe");
 	
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>1,-column=>1,-sticky=>"w");
-    $psn_run_frame -> Label (-text=>"Model file:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>2,-column=>1,-sticky=>"w");
+    $psn_run_frame -> Label (-text=>"Model file(s):", -font=>$font_bold,-background=>$bgcol
+	) -> grid(-row=>2,-column=>1,-sticky=>"ens");
 #  my $models = @$modelfile;
-    $psn_run_frame -> Entry (-textvariable=> $modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled', -border=>1, -relief=>'groove',) -> grid(-row=>2,-column=>2,-sticky=>"w");
-    $psn_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
-    $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50,-border=>1, -relief=>'groove',) -> grid(-row=>3,-column=>2,-sticky=>"wens");
+    $psn_run_frame -> Label (-text => $modelfile, -font=>$font_normal, -background=>$bgcol, -foreground=>$grey) -> grid(-row=>2,-column=>2,-sticky=>"w");
+#    $psn_run_frame -> Entry (-textvariable=> $modelfile, -font=>$font_normal,-background=>$white, -state=>'disabled', -border=>1, -relief=>'groove',) -> grid(-row=>2,-column=>2,-sticky=>"w");
+#    $psn_run_frame -> Label (-text=>"Dataset:", -font=>$font_normal,-background=>$bgcol) -> grid(-row=>3,-column=>1,-sticky=>"w");
+#    $psn_run_frame -> Entry (-textvariable=>$models_dataset{$model}, -font=>$font_normal,-background=>$white, -state=>'disabled', -width=>50,-border=>1, -relief=>'groove',) -> grid(-row=>3,-column=>2,-sticky=>"wens");
 
     $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
 
@@ -7142,8 +7142,9 @@ sub psn_run_window {
         -> grid(-row=>12, -column=>3, -rowspan=>2, -columnspan=>2, -sticky=>"wens");
     $help -> attach($psn_run_button, "Start run");
 
-    my $nm_text = "NM installation";
-    $psn_run_frame -> Label (-text=>$nm_text.":", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>8,-column=>1,-sticky=>"w");
+    my $nm_text = "NONMEM";
+    $psn_run_frame -> Label (-text=>$nm_text.":", -font=>$font_bold, -background=>$bgcol
+	) -> grid(-row=>7,-column=>1,-sticky=>"ens");
 
     my $scm_file;
     if ($psn_option eq "scm") {
@@ -7192,7 +7193,8 @@ sub psn_run_window {
      }
 
 #  my $psn_background = 0;
-    $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_normal, -background=>$bgcol) -> grid(-row=>6,-column=>1,-sticky=>"w");
+    $psn_run_frame -> Label (-text=>"Run in background: ", -font=>$font_bold, -background=>$bgcol
+	) -> grid(-row=>8,-column=>1,-sticky=>"ens");
     $psn_run_frame -> Checkbutton (-text=>"(without console window)", -variable=> \$psn_background, -font=>$font_normal,  -selectcolor=>$selectcol, -activebackground=>$bgcol, -selectcolor=>$selectcol, -command=> sub{
         # update
         # $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
@@ -7208,9 +7210,9 @@ sub psn_run_window {
 	if (length($text_pre.$ssh_add)>66) {$pre_text_formatted = substr($text_pre.$ssh_add, 0, 66)."..."};
 	$ssh_label_pre -> configure (-text=>$pre_text_formatted);
 	$ssh_label_post -> configure (-text=>$ssh_add2.$text_post);
-    }) -> grid(-row=>6,-column=>2,-sticky=>"w");
-    $psn_run_frame -> Label (-text=>"Cluster:", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>7,-column=>1,-sticky=>"nsw");
+    }) -> grid(-row=>8,-column=>2,-sticky=>"w");
+    $psn_run_frame -> Label (-text=>"Cluster:", -font=>$font_bold, -background=>$bgcol
+    ) -> grid(-row=>6,-column=>1,-sticky=>"ens");
      $psn_run_frame -> Label (-text=>" ", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>9,-column=>1,-sticky=>"ne");
 
@@ -7224,8 +7226,8 @@ sub psn_run_window {
 	) -> grid(-row=>11,-column=>1,-sticky=>"nes");
     $psn_run_frame -> Label (-text=>"Command suffix:",-font=>$font_small, -background=>$bgcol, -foreground=>$grey
 	) -> grid(-row=>14,-column=>1,-sticky=>"nes");
-    $psn_run_frame -> Label (-text=>"PsN command line:\n",-font=>$font_normal, -background=>$bgcol
-	) -> grid(-row=>12,-column=>1,-sticky=>"nw");
+    $psn_run_frame -> Label (-text=>"PsN command line:\n",-font=>$font_bold, -background=>$bgcol
+	) -> grid(-row=>12,-column=>1,-sticky=>"ens");
     # $psn_run_frame -> Label (-text=>" ",-font=>$font_normal, -background=>$bgcol) -> grid(-row=>10,-column=>1,-sticky=>"w");
 
     $psn_run_frame -> Button (-text=>"History", -background=>$button, -activebackground=>$abutton, -border=>$bbw, -font=>$font_normal , -command=> sub {
@@ -7234,8 +7236,8 @@ sub psn_run_window {
 
     my $nm_versions_menu = $psn_run_frame -> Optionmenu(
         -border=>$bbw, -width=>32, -font=>$font_normal, 
-#	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
-	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
+	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
+#	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
 	-command=> sub{
 	    unless ($psn_option eq "sumo") { # no need for building the PsN statement
                 $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
@@ -7248,7 +7250,7 @@ sub psn_run_window {
             $psn_command_line_entry -> delete("1.0","end");
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
-        })-> grid(-row=>8,-column=>2,-sticky => 'wns');
+        })-> grid(-row=>7,-column=>2,-sticky => 'wns');
     $nm_versions_menu -> configure (-options => ["Loading..."], -variable => \$nm_version_chosen,);   
 
     center_window($psn_run_window, $setting{center_window}); # center after adding frame (redhat)
@@ -7271,8 +7273,8 @@ sub psn_run_window {
     my ($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 1);
 
     my $ssh_cluster_optionmenu = $psn_run_frame -> Optionmenu(
-	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
-#							      -background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
+#	-background=>"#c0c0c0", -activebackground=>"#a0a0a0", 
+	-background=>$lightblue, -activebackground=>$darkblue, -foreground=>$white, -activeforeground=>$white, 
 	-width=>16, -border=>$bbw, -font=>$font_normal, 
 	-options=>\@ssh_names, -textvariable => \$ssh_chosen, -width=>32, -state=>"normal",
 	-command=>
@@ -7330,8 +7332,7 @@ sub psn_run_window {
 		($psn_conf_text, $psn_conf_text_filename) = text_edit_window_build ($psn_conf_frame, $text, $conf_file, $font_fixed, 70, 22, 0);
 	    }
 	}
-	 })->grid(-row=>7,-column=>2,-sticky=>'wns');
-#    if (int(keys (%ssh_all)) == 0) {$ssh_cluster_optionmenu -> configure (-state => 'disabled'); }
+	 })->grid(-row=>6,-column=>2,-sticky=>'wns');
 
     $psn_run_button -> configure ( -border=>$bbw, -state=> "normal",-command=> sub {
         my $files = "";
@@ -7351,9 +7352,7 @@ sub psn_run_window {
         $psn_params =~ s/\"+$//;  #remove trailing spaces
         my $psn_nm_version = "";
         @runs = $models_hlist -> selectionGet ();
- #       $psn_commands{$psn_option} = $psn_params;
- #       save_ini ($home_dir."/ini/psn.ini", \%psn_commands, \%psn_commands_descr, $base_dir."/ini_defaults/psn.ini");
-	
+
         psn_history_save_to_log ($psn_command_line);
         exec_run_psn ($psn_command_line, \%ssh, $modelfile, $model_description, $text_pre.$ssh_add, $ssh_add2.$text_post);
 

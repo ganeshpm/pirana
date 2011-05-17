@@ -47,7 +47,7 @@
 [S] Model implementation
 
 [Q] [model_type] Model implementation:
-[O] [model_type,("ADVAN1=1 cmp iv","ADVAN2=1 cmp oral","ADVAN3=2 cmp iv","ADVAN4=2 cmp oral","ADVAN5=general linear model","ADVAN6","ADVAN7=general linear model (alt.)","ADVAN8=general non-linear model (stiff)","ADVAN9=non-linear  model  with  equilibrium  comp.","ADVAN10=One Compartment Model with Michaelis-Menten CL","ADVAN11=3 cmp iv","ADVAN12=3 cmp oral","ADVAN13=general non-linear model(alt.)","PRED=User-supplied routine")] (1) [/C]
+[O] [model_type,("ADVAN1=1 cmp iv","ADVAN2=1 cmp oral","ADVAN3=2 cmp iv","ADVAN4=2 cmp oral","ADVAN5=general linear model","ADVAN6=general non-linear model","ADVAN7=general linear model (alt.)","ADVAN8=general non-linear model (stiff)","ADVAN9=non-linear  model  with  equilibrium  comp.","ADVAN10=One Compartment Model with Michaelis-Menten CL","ADVAN11=3 cmp iv","ADVAN12=3 cmp oral","ADVAN13=general non-linear model(alt.)","PRED=User-supplied routine")] (1) [/C]
 [/Q]
 
 [Q] [error_model] Error model:

@@ -38,11 +38,11 @@
 [S] Parallelization options
 
 [Q] [n_nodes_declare] Number of nodes to declare: 
-[O] [n_nodes_declare, ("1", "2", "4", "6", "8", "10", "12", "16")] 4 [/O]
+[O] [n_nodes_declare, ("1", "2", "4", "6", "8", "10", "12", "16", "32")] 4 [/O]
 [/Q]
 
 [Q] [n_nodes_use] Number of nodes to use: 
-[O] [n_nodes_use, ("1", "2", "4", "6", "8", "10", "12", "16")] 2 [/O]
+[O] [n_nodes_use, ("1", "2", "4", "6", "8", "10", "12", "16", "32")] 2 [/O]
 [/Q]
 
 [Q] [parse_type] Parse type: 
