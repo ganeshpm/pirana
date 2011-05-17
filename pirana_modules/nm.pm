@@ -1749,13 +1749,13 @@ sub extract_from_model {
   for (my $j =0; $j < 20; $j++) {
     if (substr(@ctl_lines[$j],0,1) eq ";") {
       if ((@ctl_lines[$j] =~ m/Ref/i)||(@ctl_lines[$j] =~ m/Parent/i)||(@ctl_lines[$j] =~ m/based on/i)) {  # Census uses 'Parent', but you can also use anything containing Ref
-        @ctl_lines[$j] =~ s/\=/:/g;  # for people that code 'Ref=001'
-        @ctl_lines[$j] =~ s/\s/:/;   #in between spaces
+        @ctl_lines[$j] =~ s/\=/\:/g;  # for people that code 'Ref=001'
+        @ctl_lines[$j] =~ s/\s/\:/;   #in between spaces
         my @l = split (/\:/, @ctl_lines[$j]); # get last word (hopefully the ref model no#)
-        $refmod = @l[int(@l)-1];
+        $refmod = pop(@l);
         $refmod =~ s/^\s+//; #remove leading spaces
 	$refmod =~ s/\"+$//;  #remove trailing spaces
-        chomp ($refmod);
+	$refmod =~ s/[\r\n]//g; 
       }
       # PsN run specification format:
       if ((substr(@ctl_lines[$j], 0,2) eq ";;")&&(@ctl_lines[$j] =~ m/based on:/i)) {  # Census uses 'Parent', but you can also use anything containing Ref
