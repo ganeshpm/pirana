@@ -8393,8 +8393,8 @@ sub show_inter_window {
         -width      => 80
     )->grid(-column => 0, -columnspan=>7,-row => 1, -sticky=>"wens");
 
-    my @headers_inter = (" ","Parameter", "Estimate", "Grad." , "Initial", "Min", "Max");
-    my @headers_inter_widths = (42, 150, 60, 100, 60, 60, 60, 100, 100);
+    my @headers_inter = (" ","Parameter", "Estimate", "Gradient" , "Initial", "Min", "Max");
+    my @headers_inter_widths = (50, 150, 60, 70, 60, 60, 60, 100, 100);
     our $grid_inter = $inter_window_frame ->Scrolled(
 	'HList', 
         -head       => 1,
@@ -8809,7 +8809,7 @@ sub update_inter_results_dialog {
 	  my $style;
 	  if ($n_grad > 0) {
 	      if (($curr_grad == 0)&&($n_grad > 0)) {$style = $align_right_red} else {$style = $th_right;}
-	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
+	      $grid_inter->itemCreate($i, 3, -text => $curr_grad, -style=>$style);
 	      $curr_grad = shift (@gradients);
 	  }
       } else {
@@ -8825,49 +8825,102 @@ sub update_inter_results_dialog {
   my @om_fix = @{$mod{om_fix}};
   my @om_same = @{$mod{om_same}}; 
   my @om_init = @{$mod{om_init}};
-  my $om_header = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#c0c0c0', -font => $font_normal);
+  my @om_struct =@{$mod{om_struct}};
+#  print join (" ", @om_struct);
+#  print int (@om_struct);
+  my $om_header = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#c0c0c0', -font => $font_small);
   my $om_left   = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#f0f0f0', -font => $font_normal);
   my $om_right  = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#f0f0f0', -font => $font_normal);
-  foreach (@omegas) {
-      unless ($grid_inter -> infoExists($i)) {
-	  $grid_inter->add($i);
+  my $iov_left  = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#e0e0e0', -font => $font_normal);
+  my $iov_right = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#e0e0e0', -font => $font_normal);
+  my @om_labels; my $j = 1;
+  my $cnt_om = 0;
+  my $cnt_no_same = 0;
+  my $n_om = int(@om_struct); # number of omega blocks
+  my $init = shift(@om_init);
+  foreach(@om_struct) { if ($_ > 1) { $n_om = $n_om - ($_ - 1); } }
+  for ($k = 0; $k < $n_om ; $k++ ) {
+      my $diag = @om_struct[$k];
+      my $block_size = block_size($diag);
+      if ($diag == 0) { # e.g. SAME 
+	  $block_size = 1;
       }
-      $grid_inter->itemCreate($i, 0, -text => "OM".(($i-$n)+1), -style=>$om_header);
-      $grid_inter->itemCreate($i, 1, -text => @om_descr[($i-$n)], -style=>$om_left);
-      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$om_right);
-      unless ((@om_fix[($i-$n)] eq "FIX")||(@om_same[($i-$n)] == 1)) {
-	  my $style;
-	  if ($n_grad > 0) {
-	      if ($curr_grad == 0) {$style = $align_right_red} else {$style = $om_right;}
-	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
-	      $curr_grad = shift (@gradients);
+      my $row = 1;
+      my $col = 1;
+      my $cnt_om_last = $cnt_om;
+      for ($p = 1; $p <= $block_size; $p++) {
+	  my @omega_curr = @{@omegas[($cnt_om_last+$row-1)]};
+	  my $om = @omega_curr[($cnt_om_last+$col-1)];
+	  unless ($grid_inter -> infoExists($i)) {
+	      $grid_inter->add($i);
 	  }
-      }  else {
-	  my $text = "FIX";
-	  if (@om_same[($i-$n)] == 1) {$text = "SAME"}
-	  $grid_inter->itemCreate($i, 3, -text => $text, -style=>$om_right);
+	  unless (@om_same[$cnt_om] == 1) {
+	      $style_right = $om_right;
+	      $style_left = $om_left;
+	      $grid_inter -> itemCreate($i, 4, -text => rnd ($init, 4) , -style=>$style_right);
+	      $grid_inter->itemCreate($i, 2, -text => $om, -style=>$style_right);
+	  } else {
+	      $style_right = $iov_right;
+	      $style_left = $iov_left;
+	      $grid_inter -> itemCreate($i, 2, -text => "..." , -style=>$style_right);
+	      $grid_inter -> itemCreate($i, 4, -text => "" , -style=>$style_right);
+	  }
+	  $grid_inter -> itemCreate($i, 0, -text => "OM".($cnt_om_last+$col).($cnt_om_last+$row), -style=>$om_header);
+	  unless ((@om_fix[($cnt_om_last-1)] eq "FIX")||(@om_fix[($cnt_om_last-1)] == 1)) {
+	      my $style;
+	      my $text = $curr_grad;
+	      if (@om_same[($cnt_om)] == 1) {
+		  $text = "";
+	      } 
+	      if (($curr_grad == 0)&&(@om_same[$cnt_om] == 0)) {$style = $align_right_red} else {$style = $style_right;}
+	      $grid_inter->itemCreate($i, 3, -text => $text, -style=>$style);
+	  }  else {
+	      my $text = "FIX";
+	      if (@om_same[($cnt_om)] == 1) {
+		  $text = "";
+		  $style = $iov_right;
+	      } 
+	      $grid_inter -> itemCreate($i, 3, -text => $text, -style=>$style_right);
+	  }
+	  if ($col == $row) { # diag
+	      $grid_inter -> itemCreate($i, 1, -text => @om_descr[$cnt_om], -style=>$style_left);
+	      $cnt_om++;
+	      $row++;
+	      $col = 1;
+	      unless (@om_same[($cnt_om)] == 1) {
+		  $cnt_no_same++;
+	      }
+	  } else {
+	      $grid_inter->itemCreate($i, 1, -text => "", -style=>$style_left);
+	      $col++;
+	  }
+	  $grid_inter->itemCreate($i, 5, -text => "", -style=>$style_right);
+	  $grid_inter->itemCreate($i, 6, -text => "", -style=>$style_right);
+	  unless (@om_same[($cnt_om)] == 1) {
+	      $init = shift (@om_init);
+	      $curr_grad = shift (@gradients);
+	  } 
+	  $i++;
       }
-      $grid_inter->itemCreate($i, 4, -text => rnd (@om_init[($i-$n)],4) , -style=>$om_right);
-      $grid_inter->itemCreate($i, 5, -text => "", -style=>$om_right);
-      $grid_inter->itemCreate($i, 6, -text => "", -style=>$om_right);
-      $i++;
   }
   $n = $i;
   my @si_descr = @{$mod{si_descr}};
   my @si_fix = @{$mod{si_fix}};
   my @si_init = @{$mod{si_init}};
   foreach (@sigmas) {
+      my @sigma_curr = @{$_};
+      my $si = @sigma_curr[@sigma_curr-1];
       unless ($grid_inter -> infoExists($i)) {
 	  $grid_inter->add($i);
       }
       $grid_inter->itemCreate($i, 0, -text => "SI".(($i-$n)+1), -style=>$th_header); 
       $grid_inter->itemCreate($i, 1, -text => @si_descr[($i-$n)], -style=>$th_left);
-      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$th_right);
+      $grid_inter->itemCreate($i, 2, -text => $si, -style=>$th_right);
       unless (@si_fix[($i-$n)] eq "FIX") {
 	  my $style;
 	  if ($n_grad > 0) {
 	      if ($curr_grad == 0) {$style = $align_right_red} else {$style = $th_right;}
-	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
+	      $grid_inter->itemCreate($i, 3, -text => $curr_grad, -style=>$style);
 	      $curr_grad = shift (@gradients);
 	  }
       } else {
@@ -8995,11 +9048,10 @@ sub extract_inter {
         if(@inter[$curr_lineno+3] =~ m/\./) {
           $omega_line = @inter[$curr_lineno+3];
         };
-        @omega_arr = split(/\s/,$omega_line);
-        @omega_arr = grep /\S/, @omega_arr;
-        my $omega;
-        if (@omega_arr>0) {$omega = rnd(@omega_arr[@omega_arr-1],5)} else {$omega = ""};
-        push (@omegas, $omega);
+        my @omega_arr = split(/\s/,$omega_line);
+        @omega_arr = grep (/\S/, @omega_arr);
+	foreach (@omega_arr ) { $_ = rnd($_,5);	}
+        push (@omegas, \@omega_arr);
       }
       $curr_lineno++;
     }
@@ -9010,8 +9062,8 @@ sub extract_inter {
           $sigma_line = @inter[$curr_lineno];
           @sigma_arr = split(/\s/,$sigma_line);
           @sigma_arr = grep /\S/, @sigma_arr;
-          $sigma = rnd(@sigma_arr[@sigma_arr-1],5);
-          push (@sigmas,$sigma);
+	  foreach (@sigma_arr ) { $_ = rnd($_,5);	}
+	  push (@sigmas, \@sigma_arr);
         }
         $curr_lineno++;
       }
