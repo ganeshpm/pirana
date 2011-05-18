@@ -8305,7 +8305,7 @@ sub show_inter_window {
       our $inter_dirs;
 #      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nswe");
       $inter_status_bar = $inter_window_frame -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>0,-row=>7,-columnspan=>7, -sticky=>"w");
-      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>2, -ipady=>0, -sticky=>"wnse");
+      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>2, -ipady=>0, -sticky=>"wns");
       $intermed_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>5, -ipady=>0, -sticky=>"wnse");
       @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
@@ -8340,8 +8340,11 @@ sub show_inter_window {
       $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
        #get all
          @info = $grid->infoSelection();
+	 my $chosen = @info[0];
          $grid_inter -> delete("all");
-	 my ($sub_iter, $sub_ofv, $descr, $minimization_done, $gradients_ref, $all_gradients_ref) = get_run_progress();
+	 my ($sub_iter, $sub_ofv, $descr, $minimization_done, 
+	     $gradients_ref, $all_gradients_ref, $all_ofv_ref, 
+	     $all_iter_ref) = get_run_progress("", $cwd."/".$chosen);
 	 my $mod_ref;
 	 if (-e $wd."/".@info[0]."/psn.mod") {
 	     $mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
@@ -8361,11 +8364,9 @@ sub show_inter_window {
       #}) -> grid(-column => 3, -row=>1, -sticky=>"w");
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
-#      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -columnspan=>7, -ipadx=>10, -sticky=>"nwse");
       $intermed_frame_buttons -> Label (
         -text=>"Note: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is\nneeded. For increasing the number of updates, use e.g. PRINT=1 in the \$EST block.",
         -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 3, -row=>3, -columnspan=>5, -ipadx=> 10, -sticky=>"w");
-      $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 0, -row=>6, -sticky=>"w");
     } else {
 	$inter_window -> focus
     };
@@ -8437,11 +8438,11 @@ sub show_inter_window {
 	      unless ($csv_file_choose eq "") {
 		  grid_to_csv ($grid_inter, $csv_file_choose, \@headers_inter, 60, 7 );
 	      }
-	  })->grid(-column=>1, -row=>3, -sticky=>"nwse");
+	  })->grid(-column=>1, -row=>3, -sticky=>"nwe");
       $intermed_frame_buttons -> Button (
 	  -text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
 	      grid_to_latex ($grid_inter, $csv_file_choose, \@headers_inter, 60, 7 );
-	  })->grid(-column=>2, -row=>3, -sticky=>"nwse");
+	  })->grid(-column=>2, -row=>3, -sticky=>"nwe");
 
    # # create the gradient plot
    # $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe');
@@ -8464,10 +8465,10 @@ sub show_inter_window {
    # $grid_inter -> update();
     $grid -> configure(-browsecmd => sub{
 	my $diff = str2time(localtime()) - $last_time;
-	my $last_time = str2time(localtime());
+	$last_time = str2time(localtime());
 	my @info = $grid -> infoSelection();
 	if (($diff > 0)||($last_chosen ne @info[0])) {
-	    my $last_chosen = @info[0];
+	    our $last_chosen = @info[0];
 	    #chdir ("./".@info[0]);
 	    my ($sub_iter, $sub_ofv, $descr, $minimization_done, 
 		$gradients_ref, $all_gradients_ref, $all_ofv_ref, 
