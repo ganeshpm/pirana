@@ -1729,6 +1729,7 @@ sub extract_from_model {
   my ($file, $modelno, $what) = @_;
   my $description = ""; my $refmod = ""; my $date_mod ="";
   my @th_bnd_low; my @th_init; my @th_bnd_up;
+  my @om_init; my @si_init;
   my %mod; my @comments;
   $mod{mod} = $modelno;
   if (-e $file) {
@@ -1845,6 +1846,14 @@ sub extract_from_model {
 		  push (@th_bnd_low, @th_ex[0]);
 		  push (@th_init,    @th_ex[1]);
 		  push (@th_bnd_up,  @th_ex[2]);
+	      }
+	      if (($init =~ m/\d/)&&($omega_area==1)) {
+		  my @om_ex = extract_th_mod($init);
+		  push (@om_init, @om_ex[1]);
+	      }
+	      if (($init =~ m/\d/)&&($sigma_area==1)) {
+		  my @si_ex = extract_th_mod($init);
+		  push (@si_init, @si_ex[1]);
 	      }
 	      $om_comment_flag = 0;
 	      my $init_clean = $init; 
@@ -1963,7 +1972,9 @@ sub extract_from_model {
     $mod{th_bnd_up} = \@th_bnd_up;
     $mod{om_descr} = \@om_descr;
     $mod{om_same} = \@om_same;
+    $mod{om_init} = \@om_init;
     $mod{si_descr} = \@si_descr;
+    $mod{si_init} = \@si_init;
     $mod{th_fix} = \@th_fix;
     $mod{om_fix} = \@om_fix;
     $mod{si_fix} = \@si_fix;

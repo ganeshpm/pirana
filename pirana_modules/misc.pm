@@ -8,7 +8,53 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(get_nmfe_number get_highest_file_number get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(sort_model_files get_nmfe_number get_highest_file_number get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub sort_model_files {
+### Purpose : Sort model files, adhering also to the "Uppsala" convention of naming them "run1.mod", "run2.mod" etc instead of "run001.mod" etc.
+### Compat  : W+L+
+    my ($files_ref, $filter) = @_; 
+    my @files1 =  @$files_ref;
+    my @files;
+    foreach (@files1) {
+	unless (($_ eq "\.")||($_ eq "\.\.")) {
+	    push (@files, $_);
+	}
+    }
+    my @files = sort { $a cmp $b} @files;
+    my $models_ref = filter_array(\@files, $filter); 
+    my @models = @$models_ref;
+
+    my (@models_copy_num, @models_copy_other, @models_all, %add_run);
+    my $add_run_flag;
+    foreach my $mod (@models) {
+	my $num = $mod;
+	$add_run_flag = 0;
+	if ($num =~ m/run/) {
+	    $add_run_flag = 1;
+	}
+	$num =~ s/run//g;
+	$num =~ s/$filter//g;
+	if ($num =~ m/^\d/ ) { # only numerics left
+	    push (@models_copy_num, $num);
+	} else {
+	    unless ($num =~ m/\#/) {
+		push (@models_copy_other, $num);
+	    }
+	}
+        if ($add_run_flag == 1) {
+	    $add_run{$num} = "run";
+	}
+    }
+    @models_copy_num = sort {$a <=> $b} @models_copy_num;
+    foreach (@models_copy_num) {
+	$_ = $add_run{$_}.$_;
+    }
+    @models_copy_other = sort {$a cmp $b} @models_copy_other;
+    push (@models_all, @models_copy_num);
+    push (@models_all, @models_copy_other);
+    return (\@models_all, \@files);
+}
 
 sub get_nmfe_number {
 ### Purpose : Get the highest number of nmfe_ directories (and add one)
