@@ -235,7 +235,7 @@ sub file_to_text {
 }
 
 sub block_size {
-### Purpose : Get the maximum length of a string in an array of strings
+### Purpose : Get the size of a block of n
 ### Compat  : W+L+
     my $n = shift;
     if ($n < 2) {

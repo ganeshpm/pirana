@@ -12,7 +12,7 @@ use pirana_modules::misc qw(unique count_numeric om_block_structure time_format 
 use pirana_modules::misc_tk qw{text_window};
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(get_current_ext extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R detect_nm_version);
+our @EXPORT_OK = qw(get_current_ext extract_om_mod extract_name_from_nm_loc nm_smart_search create_output_summary_csv get_nm_help_text get_nm_help_keywords add_item convert_nm_table_file save_etas_as_csv read_etas_from_file replace_block change_seed get_estimates_from_lst extract_from_model extract_from_lst extract_th extract_cov blocks_from_estimates duplicate_model get_cov_mat output_results_HTML output_results_LaTeX interpret_pk_block_for_ode rh_convert_array extract_nm_block interpret_des translate_des_to_BM translate_des_to_R detect_nm_version);
 our @collect_nm;
 
 sub get_current_ext {
@@ -757,6 +757,26 @@ sub extract_th {
   my $line = shift;
   my @sp;
   $line =~ s/FIX//;
+  my @raw_split = split (" ",$line);
+  foreach (@raw_split) {
+    unless ($_ eq "") {
+      $_ =~ s/\s//g;
+      push (@sp, $_);
+    }
+  }
+  return (@sp);
+}
+
+sub extract_om_mod {
+### Purpose : Extract parameter values from a line in a NM results file
+### Compat  : W+L+
+  my $line = shift;
+  my @sp;
+  $line =~ s/FIX//;
+  $line =~ s/\$OMEGA//i;
+  $line =~ s/\$SIGMA//i;
+  $line =~ s/SAME//i;
+  $line =~ s/BLOCK\(.\)//i;
   my @raw_split = split (" ",$line);
   foreach (@raw_split) {
     unless ($_ eq "") {
@@ -1796,190 +1816,192 @@ sub extract_from_model {
   if ($what eq "all") {
     # loop through model file to extract parameter names
       my $theta_area=0; my $omega_area=0; my $sigma_area=0; my $prior=0;
-    my $theta_area_prv=0; my $omega_area_prv=0; my $sigma_area_prv=0; # needed to determine whether in Prior region or not
-    my $table_area=0; my $estim_area=0; my $msf_file="";
+      my $theta_area_prv=0; my $omega_area_prv=0; my $sigma_area_prv=0; # needed to determine whether in Prior region or not
+      my $table_area=0; my $estim_area=0; my $msf_file="";
       my $cnt = 0; 
-    my @th_descr; my @om_descr; my @si_descr;
-    my $om_comment_flag; my $si_comment_flag;
-    my @tab_files;
-    my (@th_fix, @om_fix, @si_fix);
+      my @th_descr; my @om_descr; my @si_descr;
+      my $om_comment_flag; my $si_comment_flag;
+      my @tab_files;
+      my (@th_fix, @om_fix, @si_fix);
       my @om_same; my $sigma_flag;
-      my @block = (1); my $last_om = 1;
-    foreach (@ctl_lines) {
-      if (substr($_,0,1) eq "\$") {
-        if ($theta_area==1) {$theta_area=0} ;
-        if ($omega_area==1) {$omega_area=0} ;
-        if ($sigma_area==1) {$sigma_area=0} ;
-        if ($table_area==1) {$table_area=0} ;
-        if ($estim_area==1) {$estim_area=0} ;
-      }
-      if ((substr ($_,0,1) eq ";")&&(!($_ =~ m/model desc/i))&&(!($_ =~ m/ref\. model\:/i))) {
-	  my $comment = $_;
-	  $comment =~ s/;//g;
-	  push (@comments, $comment);
-      } else {
-	  if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1; $theta_area_prv=1; }
-	  if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; if ($theta_area_prv==1) {$omega_area_prv=1;} }
-	  if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; $sigma_flag = 1; }
-	  if (substr ($_,0,6) eq "\$TABLE") {$table_area = 1 }
-	  if (substr ($_,0,4) eq "\$EST")   {$estim_area = 1 }
-	  if (substr ($_,0,5) eq "\$DATA") {
-	      my @data_arr = split (" ", $_);
-	      shift(@data_arr);
-	      my $dataset = "";
-	      while (($dataset eq "")&&(@data_arr>0)) {$dataset = shift(@data_arr)};
-	      $mod{dataset} = $dataset;
+      my @block = (1); my $last_om = 1; my @om_struct;
+      foreach (@ctl_lines) {
+	  if (substr($_,0,1) eq "\$") {
+	      if ($theta_area==1) {$theta_area=0} ;
+	      if ($omega_area==1) {$omega_area=0} ;
+	      if ($sigma_area==1) {$sigma_area=0} ;
+	      if ($table_area==1) {$table_area=0} ;
+	      if ($estim_area==1) {$estim_area=0} ;
 	  }
-	  if ( $theta_area_prv + $omega_area_prv + $theta_area == 3) {
-	      $prior = 1;
-	  }
-	  if ($theta_area+$omega_area+$sigma_area>0) {
-	      my ($init, @rest) = split (";",$_);
-	      my $descr = @rest[0];
-	      if (@rest>1) { # PsN specific (units)
-		  @rest[1] =~ s/^\s+//; #remove leading spaces
-		  @rest[1] =~ s/\"+$//;  #remove trailing spaces
-		  $descr .= "(".@rest[1].")";
-	      };
-	      if (($init =~ m/\d/)&&($theta_area==1)) {
-		  my @th_ex = extract_th_mod($init);
-		  push (@th_bnd_low, @th_ex[0]);
-		  push (@th_init,    @th_ex[1]);
-		  push (@th_bnd_up,  @th_ex[2]);
+	  if ((substr ($_,0,1) eq ";")&&(!($_ =~ m/model desc/i))&&(!($_ =~ m/ref\. model\:/i))) {
+	      my $comment = $_;
+	      $comment =~ s/;//g;
+	      push (@comments, $comment);
+	  } else {
+	      if (substr ($_,0,6) eq "\$THETA") {$theta_area = 1; $theta_area_prv=1; }
+	      if (substr ($_,0,6) eq "\$OMEGA") {$omega_area = 1; if ($theta_area_prv==1) {$omega_area_prv=1;} }
+	      if (substr ($_,0,6) eq "\$SIGMA") {$sigma_area = 1; $sigma_flag = 1; }
+	      if (substr ($_,0,6) eq "\$TABLE") {$table_area = 1 }
+	      if (substr ($_,0,4) eq "\$EST")   {$estim_area = 1 }
+	      if (substr ($_,0,5) eq "\$DATA") {
+		  my @data_arr = split (" ", $_);
+		  shift(@data_arr);
+		  my $dataset = "";
+		  while (($dataset eq "")&&(@data_arr>0)) {$dataset = shift(@data_arr)};
+		  $mod{dataset} = $dataset;
 	      }
-	      if (($init =~ m/\d/)&&($omega_area==1)) {
-		  my @om_ex = extract_th_mod($init);
-		  push (@om_init, @om_ex[1]);
+	      if ( $theta_area_prv + $omega_area_prv + $theta_area == 3) {
+		  $prior = 1;
 	      }
-	      if (($init =~ m/\d/)&&($sigma_area==1)) {
-		  my @si_ex = extract_th_mod($init);
-		  push (@si_init, @si_ex[1]);
-	      }
-	      $om_comment_flag = 0;
-	      my $init_clean = $init; 
-	      $init_clean =~ s/BLOCK\(.\)//;
-	      $init_clean =~ s/DIAGONAL\(.\)//;
-	      if ((($init_clean =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
-		  $om_comment_flag = 1;
-	      }
-	      if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
-	      if (($init =~ m/\$OMEGA/)&&($init =~ m/BLOCK/)) {
-		  $init =~ m/\((.*)\)/;
-		  unless ($init =~ m/SAME/i) {
-		      my $block_ref = om_block_structure($1);
-		      @block = @$block_ref;
+	      if ($theta_area+$omega_area+$sigma_area>0) {
+		  my ($init, @rest) = split (";",$_);
+		  my $descr = @rest[0];
+		  if (@rest>1) { # PsN specific (units)
+		      @rest[1] =~ s/^\s+//; #remove leading spaces
+		      @rest[1] =~ s/\"+$//;  #remove trailing spaces
+		      $descr .= "(".@rest[1].")";
+		  };
+		  if (($init =~ m/\d/)&&($theta_area==1)) {
+		      my @th_ex = extract_th_mod($init);
+		      push (@th_bnd_low, @th_ex[0]);
+		      push (@th_init,    @th_ex[1]);
+		      push (@th_bnd_up,  @th_ex[2]);
 		  }
-	      }
-	      if ($init_clean =~ m/\d/) { # match numeric character
-		  $init =~ s/\s//g;
-		  chomp($descr);
-		  if ($omega_area+$sigma_area > 0) {
-		      my $n = count_numeric ($init_clean);
-		      for (my $l = 0; $l < $n; $l++) { 
-			  if (int(@block) > 1) {
-			      $last_om = shift (@block);
-			  } else {
-			      $last_om = 1;
-			  } 
-		      }
+		  $om_comment_flag = 0;
+		  my $init_clean = $init; 
+		  $init_clean =~ s/BLOCK\(.\)//;
+		  $init_clean =~ s/DIAGONAL\(.\)//;
+		  if ((($init_clean =~ m/\d/)||($init =~ m/same/i))&&($omega_area == 1)) {
+		      $om_comment_flag = 1;
 		  }
-		  $descr =~ s/\r//g; # also take care of carriage return on Windows
-		  if (($theta_area == 1)&&($prior==0)) {
-		      push (@th_descr, $descr); 
-		  }
-		  if (($omega_area == 1)&&($last_om==1)&&($sigma_flag==0)) {
-		      push (@om_descr, $descr); 
-		      push (@om_same, 0);
-		      $om_comment_flag = 2 
-		  }
-		  if (($sigma_area == 1)&&($last_om==1)) {
-		      push (@si_descr, $descr); 
-		      $si_comment_flag = 2; 
-		  }
-		  if ($init =~ m/FIX/) { # match numeric character
-		      if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
-		      if ($omega_area ==1) {push (@om_fix, "FIX")} ;
-		      if ($sigma_area ==1) {push (@si_fix, "FIX")} ;
-		  } else {
-		      if ($theta_area ==1) {push (@th_fix, "")} ;
-		      if ($omega_area ==1) {push (@om_fix, "")} ;
-		      if ($sigma_area ==1) {push (@si_fix, "")} ;
-		  }
-	      }
-	      if (($omega_area == 1)&&($sigma_flag == 0)) {
-		  if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
+		  if (($init =~ m/\d/)&&($sigma_area == 1)) {$si_comment_flag = 0}
+		  if (($init =~ m/\$OMEGA/)&&($init =~ m/BLOCK/)) {
 		      $init =~ m/\((.*)\)/;
-		      for (my $n = 0; $n < $1; $n++) {
-			  push (@om_same, 1);
+		      unless ($init =~ m/SAME/i) {
+			  my $block_ref = om_block_structure($1);
+			  @block = @$block_ref;
 		      }
-		      $last_om = 1;
-		  } 
-	      }
-	      if (($om_comment_flag == 1)&&($omega_area==1)) {
-		  if ($last_om == 1) {
-		      my $k = 1;
+		  }
+		  if ($init_clean =~ m/\d/) { # match numeric character
+		      chomp($descr);
+		      if ($omega_area+$sigma_area > 0) {
+			  my $n = count_numeric ($init_clean);
+			  for (my $l = 0; $l < $n; $l++) { 
+			      if (int(@block) > 1) {
+				  $last_om = shift (@block);
+			      } else {
+				  $last_om = 1;
+			      } 
+			  }
+		      }
+		      if ($omega_area==1) {
+			  my @om_ex = extract_om_mod($init);
+			  push (@om_init, @om_ex);
+		      }
+		      if ($sigma_area==1) {
+			  my @si_ex = extract_om_mod($init);
+			  push (@si_init, @si_ex);
+		      }
+		      $descr =~ s/\r//g; # also take care of carriage return on Windows
+		      if (($theta_area == 1)&&($prior==0)) {
+			  push (@th_descr, $descr); 
+		      }
+		      if (($omega_area == 1)&&($last_om==1)&&($sigma_flag==0)) {
+			  push (@om_descr, $descr); 
+			  push (@om_same, 0);
+			  push (@om_struct, int(@block));
+			  $om_comment_flag = 2 
+		      }
+		      if (($sigma_area == 1)&&($last_om==1)) {
+			  push (@si_descr, $descr); 
+			  $si_comment_flag = 2; 
+		      }
+		      if ($init =~ m/FIX/) { # match numeric character
+			  if (($theta_area ==1)&&($prior==0)) {push (@th_fix, "FIX")} ;
+			  if ($omega_area ==1) {push (@om_fix, "FIX")} ;
+			  if ($sigma_area ==1) {push (@si_fix, "FIX")} ;
+		      } else {
+			  if ($theta_area ==1) {push (@th_fix, "")} ;
+			  if ($omega_area ==1) {push (@om_fix, "")} ;
+			  if ($sigma_area ==1) {push (@si_fix, "")} ;
+		      }
+		  }
+		  if (($omega_area == 1)&&($sigma_flag == 0)) {
 		      if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
 			  $init =~ m/\((.*)\)/;
-			  $k = $1;
+			  for (my $n = 0; $n < $1; $n++) {
+			      push (@om_same, 1);
+			  }
+			  $last_om = 1;
+			  push (@om_struct, 0);
 		      } 
-		      for (my $n = 0; $n < $k; $n++) {
-			  push (@om_descr, $descr);
-		      }
-		  }		  
+		  }
+		  if (($om_comment_flag == 1)&&($omega_area==1)) {
+		      if ($last_om == 1) {
+			  my $k = 1;
+			  if (($init =~ m/SAME/)&&($init =~ m/BLOCK/)) {
+			      $init =~ m/\((.*)\)/;
+			      $k = $1;
+			  } 
+			  for (my $n = 0; $n < $k; $n++) {
+			      push (@om_descr, $descr);
+			  }
+		      }		  
+		  }
+		  if (($si_comment_flag == 1)&&($sigma_area==1)) {push (@si_descr, $descr);}
 	      }
-	      if (($si_comment_flag == 1)&&($sigma_area==1)) {push (@si_descr, $descr);}
-	  }
-	  if($table_area==1) {
-	      if($_ =~ s/FILE\=//) {
-		  chomp ($_);
-		  my $tab = $';    #'
-		      $tab =~ s/^\s+//; #remove leading spaces
-		  my @tabline = split(/\s/, $tab);
-		  push (@tab_files, @tabline[0]);
+	      if($table_area==1) {
+		  if($_ =~ s/FILE\=//) {
+		      chomp ($_);
+		      my $tab = $';    #'
+			  $tab =~ s/^\s+//; #remove leading spaces
+		      my @tabline = split(/\s/, $tab);
+		      push (@tab_files, @tabline[0]);
+		  }
 	      }
-	  }
-	  if($estim_area==1) {
-	      if($_ =~ s/MSF\=//) {
-		  chomp ($_);
-		  my $pos = length $`;
-		  my @msfline = split(/\s/,substr($_, $pos));
-		  $msf_file = @msfline[0];
-	      }
-	      my $line = $_;
-	      if ( $line =~ m/METH/i ) {
-		  my $offs = 7; # METHOD
-		  my $pos = length ($`);
-		  if (substr($line, $pos+4,1) eq "=") {$offs = 5}; # METH
-		  $pos = $pos+$offs;
-		  if (substr($line,$pos, 1) eq "0")      {$mod{method} = add_item($mod{method},"FO", $line)};
-		  if (substr($line,$pos, 4) eq "ZERO")   {$mod{method} = add_item($mod{method},"FO", $line)};
-		  if ((substr($line,$pos, 1) eq "1")&&!($line =~ m/\sLAPLAC/gi))      {$mod{method} = add_item($mod{method},"FOCE", $line)};
-		  if ((substr($line,$pos, 4) eq "FOCE")&&!($line =~ m/\sLAPLAC/gi))   {$mod{method} = add_item($mod{method},"FOCE", $line)};
-		  if ((substr($line,$pos, 4) eq "COND")&&!($line =~ m/\sLAPLAC/gi))   {$mod{method} = add_item($mod{method},"FOCE", $line)};
-		  if ((substr($line,$pos, 6) eq "HYBRID")&&!($line =~ m/\sLAPLAC/gi)) {$mod{method} = add_item($mod{method},"HYB", $line)};
-		  if (substr($line,$pos, 3) eq "ITS")    {$mod{method} = add_item($mod{method},"ITS", $line)};
-		  if (substr($line,$pos, 4) eq "SAEM")   {$mod{method} = add_item($mod{method},"SAEM", $line)};
-		  if (substr($line,$pos, 3) eq "IMP")    {$mod{method} = add_item($mod{method},"IMP", $line)};
-		  if (substr($line,$pos, 5) eq "BAYES")  {$mod{method} = add_item($mod{method},"BAYES", $line)};
-		  if ($line =~ m/ LAPL/i) {$mod{method} = add_item($mod{method},"LAPL", $line)}
+	      if($estim_area==1) {
+		  if($_ =~ s/MSF\=//) {
+		      chomp ($_);
+		      my $pos = length $`;
+		      my @msfline = split(/\s/,substr($_, $pos));
+		      $msf_file = @msfline[0];
+		  }
+		  my $line = $_;
+		  if ( $line =~ m/METH/i ) {
+		      my $offs = 7; # METHOD
+		      my $pos = length ($`);
+		      if (substr($line, $pos+4,1) eq "=") {$offs = 5}; # METH
+		      $pos = $pos+$offs;
+		      if (substr($line,$pos, 1) eq "0")      {$mod{method} = add_item($mod{method},"FO", $line)};
+		      if (substr($line,$pos, 4) eq "ZERO")   {$mod{method} = add_item($mod{method},"FO", $line)};
+		      if ((substr($line,$pos, 1) eq "1")&&!($line =~ m/\sLAPLAC/gi))      {$mod{method} = add_item($mod{method},"FOCE", $line)};
+		      if ((substr($line,$pos, 4) eq "FOCE")&&!($line =~ m/\sLAPLAC/gi))   {$mod{method} = add_item($mod{method},"FOCE", $line)};
+		      if ((substr($line,$pos, 4) eq "COND")&&!($line =~ m/\sLAPLAC/gi))   {$mod{method} = add_item($mod{method},"FOCE", $line)};
+		      if ((substr($line,$pos, 6) eq "HYBRID")&&!($line =~ m/\sLAPLAC/gi)) {$mod{method} = add_item($mod{method},"HYB", $line)};
+		      if (substr($line,$pos, 3) eq "ITS")    {$mod{method} = add_item($mod{method},"ITS", $line)};
+		      if (substr($line,$pos, 4) eq "SAEM")   {$mod{method} = add_item($mod{method},"SAEM", $line)};
+		      if (substr($line,$pos, 3) eq "IMP")    {$mod{method} = add_item($mod{method},"IMP", $line)};
+		      if (substr($line,$pos, 5) eq "BAYES")  {$mod{method} = add_item($mod{method},"BAYES", $line)};
+		      if ($line =~ m/ LAPL/i) {$mod{method} = add_item($mod{method},"LAPL", $line)}
+		  }
 	      }
 	  }
       }
-    }
-    $mod{th_descr} = \@th_descr;
-    $mod{th_init} = \@th_init;
-    $mod{th_bnd_low} = \@th_bnd_low;
-    $mod{th_bnd_up} = \@th_bnd_up;
-    $mod{om_descr} = \@om_descr;
-    $mod{om_same} = \@om_same;
-    $mod{om_init} = \@om_init;
-    $mod{si_descr} = \@si_descr;
-    $mod{si_init} = \@si_init;
-    $mod{th_fix} = \@th_fix;
-    $mod{om_fix} = \@om_fix;
-    $mod{si_fix} = \@si_fix;
-    $mod{tab_files} = \@tab_files;
-    $mod{msf_file} = $msf_file;
+      $mod{th_descr} = \@th_descr;
+      $mod{th_init} = \@th_init;
+      $mod{th_bnd_low} = \@th_bnd_low;
+      $mod{th_bnd_up} = \@th_bnd_up;
+      $mod{om_descr} = \@om_descr;
+      $mod{om_same} = \@om_same;
+      $mod{om_init} = \@om_init;
+      $mod{om_struct} = \@om_struct;
+      $mod{si_descr} = \@si_descr;
+      $mod{si_init} = \@si_init;
+      $mod{th_fix} = \@th_fix;
+      $mod{om_fix} = \@om_fix;
+      $mod{si_fix} = \@si_fix;
+      $mod{tab_files} = \@tab_files;
+      $mod{msf_file} = $msf_file;
   }
   $mod{description} = $description;
   $mod{refmod} = $refmod;
