@@ -2434,20 +2434,20 @@ sub grid_to_csv {
     print OUT join(",", @headers)."\n";
     for ($j = 1; $j <= $nrow; $j++) {
 	if ($grid -> infoExists($j)) {
-	for ($i = 0; $i < $ncol; $i++) {
-	    if ($grid -> itemExists($j, $i)) {
-		my $value = $grid -> itemCget($j, $i, "text");
-		chomp($value);
-		$value =~ s/\,/;/g;
-		$value =~ s/[\(\)]//g;
-		print OUT $value;
-	    } 
-	    unless(($ncol-$i) ==1) {
-		print OUT ",";
+	    for ($i = 0; $i < $ncol; $i++) {
+		if ($grid -> itemExists($j, $i)) {
+		    my $value = $grid -> itemCget($j, $i, "text");
+		    chomp($value);
+		    $value =~ s/\,/;/g;
+		    $value =~ s/[\(\)]//g;
+		    print OUT $value;
+		} 
+		unless(($ncol-$i) ==1) {
+		    print OUT ",";
+		}
 	    }
+	    print OUT "\n";
 	}
-	}
-	print OUT "\n";
     }
     close OUT;
     if (-e $csv_file) {
@@ -2472,20 +2472,20 @@ sub grid_to_latex {
     $tex .= " \\\\ \n";
     for (my $j = 1; $j <= $nrow; $j++) {
 	if ($grid -> infoExists($j)) {
-	for ($i = 0; $i < $ncol; $i++) {
-	    if ($grid -> itemExists($j, $i)) {
-		my $value = $grid -> itemCget($j, $i, "text");
-		chomp($value);
-		$value =~ s/\,/;/g;
-		$value =~ s/[\(\)]//g;
-		$tex .= $value;
-	    } 
-	    unless(($ncol-$i) <= 1) {
-		$tex .= " & ";
+	    for ($i = 0; $i < $ncol; $i++) {
+		if ($grid -> itemExists($j, $i)) {
+		    my $value = $grid -> itemCget($j, $i, "text");
+		    chomp($value);
+		    $value =~ s/\,/;/g;
+		    $value =~ s/[\(\)]//g;
+		    $tex .= $value;
+		} 
+		unless(($ncol-$i) <= 1) {
+		    $tex .= " & ";
+		}
 	    }
+	    $tex .= " \\\\ \n";
 	}
-	}
-	$tex .= " \\\\ \n";
     }
     $tex .= "\\end{tabular}\n";
     unless (-d $cwd."/pirana_temp") { mkdir ($cwd."/pirana_temp") };
@@ -8351,9 +8351,9 @@ sub show_inter_window {
 	 }
 	 update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
       }) -> grid(-column => 4, -row=>1, -sticky=>"w");
-      $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
-         @info = $grid->infoSelection();
-      }) -> grid(-column => 5, -row=>1, -sticky=>"w");
+#      $inter_frame_buttons -> Button (-text=>'Plot OFV / gradients',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+ #        @info = $grid->infoSelection();
+ #     }) -> grid(-column => 5, -row=>1, -sticky=>"w");
 
       ## Stop run functionality: not yet implemented (has issues)
       #$inter_frame_buttons -> Button (-text=>'Stop run', -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
@@ -8365,7 +8365,7 @@ sub show_inter_window {
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
       $intermed_frame_buttons -> Label (
-        -text=>"Note: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is\nneeded. For increasing the number of updates, use e.g. PRINT=1 in the \$EST block.",
+        -text=>"Note: to obtain intermediate estimates from runs, creation of an MSF file is\nrequired. To increase update frequency, use e.g. PRINT=1 in the \$EST block.",
         -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 3, -row=>3, -columnspan=>5, -ipadx=> 10, -sticky=>"w");
     } else {
 	$inter_window -> focus
@@ -8390,7 +8390,7 @@ sub show_inter_window {
         -padx       => 0,
 	-selectbackground => $pirana_orange,
 	-background => 'white',
-        -width      => 80
+        -width      => 60
     )->grid(-column => 0, -columnspan=>7,-row => 1, -sticky=>"wens");
 
     my @headers_inter = (" ","Parameter", "Estimate", "Gradient" , "Initial", "Min", "Max");
@@ -8409,7 +8409,7 @@ sub show_inter_window {
         -padx       => 0,
 	-selectbackground => $pirana_orange,
 	-background => 'white',
-        -width      => 80
+        -width      => 60
     )->grid(-column => 0, -columnspan=>7, -row => 4, -sticky=>"wens");
     
     foreach my $x ( 0 .. $#headers ) {
