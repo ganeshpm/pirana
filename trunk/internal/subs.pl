@@ -2439,6 +2439,7 @@ sub grid_to_csv {
 		my $value = $grid -> itemCget($j, $i, "text");
 		chomp($value);
 		$value =~ s/\,/;/g;
+		$value =~ s/[\(\)]//g;
 		print OUT $value;
 	    } 
 	    unless(($ncol-$i) ==1) {
@@ -2476,6 +2477,7 @@ sub grid_to_latex {
 		my $value = $grid -> itemCget($j, $i, "text");
 		chomp($value);
 		$value =~ s/\,/;/g;
+		$value =~ s/[\(\)]//g;
 		$tex .= $value;
 	    } 
 	    unless(($ncol-$i) <= 1) {
@@ -4578,52 +4580,6 @@ sub update_run_results {
   return($sql_command);
 }
 
-sub dir_and_sort_model_files {
-### Purpose : Read folder for model files. Sort them, adhering also to the "Uppsala" convention of naming them "run1.mod", "run2.mod" etc instead of "run001.mod" etc.
-### Compat  : W+L+
-    my ($dir, $filter) = @_; 
-    my @files1 = dir ($dir, "");
-    my @files;
-    foreach (@files1) {
-	unless (($_ eq "\.")||($_ eq "\.\.")) {
-	    push (@files, $_);
-	}
-    }
-    my @files = sort { $a cmp $b} @files;
-    my $models_ref = filter_array(\@files, $filter); 
-    my @models = @$models_ref;
-
-    my (@models_copy_num, @models_copy_other, @models_all, %add_run);
-    my $add_run_flag;
-    foreach my $mod (@models) {
-	my $num = $mod;
-	$add_run_flag = 0;
-	if ($num =~ m/run/) {
-	    $add_run_flag = 1;
-	}
-	$num =~ s/run//g;
-	$num =~ s/$filter//g;
-	if ($num =~ m/^\d/ ) { # only numerics left
-	    push (@models_copy_num, $num);
-	} else {
-	    unless ($num =~ m/\#/) {
-		push (@models_copy_other, $num);
-	    }
-	}
-        if ($add_run_flag == 1) {
-	    $add_run{$num} = "run";
-	}
-    }
-    @models_copy_num = sort {$a <=> $b} @models_copy_num;
-    foreach (@models_copy_num) {
-	$_ = $add_run{$_}.$_;
-    }
-    @models_copy_other = sort {$a cmp $b} @models_copy_other;
-    push (@models_all, @models_copy_num);
-    push (@models_all, @models_copy_other);
-    return (\@models_all, \@files);
-}
-
 sub read_curr_dir {
 ### Purpose : Get all model files and all directories in curr dir and put them in arrays
 ### Compat  : W+
@@ -4634,7 +4590,8 @@ sub read_curr_dir {
     check_db_file_correct ("pirana.dir");
 
     status ("Reading all files...");
-    my ($ctl_files_ref, $all_files_ref) = dir_and_sort_model_files ($cwd, '\.'.$setting{ext_ctl});
+    my @files1 = dir ($cwd, "");
+    my ($ctl_files_ref, $all_files_ref) = sort_model_files (\@files1, '\.'.$setting{ext_ctl});
     our @ctl_files = @$ctl_files_ref;
     our @all_files = @$all_files_ref;
 
@@ -4716,6 +4673,7 @@ sub read_curr_dir {
 	status ("Reading folders...");
 	our @dirs;
 #    our @dir_files = dir ("."); # is faster than a regular <*>  ?
+	@all_files = sort (@all_files);
 	foreach(@all_files) {
 	    if (-d $_) {
 #		unless ($_ =~ /\./) {
@@ -8345,9 +8303,10 @@ sub show_inter_window {
       });
       $inter_window_frame = $inter_window -> Frame(-background=>$bgcol)->grid(-column=>0, -row=>0, -ipadx=>10,-ipady=>0, -sticky=>"nwse");
       our $inter_dirs;
-      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nswe");
-      $inter_status_bar = $inter_frame_status -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>1,-row=>1,-sticky=>"w");
-      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>1, -row=>2, -ipady=>0, -sticky=>"wnse");
+#      $inter_frame_status = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>4, -ipadx=>10, -sticky=>"nswe");
+      $inter_status_bar = $inter_window_frame -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>0,-row=>7,-columnspan=>7, -sticky=>"w");
+      $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>2, -ipady=>0, -sticky=>"wnse");
+      $intermed_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>5, -ipady=>0, -sticky=>"wnse");
       @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
@@ -8400,35 +8359,58 @@ sub show_inter_window {
       #     ;
       #   }
       #}) -> grid(-column => 3, -row=>1, -sticky=>"w");
-
       $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol, -font=>"Arial 3") -> grid(-column => 1, -row=>0, -sticky=>"w");
       $inter_frame_buttons -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>2, -sticky=>"w");
-      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -columnspan=>7, -ipadx=>10, -sticky=>"nwse");
-      $inter_intermed_frame -> Label (
-        -text=>"\nNote: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is needed. For increasing the number of \nparameter updates, use e.g. PRINT=1 in the \$EST block.",
-        -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 1, -row=>2, -columnspan=>1, -sticky=>"w");
-      $inter_intermed_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 1, -row=>3, -sticky=>"w");
-    } else {$inter_window -> focus};
+#      $inter_intermed_frame = $inter_window -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>3, -columnspan=>7, -ipadx=>10, -sticky=>"nwse");
+      $intermed_frame_buttons -> Label (
+        -text=>"Note: to obtain intermediate estimates from runs, the specification of MSF files in \$EST is\nneeded. For increasing the number of updates, use e.g. PRINT=1 in the \$EST block.",
+        -font=>$font, -foreground=>"#666666", -justify=>'l',-background=>$bgcol) -> grid(-column => 3, -row=>3, -columnspan=>5, -ipadx=> 10, -sticky=>"w");
+      $inter_window_frame -> Label (-text=>' ',  -width=>9, -background=>$bgcol) -> grid(-column => 0, -row=>6, -sticky=>"w");
+    } else {
+	$inter_window -> focus
+    };
     inter_status ("Searching sub-directories for active runs...");
     chdir ($wd);
 
     my @headers = ( "MSF", "Iterations","OFV");
     my @headers_widths = (60, 60, 60, 160,240);
 
-    our $grid = $inter_window_frame ->Scrolled('HList', -head => 1, 
-        -columns    => 5, -scrollbars => 'e',-highlightthickness => 0,
-        -height     => 10, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 100, -background => 'white'
+    our $grid = $inter_window_frame ->Scrolled(
+	'HList', 
+        -head       => 1,
+        -relief     => 'groove',
+        -highlightthickness => 0,
+        -selectmode => "extended",
+	-selectborderwidth => 0,
+        -columns    => 5,
+        -scrollbars => 'se',
+        -height     => 8,
+        -pady       => 0,
+        -padx       => 0,
+	-selectbackground => $pirana_orange,
+	-background => 'white',
+        -width      => 80
     )->grid(-column => 0, -columnspan=>7,-row => 1, -sticky=>"wens");
 
-    my @headers_inter = (" ","Theta", "Grad." , "Desc.", "Omega", "Grad.", "Desc.", "Sigma", "Grad.", "Desc.","");
-    my @headers_inter_widths = (24, 60, 60, 100, 60, 60, 100, 60, 60, 100, 100);
-
-    our $grid_inter = $inter_intermed_frame ->Scrolled('HList', -head => 1,
-        -columns    => 11, -scrollbars => 'e', -highlightthickness => 0,
-        -height     => 15, -border     => 0, -selectbackground => $pirana_orange,
-        -width      => 100, -background => 'white',
-    )->grid(-column => 0, -columnspan=>7, -row => 1, -sticky=>"wens");
+    my @headers_inter = (" ","Parameter", "Estimate", "Grad." , "Initial", "Min", "Max");
+    my @headers_inter_widths = (42, 150, 60, 100, 60, 60, 60, 100, 100);
+    our $grid_inter = $inter_window_frame ->Scrolled(
+	'HList', 
+        -head       => 1,
+        -relief     => 'groove',
+        -highlightthickness => 0,
+        -selectmode => "extended",
+	-selectborderwidth => 0,
+        -columns    => 8,
+        -scrollbars => 'se',
+        -height     => 20,
+        -pady       => 0,
+        -padx       => 0,
+	-selectbackground => $pirana_orange,
+	-background => 'white',
+        -width      => 80
+    )->grid(-column => 0, -columnspan=>7, -row => 4, -sticky=>"wens");
+    
     foreach my $x ( 0 .. $#headers ) {
         $grid -> header('create', $x, -text=> $headers[$x], -style=> $header_right, -headerbackground => 'gray');
         $grid -> columnWidth($x, @headers_widths[$x]);
@@ -8438,13 +8420,28 @@ sub show_inter_window {
     $grid -> columnWidth(3, @headers_widths[3]);
     $grid -> columnWidth(4, @headers_widths[4]);
 
-    my @styles = ($header_left, $header_right, $header_left, $header_left, $header_right, $header_left, $header_left,  $header_right, $header_left, $header_left, $header_left, $header_left);
+    my @styles = ($header_left, $header_left, $header_right, $header_left, $header_right, $header_left, $header_left,  $header_right, $header_left, $header_left, $header_left, $header_left);
     $x=0; foreach (@headers_inter) {
       if ($x==5) {$style = $header_left} else {$style = $header_right};
       $grid_inter -> header('create', $x, -text=> $headers_inter[$x], -style=> @styles[$x], -headerbackground => 'gray');
       $grid_inter -> columnWidth($x, @headers_inter_widths[$x]);
       $x++;
     }
+
+      $intermed_frame_buttons -> Button (
+	  -text=>"Export as CSV", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	      my $types = [
+		  ['CSV files','.csv'],
+		  ['All Files','*',  ], ];
+	      my $csv_file_choose = $mw -> getSaveFile(-defaultextension => "*.csv", -initialdir=> $cwd ,-filetypes=> $types);
+	      unless ($csv_file_choose eq "") {
+		  grid_to_csv ($grid_inter, $csv_file_choose, \@headers_inter, 60, 7 );
+	      }
+	  })->grid(-column=>1, -row=>3, -sticky=>"nwse");
+      $intermed_frame_buttons -> Button (
+	  -text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	      grid_to_latex ($grid_inter, $csv_file_choose, \@headers_inter, 60, 7 );
+	  })->grid(-column=>2, -row=>3, -sticky=>"nwse");
 
    # # create the gradient plot
    # $plot_frame = $inter_intermed_frame -> Frame (-relief=>'groove', -background=>$bgcol, -border=>0, -height=>10) -> grid(-column=>2, -row=>1, -rowspan=>3, -sticky=>'nwe');
@@ -8467,15 +8464,16 @@ sub show_inter_window {
    # $grid_inter -> update();
     $grid -> configure(-browsecmd => sub{
 	my $diff = str2time(localtime()) - $last_time;
-	our $last_time = str2time(localtime());
+	my $last_time = str2time(localtime());
 	my @info = $grid -> infoSelection();
 	if (($diff > 0)||($last_chosen ne @info[0])) {
-	    our $last_chosen = @info[0];
+	    my $last_chosen = @info[0];
 	    #chdir ("./".@info[0]);
 	    my ($sub_iter, $sub_ofv, $descr, $minimization_done, 
 		$gradients_ref, $all_gradients_ref, $all_ofv_ref, 
-		$all_iter_ref) = get_run_progress("", $cwd."/".@info[0]);
+		$all_iter_ref) = get_run_progress("", $cwd."/".$last_chosen);
 	    #chdir ($wd);
+
 	    my $mod_ref;
 	    if (-e $wd."/".@info[0]."/psn.mod") {
 		$mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
@@ -8700,8 +8698,9 @@ sub get_run_progress {
   if (int(@l)>0) {
     $output_file = unix_path($dir."/".@l[0]);
   }
-  if ((-e "OUTPUT")&&(-s "OUTPUT" >0)) {$output_file = "OUTPUT"};
-  open (OUT,"<".unix_path($dir."/".$output_file));
+  $dir .= "/";
+  if ((-e $dir."OUTPUT")&&(-s $dir."OUTPUT" >0)) {$output_file = unix_path($dir."OUTPUT")};
+  open (OUT,"<".unix_path($output_file));
   @lines = <OUT>;
   close OUT;
   my @gradients;
@@ -8791,72 +8790,93 @@ sub update_inter_results_dialog {
 #  my $th_descr_ref = $mod{th_descr};
   my @th_descr = @{$mod{th_descr}};
   my @th_fix = @{$mod{th_fix}};
+  my @th_init = @{$mod{th_init}};
+  my @th_bnd_low = @{$mod{th_bnd_low}};
+  my @th_bnd_up  = @{$mod{th_bnd_up}};
   my $curr_grad = shift (@gradients);
+  my $th_header = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#cfcfcf', -font => $font_normal);
+  my $th_left   = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#ffffff', -font => $font_normal);
+  my $th_right  = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#ffffff', -font => $font_normal);
   foreach (@thetas) {
-    $grid_inter->add($i);
-    $grid_inter->itemCreate($i, 0, -text => $i, -style=>$header_right);
-    $grid_inter->itemCreate($i, 1, -text => $_, -style=>$align_right);
-    $grid_inter->itemCreate($i, 3, -text => @th_descr[($i-1)], -style=>$align_left);
-    unless (@th_fix[($i-1)] eq "FIX") {
-	my $style;
-	if ($n_grad > 0) {
-	    if (($curr_grad == 0)&&($n_grad > 0)) {$style = $align_right_red} else {$style = $align_right;}
-	    $grid_inter->itemCreate($i, 2, -text => "(".$curr_grad.")", -style=>$style);
-	    $curr_grad = shift (@gradients);
-	}
-    } else {
-	$grid_inter->itemCreate($i, 2, -text => "NA", -style=>$style);
-    }
-    $i++;
+      unless ($grid_inter -> infoExists($i)) {
+	  $grid_inter->add($i);
+      }
+      $grid_inter->itemCreate($i, 0, -text => "TH".$i, -style=>$th_header);
+      $grid_inter->itemCreate($i, 1, -text => @th_descr[($i-1)], -style=>$th_left);
+      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$th_right);
+      unless (@th_fix[($i-1)] eq "FIX") {
+	  my $style;
+	  if ($n_grad > 0) {
+	      if (($curr_grad == 0)&&($n_grad > 0)) {$style = $align_right_red} else {$style = $th_right;}
+	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
+	      $curr_grad = shift (@gradients);
+	  }
+      } else {
+	  $grid_inter->itemCreate($i, 3, -text => "NA", -style=>$th_right);
+      }
+      $grid_inter->itemCreate($i, 4, -text => @th_init[($i-1)], -style=>$th_right);
+      $grid_inter->itemCreate($i, 5, -text => @th_bnd_low[($i-1)], -style=>$th_right);
+      $grid_inter->itemCreate($i, 6, -text => @th_bnd_up[($i-1)], -style=>$th_right);
+      $i++;
   }
-  $n = $i-1;
-  $i = 1;
+  $n = $i;
   my @om_descr = @{$mod{om_descr}};
   my @om_fix = @{$mod{om_fix}};
   my @om_same = @{$mod{om_same}}; 
+  my @om_init = @{$mod{om_init}};
+  my $om_header = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#c0c0c0', -font => $font_normal);
+  my $om_left   = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#f0f0f0', -font => $font_normal);
+  my $om_right  = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#f0f0f0', -font => $font_normal);
   foreach (@omegas) {
-    if ($i > $n) {
-        $n = $i;
-        $grid_inter->add($i);
-    }
-    $grid_inter->itemCreate($i, 4, -text => $_, -style=>$align_right);
-    $grid_inter->itemCreate($i, 6, -text => @om_descr[($i-1)], -style=>$align_left);
-    unless ((@om_fix[($i-1)] eq "FIX")||(@om_same[($i-1)] == 1)) {
-	my $style;
-	if ($n_grad > 0) {
-	    if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
-	    $grid_inter->itemCreate($i, 5, -text => "(".$curr_grad.")", -style=>$style);
-	    $curr_grad = shift (@gradients);
-	}
-    }  else {
-	my $text = "FIX";
-	if (@om_same[($i-1)] == 1) {$text = "SAME"}
-	$grid_inter->itemCreate($i, 5, -text => $text, -style=>$style);
-    }
-    $i++;
+      unless ($grid_inter -> infoExists($i)) {
+	  $grid_inter->add($i);
+      }
+      $grid_inter->itemCreate($i, 0, -text => "OM".(($i-$n)+1), -style=>$om_header);
+      $grid_inter->itemCreate($i, 1, -text => @om_descr[($i-$n)], -style=>$om_left);
+      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$om_right);
+      unless ((@om_fix[($i-$n)] eq "FIX")||(@om_same[($i-$n)] == 1)) {
+	  my $style;
+	  if ($n_grad > 0) {
+	      if ($curr_grad == 0) {$style = $align_right_red} else {$style = $om_right;}
+	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
+	      $curr_grad = shift (@gradients);
+	  }
+      }  else {
+	  my $text = "FIX";
+	  if (@om_same[($i-$n)] == 1) {$text = "SAME"}
+	  $grid_inter->itemCreate($i, 3, -text => $text, -style=>$om_right);
+      }
+      $grid_inter->itemCreate($i, 4, -text => rnd (@om_init[($i-$n)],4) , -style=>$om_right);
+      $grid_inter->itemCreate($i, 5, -text => "", -style=>$om_right);
+      $grid_inter->itemCreate($i, 6, -text => "", -style=>$om_right);
+      $i++;
   }
-  $i=1;
+  $n = $i;
   my @si_descr = @{$mod{si_descr}};
   my @si_fix = @{$mod{si_fix}};
+  my @si_init = @{$mod{si_init}};
   foreach (@sigmas) {
-    if ($i > $n) {
-        $n = $i;
-        $grid_inter->add($i);
-    }
-    $grid_inter->itemCreate($i, 7, -text => $_, -style=>$align_right);
-    $grid_inter->itemCreate($i, 9, -text => @si_descr[($i-1)], -style=>$align_left);
-    unless (@si_fix[($i-1)] eq "FIX") {
-	my $style;
-	if ($n_grad > 0) {
-	    if ($curr_grad == 0) {$style = $align_right_red} else {$style = $align_right;}
-	    $grid_inter->itemCreate($i, 8, -text => "(".$curr_grad.")", -style=>$style);
-	    $curr_grad = shift (@gradients);
-	}
-    } else {
-	my $text = "FIX";
-	$grid_inter->itemCreate($i, 8, -text => $text, -style=>$style);
-    }
-    $i++;
+      unless ($grid_inter -> infoExists($i)) {
+	  $grid_inter->add($i);
+      }
+      $grid_inter->itemCreate($i, 0, -text => "SI".(($i-$n)+1), -style=>$th_header); 
+      $grid_inter->itemCreate($i, 1, -text => @si_descr[($i-$n)], -style=>$th_left);
+      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$th_right);
+      unless (@si_fix[($i-$n)] eq "FIX") {
+	  my $style;
+	  if ($n_grad > 0) {
+	      if ($curr_grad == 0) {$style = $align_right_red} else {$style = $th_right;}
+	      $grid_inter->itemCreate($i, 3, -text => "(".$curr_grad.")", -style=>$style);
+	      $curr_grad = shift (@gradients);
+	  }
+      } else {
+	  my $text = "FIX";
+	  $grid_inter->itemCreate($i, 3, -text => $text, -style=>$th_right);
+      }
+      $grid_inter->itemCreate($i, 4, -text => rnd(@si_init[($i-$n)], 4), -style=>$th_right);
+      $grid_inter->itemCreate($i, 5, -text => "", -style=>$th_right);
+      $grid_inter->itemCreate($i, 6, -text => "", -style=>$th_right);
+      $i++;
   }
   # $i=1;
   # foreach (@gradients) {
