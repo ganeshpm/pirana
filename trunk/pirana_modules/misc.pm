@@ -601,10 +601,14 @@ sub linux_start {
 
 sub darwin_start {
     my $curr_dir = cwd();
-    unless ((@_[0] eq "")||(@_[0] eq " ")) {
-	system ("/usr/bin/open -a '".@_[0]."' ".@_[1]." &");
-    } else {
-	system ("/usr/bin/open ".@_[1]." &");
+    if (@_[0] =~ m/\//) { # probably a path is specified
+	system (@_[0] . " ".@_[1]." &");	
+    } else { # probably an application (.app) is specified 
+	unless ((@_[0] eq "")||(@_[0] eq " ")) {
+	    system ("/usr/bin/open -a '".@_[0]."' ".@_[1]." &");
+	} else {
+	    system ("/usr/bin/open ".@_[1]." &");
+	}
     }
 }
 

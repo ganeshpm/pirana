@@ -1451,7 +1451,7 @@ sub generate_report_command {
     if (@run == 0) { message("First select a model / result file."); return(); }
     foreach (@run) {
 	my $pirana_notes = $models_notes{$_};
-	$_ .= ".".$setting{ext_res};
+ 	$_ .= ".".$setting{ext_res};
 	output_results_HTML($_, \%setting, $pirana_notes, $run_reports_ref);
 	start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum_'.$_.'.html"');
     }
@@ -2257,6 +2257,7 @@ sub show_estim_window {
 ### Compat  : W+L+
     my $lst_ref = shift;
     my @lst = @$lst_ref;
+    my $modelno = @lst[0]; 
     my $lstfile = @lst[0].".".$setting{ext_res};
     my $modelfile = $lstfile;
     $modelfile =~ s/$setting{ext_res}/$setting{ext_ctl}/i;
@@ -2348,8 +2349,11 @@ sub show_estim_window {
     $estim_window_frame -> Button (-text=>"Export as LaTeX", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
 	grid_to_latex ($estim_grid, $csv_file_choose, \@estim_grid_headers, (int(@th)+int(@om)+int(@si)+2), $cols );
     })->grid(-column=>2, -row=>3, -sticky=>"nwse");
-
-
+    $estim_window_frame -> Button (-text=>"HTML report", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
+	my $pirana_notes = $models_notes{$modelno}; 
+  	output_results_HTML($lstfile, \%setting, $pirana_notes, \%$run_reports);
+	start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum_'.$_.'.html"');
+    })->grid(-column=>3, -row=>3, -sticky=>"nwse");
     my $i = 1; my $j=1; my $max_i = 1;
     if (@th>0) {
 	$estim_window ->configure (-title=>$lstfile." (".$last_method.")");
@@ -4377,6 +4381,7 @@ sub duplicate_model_window {
   my $mod_ref = extract_from_model ($modelfile, $modelno);
   my %mod = %$mod_ref;
   $new_ctl_descr = $mod{description};
+  $new_ctl_descr =~ s/[\r\n]//g;
 
   $dupl_dialog_frame -> Label (-background=>$bgcol, -font=>$font, -text=>'Model description:')->grid(-row=>3,-column=>1,-sticky=>"we");
   $dupl_dialog_frame -> Label (-background=>$bgcol, -font=>$font, -justify=>"left", -text=>"\nAutomatically changing of table files only works if in the table name the exact filename of\nthe model is incorporated. E.g. if your model file is name 005.mod, then your tables should\nbe named sdtab005, tab005.tab, 005.tab, etc in the control stream\n\n."
