@@ -1902,7 +1902,7 @@ sub extract_from_model {
 			  my @si_ex = extract_om_mod($init);
 			  push (@si_init, @si_ex);
 		      }
-		      $descr =~ s/\r//g; # also take care of carriage return on Windows
+		      $descr =~ s/[\r\n]//g; # also take care of carriage return on Windows
 		      if (($theta_area == 1)&&($prior==0)) {
 			  push (@th_descr, $descr); 
 		      }
