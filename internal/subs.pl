@@ -2368,7 +2368,7 @@ sub show_estim_window {
 	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 
 	foreach my $th (@th) {
-	    $estim_grid -> add($i+$prerows);
+	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "TH ".$i, -style=>$header_right2);
 	    my $th_text = rnd($th,4);
 	    my $th_rse = "";
@@ -2381,12 +2381,12 @@ sub show_estim_window {
 	    $i++;
 	}
 	if ($max_i > $i) {$i = $max_i};
-	$estim_grid -> add($i+$prerows);
+	unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $om (@om) {
 	    @om_x = @$om; $j = 1;
-	    $estim_grid -> add($i+$prerows);
+	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "OM ".$cnt, -style=>$header_right2);
 	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @omega_names[$cnt-1], -style=>$align_left);
 	    foreach $om_cov (@om_x) {
@@ -2405,12 +2405,12 @@ sub show_estim_window {
 	    }
 	    $i++; $cnt++;
 	}
-	$estim_grid -> add($i+$prerows);
+	unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $si (@si) {
 	    @si_x = @$si; $j = 1;
-	    $estim_grid -> add($i+$prerows);
+	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "SI ".$cnt, -style=>$header_right2);
 	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @sigma_names[$cnt-1], -style=>$align_left);
 	    foreach $si_cov (@si_x) {
@@ -2564,7 +2564,7 @@ sub show_estim_multiple {
     push (@estim_grid_headers, " ");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
 						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
-						     -height     => 40, -width      => 90,
+						     -height     => 25, -width      => 90,
 						     -border     => 0, -indicator=>0,
 						     -selectborderwidth => 0, -padx=>0, -pady=>0,
 						     -background => 'white',
@@ -2611,21 +2611,21 @@ sub show_estim_multiple {
 	$estim_grid -> add(2);
 	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_all; $i++) {
-	    $estim_grid -> add(($i+$prerows));
+	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
 	    $estim_grid -> itemCreate(($i+$prerows), 0, -text => "TH ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($i+$prerows), 1, -text => @theta_names[($i-1)], -style=>$align_left);
 	}
-	$estim_grid -> add($max_th+$prerows+1);
+	unless ($estim_grid -> infoExists($max_th+$prerows+1)) { $estim_grid -> add($max_th+$prerows+1) };
 	$estim_grid -> itemCreate($max_th+$prerows+1, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_om; $i++) {
-	    $estim_grid -> add($max_th+1+$i+$prerows);
+	    unless ($estim_grid -> infoExists($max_th+1+$i+$prerows)) { $estim_grid -> add($max_th+1+$i+$prerows) };
 	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 0, -text => "OM ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 1, -text => @omega_names[($i-1)], -style=>$align_left);
 	}
-	$estim_grid -> add($max_th+$max_om+$prerows+2);
+	unless ($estim_grid -> infoExists($max_th+$max_om+$prerows+2)) { $estim_grid -> add($max_th+$max_om+$prerows+2) };
 	$estim_grid -> itemCreate($max_th+$max_om+$prerows+2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_si; $i++) {
-	    $estim_grid -> add($max_th+$max_om+2+$prerows+$i);
+	    unless ($estim_grid -> infoExists($max_th+$max_om+2+$prerows+$i)) { $estim_grid -> add($max_th+$max_om+2+$prerows+$i) };
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 0, -text => "SI ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
 	}
@@ -2663,8 +2663,7 @@ sub show_estim_multiple {
 	    $i++;
 	}
 	$col++;
-    }
-     
+    }    
 }
 
 sub read_log {
@@ -7500,7 +7499,7 @@ sub frame_models_show {
 
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>580);
+$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>520);
 $mw -> gridColumnconfigure(3, -weight => 1, -minsize=>180);
 $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
