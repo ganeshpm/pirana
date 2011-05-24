@@ -598,33 +598,46 @@ sub sge_setup_window {
     our %sge = %$sge_ref;
     my %sge_new = %sge;
     my %sge_descr = %$sge_descr_ref;
-
+    if (($sge_new{cluster_connect} eq "")||($sge_new{cluster_connect} eq " ")) {
+	$sge_new{cluster_conncet} = "None (local)";
+    }
+    
    $sge_setup_frame -> Label (-text=>"Run on SGE by default", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>1,-column=>1,-columnspan=>1,-sticky=>"ne");
     my $sge_submit_entry = $sge_setup_frame -> Checkbutton (-text => "", -variable=> \$sge_new{sge_default}, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol
     ) -> grid(-row=>1,-column=>2,-columnspan=>2,-sticky=>"nw");
   
-    $sge_setup_frame -> Label (-text=>"Submit command ", -font=> $font_normal, -background=>$bgcol
+    $sge_setup_frame -> Label (-text=>"Connect to cluster: ", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>2,-column=>1,-columnspan=>1,-sticky=>"ne");
+    my @ssh_names = keys (%ssh_all);
+    unshift (@ssh_names, "None (local)");
+    my $sge_submit_entry = $sge_setup_frame -> Optionmenu(
+	-background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white, -activeforeground=>$white, -width=>16, -border=>$bbw, -font=>$font_normal, 
+	-options=>\@ssh_names, -textvariable => \$sge_new{connect_cluster},-width=>28,
+	-command=>sub{
+	})->grid(-row=>2,-column=>2,-sticky=>'wens');
+    
+    $sge_setup_frame -> Label (-text=>"Submit command ", -font=> $font_normal, -background=>$bgcol
+    ) -> grid(-row=>3,-column=>1,-columnspan=>1,-sticky=>"ne");
     my $sge_submit_entry = $sge_setup_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$sge_new{submit_command}, -width=>10, -font=>$font_normal, -background=>"#FFFFFF"
-    ) -> grid(-row=>2,-column=>2,-columnspan=>2,-sticky=>"nw");
-  
-    $sge_setup_frame -> Label (-text=>"Run priority ", -font=> $font_normal, -background=>$bgcol
-    ) -> grid(-row=>3,-column=>1,-sticky=>"ne");
-    my $sge_priority_entry = $sge_setup_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$sge_new{priority}, -width=>4, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>3,-column=>2,-columnspan=>2,-sticky=>"nw");
   
-    $sge_setup_frame -> Label (-text=>"Additional parameters ", -font=>$font_normal, -background=>$bgcol
+    $sge_setup_frame -> Label (-text=>"Run priority ", -font=> $font_normal, -background=>$bgcol
     ) -> grid(-row=>4,-column=>1,-sticky=>"ne");
-    my $sge_parameters_entry = $sge_setup_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$sge_new{parameters}, -width=>20, -font=>$font_normal, -background=>"#FFFFFF"
+    my $sge_priority_entry = $sge_setup_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$sge_new{priority}, -width=>4, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>4,-column=>2,-columnspan=>2,-sticky=>"nw");
   
-    $sge_setup_frame -> Label (-text=>"\n\n", -font=>$font_normal, -background=>$bgcol
-    ) -> grid(-row=>5,-column=>1,-sticky=>"nw");
-    $sge_setup_frame -> Label (-text=>"Use project/model-name as job-name ", -font=>$font_normal, -background=>$bgcol
+    $sge_setup_frame -> Label (-text=>"Additional parameters ", -font=>$font_normal, -background=>$bgcol
     ) -> grid(-row=>5,-column=>1,-sticky=>"ne");
-    $sge_setup_frame -> Checkbutton (-text=>"", -variable=> \$sge_new{model_as_jobname}, -font=>$font_normal, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol
+    my $sge_parameters_entry = $sge_setup_frame -> Entry (-border=>1, -relief=>'groove',-textvariable=> \$sge_new{parameters}, -width=>20, -font=>$font_normal, -background=>"#FFFFFF"
     ) -> grid(-row=>5,-column=>2,-columnspan=>2,-sticky=>"nw");
+  
+    $sge_setup_frame -> Label (-text=>"\n\n", -font=>$font_normal, -background=>$bgcol
+    ) -> grid(-row=>6,-column=>1,-sticky=>"nw");
+    $sge_setup_frame -> Label (-text=>"Use project/model-name as job-name ", -font=>$font_normal, -background=>$bgcol
+    ) -> grid(-row=>6,-column=>1,-sticky=>"ne");
+    $sge_setup_frame -> Checkbutton (-text=>"", -variable=> \$sge_new{model_as_jobname}, -font=>$font_normal, -background=>$bgcol, -selectcolor=>$selectcol, -activebackground=>$bgcol
+    ) -> grid(-row=>7,-column=>2,-columnspan=>2,-sticky=>"nw");
 
     $sge_setup_frame -> Button (-text=>"Cancel", -width=>8, -font=>$font_normal, -border=>0, -background=>$button, -activebackground=>$abutton, -command => sub{
 	$sge_setup_window -> destroy();
@@ -671,12 +684,12 @@ sub ssh_setup_window {
 	-background=>$lightblue, -activebackground=>$darkblue,-foreground=>$white, -activeforeground=>$white, -width=>16, -border=>$bbw, -font=>$font_normal, 
 	-options=>\@ssh_names, -textvariable => \$ssh_chosen,-width=>28,
 	-command=>sub{
-				     my $ssh_ref = $ssh_all{$ssh_chosen};
-				     my %ssh = %$ssh_ref;
-				     foreach my $key (%ssh) {
-					 $ssh_new{$key} = $ssh{$key};
-				     }
-				      })->grid(-row=>3,-column=>2,-sticky=>'wens');
+	    my $ssh_ref = $ssh_all{$ssh_chosen};
+	    my %ssh = %$ssh_ref;
+	    foreach my $key (%ssh) {
+		$ssh_new{$key} = $ssh{$key};
+	    }
+	})->grid(-row=>3,-column=>2,-sticky=>'wens');
     my $add_new_cluster_button = $ssh_connection_frame -> Button (
 	-image=>$gif{plus}, -font=>$font, -border=>$bbw, 
 	-background=>$button, -activebackground=>$abutton, -command=> sub{
@@ -868,6 +881,7 @@ sub refresh_sge_monitor {
     my ($ssh_ref, $nodes_hlist, $jobs_hlist_running, $jobs_hlist_scheduled, $jobs_hlist_finished, $use_hlist) = @_;
     my ($job_info_running_ref, $job_info_scheduled_ref, $job_info_finished_ref, $node_info_ref, $node_use_ref);
     my @dum = [];
+    my %ssh = %$ssh_ref;
     $nodes_hlist -> delete("all");
     $use_hlist -> delete("all");
     $jobs_hlist_running -> delete("all");
@@ -1084,21 +1098,16 @@ sub sge_monitor_window {
   #  my $sge_ssh = $sge_notebook -> add("ssh", -label=>"SSH");
 
 # set up ssh if needed
-    $ssh{connect_ssh} = $ssh{default};
-    my $ssh_pre; my $ssh_post;
-    unless ($ssh{login} =~ m/plink/i) { $ssh_post = "'" };
-    if ($ssh{connect_ssh} == 1) {
-	$ssh_pre .= $ssh{login}.' ';	
-	if ($ssh{parameters} ne "") {
-	    $ssh_pre .= $ssh{parameters}.' ';
-	}
-	unless ($ssh{login} =~ m/plink/i) { $ssh_pre .= "'" };
-	if ($ssh{execute_before} ne "") {
-	    $ssh_pre .= $ssh{execute_before}.'; ';
-	}
-	unless ($ssh{login} =~ m/plink/i) { $ssh_post = "'" };
+    my ($ssh_pre, $ssh_post); 
+    my %ssh;
+    if (($sge{connect_cluster} ne "None (local)")&&($sge{connect_cluster} ne "")&&($sge{connect_cluster} ne " ")) {
+	my $ssh_ref = $ssh_all{$sge{connect_cluster}};
+	%ssh = %$ssh_ref;
+	$ssh{connect_ssh} = 1;
+	($ssh_pre, $ssh_post) = ssh_get_pre_post (\%ssh); 
+    } else {
+	$ssh{connect_ssh} = 0;
     }
-   # ssh_notebook_tab ($sge_ssh, 3, "");
 
 ### Build running Jobs tab
     my $jobs_hlist_running = tk_table_from_model_output ($ssh_pre."qstat -s r |".$ssh_post, $sge_running);
@@ -2368,7 +2377,7 @@ sub show_estim_window {
 	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 
 	foreach my $th (@th) {
-	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	    $estim_grid -> add($i+$prerows);
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "TH ".$i, -style=>$header_right2);
 	    my $th_text = rnd($th,4);
 	    my $th_rse = "";
@@ -2381,12 +2390,12 @@ sub show_estim_window {
 	    $i++;
 	}
 	if ($max_i > $i) {$i = $max_i};
-	unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	$estim_grid -> add($i+$prerows);
 	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $om (@om) {
 	    @om_x = @$om; $j = 1;
-	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	    $estim_grid -> add($i+$prerows);
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "OM ".$cnt, -style=>$header_right2);
 	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @omega_names[$cnt-1], -style=>$align_left);
 	    foreach $om_cov (@om_x) {
@@ -2405,12 +2414,12 @@ sub show_estim_window {
 	    }
 	    $i++; $cnt++;
 	}
-	unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	$estim_grid -> add($i+$prerows);
 	$estim_grid -> itemCreate($i+$prerows, 0, -text => " ", -style=>$header_right2);
 	$i++; my $flag=$i; $cnt=1;
 	foreach my $si (@si) {
 	    @si_x = @$si; $j = 1;
-	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	    $estim_grid -> add($i+$prerows);
 	    $estim_grid -> itemCreate($i+$prerows, 0, -text => "SI ".$cnt, -style=>$header_right2);
 	    $estim_grid -> itemCreate($i+$prerows, 1, -text => @sigma_names[$cnt-1], -style=>$align_left);
 	    foreach $si_cov (@si_x) {
@@ -2564,7 +2573,7 @@ sub show_estim_multiple {
     push (@estim_grid_headers, " ");
     our $estim_grid = $estim_window_frame ->Scrolled('HList', -head => 1,
 						     -columns    => 40, -scrollbars => 'se',-highlightthickness => 0,
-						     -height     => 25, -width      => 90,
+						     -height     => 40, -width      => 90,
 						     -border     => 0, -indicator=>0,
 						     -selectborderwidth => 0, -padx=>0, -pady=>0,
 						     -background => 'white',
@@ -2611,21 +2620,21 @@ sub show_estim_multiple {
 	$estim_grid -> add(2);
 	$estim_grid -> itemCreate(2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_all; $i++) {
-	    unless ($estim_grid -> infoExists($i+$prerows)) { $estim_grid -> add($i+$prerows) };
+	    $estim_grid -> add(($i+$prerows));
 	    $estim_grid -> itemCreate(($i+$prerows), 0, -text => "TH ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($i+$prerows), 1, -text => @theta_names[($i-1)], -style=>$align_left);
 	}
-	unless ($estim_grid -> infoExists($max_th+$prerows+1)) { $estim_grid -> add($max_th+$prerows+1) };
+	$estim_grid -> add($max_th+$prerows+1);
 	$estim_grid -> itemCreate($max_th+$prerows+1, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_om; $i++) {
-	    unless ($estim_grid -> infoExists($max_th+1+$i+$prerows)) { $estim_grid -> add($max_th+1+$i+$prerows) };
+	    $estim_grid -> add($max_th+1+$i+$prerows);
 	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 0, -text => "OM ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+1+$i+$prerows), 1, -text => @omega_names[($i-1)], -style=>$align_left);
 	}
-	unless ($estim_grid -> infoExists($max_th+$max_om+$prerows+2)) { $estim_grid -> add($max_th+$max_om+$prerows+2) };
+	$estim_grid -> add($max_th+$max_om+$prerows+2);
 	$estim_grid -> itemCreate($max_th+$max_om+$prerows+2, 0, -text => " ", -style=>$header_right2);
 	for($i = 1; $i <= $max_si; $i++) {
-	    unless ($estim_grid -> infoExists($max_th+$max_om+2+$prerows+$i)) { $estim_grid -> add($max_th+$max_om+2+$prerows+$i) };
+	    $estim_grid -> add($max_th+$max_om+2+$prerows+$i);
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 0, -text => "SI ".$i, -style=>$header_right2);
 	    $estim_grid -> itemCreate(($max_th+$max_om+2+$i+$prerows), 1, -text => @sigma_names[($i-1)], -style=>$align_left);
 	}
@@ -2663,7 +2672,8 @@ sub show_estim_multiple {
 	    $i++;
 	}
 	$col++;
-    }    
+    }
+     
 }
 
 sub read_log {
@@ -7499,8 +7509,8 @@ sub frame_models_show {
 
 # take care of resizing
 $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>520);
-$mw -> gridColumnconfigure(3, -weight => 1, -minsize=>180);
+$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>530);
+$mw -> gridColumnconfigure(3, -weight => 1, -minsize=>170);
 $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
 $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
 $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
@@ -8311,7 +8321,7 @@ sub show_inter_window {
       $inter_status_bar = $inter_window_frame -> Label (-text=>"Status: Idle", -anchor=>"w", -font=>$font_normal, -background=>$bgcol)->grid(-column=>0,-row=>7,-columnspan=>7, -sticky=>"w");
       $inter_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>2, -ipady=>0, -sticky=>"wns");
       $intermed_frame_buttons = $inter_window_frame -> Frame(-relief=>'sunken', -border=>0, -background=>$bgcol)->grid(-column=>0, -row=>5, -ipady=>0, -sticky=>"wnse");
-      @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      @buttons[0] = $inter_frame_buttons -> Button (-text=>'Rescan directories', -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
         $grid -> delete("all");
         inter_status ("Searching sub-directories for active runs...");
         @n = get_runs_in_progress($wd, \@buttons);
@@ -8319,7 +8329,7 @@ sub show_inter_window {
           inter_status ("No active runs found");
         } else {inter_status()};
       }) -> grid(-column => 1, -row=>1, -sticky=>"wns");
-      $inter_frame_buttons -> Button (-text=>'Open intermediate files', -font=>$font,  -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $inter_frame_buttons -> Button (-text=>'Intermediate files', -font=>$font,  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
          @info = $grid->infoSelection();
          foreach (@info) {
            my $dir = $_;
@@ -8330,7 +8340,7 @@ sub show_inter_window {
            }
          }
       }) -> grid(-column => 2, -row=>1, -sticky=>"w");
-      $inter_frame_buttons -> Button (-text=>'Open .ext file', -font=>$font,  -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $inter_frame_buttons -> Button (-text=>'Open .ext file', -font=>$font,  -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
          @info = $grid->infoSelection();
          foreach my $dir (@info) {
 	   my $ext_file = get_current_ext ($wd."/".$dir);
@@ -8341,7 +8351,7 @@ sub show_inter_window {
 	   }
          }
       }) -> grid(-column => 3, -row=>1, -sticky=>"w");
-      $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -font=>$font, -width=>17, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
+      $inter_frame_buttons -> Button (-text=>'Refresh estimates',  -font=>$font, -width=>20, -border=>$bbw,-background=>$button, -activebackground=>$abutton,-command=>sub{
        #get all
          @info = $grid->infoSelection();
 	 my $chosen = @info[0];
@@ -8843,6 +8853,8 @@ sub update_inter_results_dialog {
   my $n_om = int(@om_struct); # number of omega blocks
   my $init = shift(@om_init);
   foreach(@om_struct) { if ($_ > 1) { $n_om = $n_om - ($_ - 1); } }
+  print int(@thetas);
+  if (int(@thetas) == 0) {$n_om == 0}; # don't print omegas if no thetas found
   for ($k = 0; $k < $n_om ; $k++ ) {
       my $diag = @om_struct[$k];
       my $block_size = block_size($diag);

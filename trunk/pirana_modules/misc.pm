@@ -8,7 +8,16 @@ use Cwd;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(sort_model_files get_nmfe_number get_highest_file_number get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+our @EXPORT_OK = qw(hash_print sort_model_files get_nmfe_number get_highest_file_number get_R_gui_command filter_array sort_table count_numeric om_block_structure unique time_format rm_spaces text_to_file file_to_text block_size base_drive find_R get_max_length_in_array get_file_extension make_clean_dir nonmem_priority get_processes generate_random_string lcase replace_string_in_file dir ascend log10 is_integer is_float bin_mode rnd one_dir_up win_path unix_path os_specific_path extract_file_name tab2csv csv2tab read_dirs_win read_dirs win_start start_command);
+
+sub hash_print {
+    my $hash_ref = shift;
+    my %hash = %$hash_ref;
+    foreach my $key (keys(%hash)) {
+	print $key.": ".$hash{$key}."\n";
+    }
+    return();
+}
 
 sub sort_model_files {
 ### Purpose : Sort model files, adhering also to the "Uppsala" convention of naming them "run1.mod", "run2.mod" etc instead of "run001.mod" etc.
