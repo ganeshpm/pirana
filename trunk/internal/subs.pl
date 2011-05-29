@@ -6256,7 +6256,7 @@ sub show_links {
   our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
 						-selectbackground=>'#606060', #-highlightthickness =>0,
 						-arrowimage => $gif{down}, -border=>1, -relief=>"groove", -width=>20,
-						-choices => [ qw/tab csv R * pdf phi ext cov coi pnm xpose sdtab mod lst/ ],
+						-choices => [ qw/tab csv R * pdf phi ext cov cor pnm xpose sdtab mod lst org/ ],
 						-variable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
   }) -> grid(-row=>2, -column=>1, -columnspan => 10, -sticky=>"nwse");
@@ -7253,9 +7253,11 @@ sub psn_run_window {
         #if ($stdout) {$stdout -> yview (scroll=>1, units);}
         chdir ($cwd);
 
-	$help -> detach($psn_run_button);
 	if ($setting_internal{quit_dialog} == 1) {
+	    $help -> detach($psn_run_button);
 	    $psn_run_window -> destroy();
+	} else {
+	    $psn_run_button -> configure (-state=>'normal');
 	}
 
      });
@@ -7508,13 +7510,15 @@ sub frame_models_show {
   }
 
 # take care of resizing
-$mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
-$mw -> gridColumnconfigure(2, -weight => 100, -minsize=>530);
-$mw -> gridColumnconfigure(3, -weight => 1, -minsize=>170);
-$mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
-$mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
-$mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
-$mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
+  my $tab_width = 180;
+  if ($^O =~ m/MSWin/) {$tab_width = 150}
+  $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
+  $mw -> gridColumnconfigure(2, -weight => 100, -minsize=>530);
+  $mw -> gridColumnconfigure(3, -weight => 1, -minsize=> $tab_width);
+  $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
+  $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
+  $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
+  $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
 
 #    if ($os =~ m/darwin/i) {
       $models_hlist -> bind ('<Button-1>' => sub {

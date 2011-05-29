@@ -44,15 +44,17 @@ sub sort_model_files {
 	}
 	$num =~ s/run//g;
 	$num =~ s/$filter//g;
-	if ($num =~ m/^\d/ ) { # only numerics left
-	    push (@models_copy_num, $num);
-	} else {
-	    unless ($num =~ m/\#/) {
-		push (@models_copy_other, $num);
+	unless (($mod =~ m/\.org/)||($mod =~ m/\.temporary/)) {
+	    if ($num =~ m/^\d/ ) { # only numerics left
+		push (@models_copy_num, $num);
+	    } else {
+		unless ($num =~ m/\#/) {
+		    push (@models_copy_other, $num);
+		}
 	    }
-	}
-        if ($add_run_flag == 1) {
-	    $add_run{$num} = "run";
+	    if ($add_run_flag == 1) {
+		$add_run{$num} = "run";
+	    }
 	}
     }
     @models_copy_num = sort {$a <=> $b} @models_copy_num;
