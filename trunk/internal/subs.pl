@@ -1458,13 +1458,20 @@ sub generate_report_command {
     my $run_reports_ref = shift;
     @run = @ctl_show[$models_hlist -> selectionGet];
     if (@run == 0) { message("First select a model / result file."); return(); }
+    my $i = 0;
+    my $mod0 = @run[0];
+    my $final = 0;
     foreach (@run) {
 	my $pirana_notes = $models_notes{$_};
- 	$_ .= ".".$setting{ext_res};
-	output_results_HTML($_, \%setting, $pirana_notes, $run_reports_ref);
-	start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum_'.$_.'.html"');
+	my $add_to = 1;
+	if ($i == 0) { $add_to = 0; }
+	if ($i == (int(@run)-1)) { $final = 1; }
+	output_results_HTML($_ . ".".$setting{ext_res}, \%setting, $pirana_notes, $run_reports_ref, $add_to, $mod0, \@run, \%models_descr);
+	$i++;
     }
+    start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_temp/pirana_sum_'.$mod0.'.html"');
 }
+
 sub generate_LaTeX_command {
     my $run_reports_ref = shift;
     my @run;
@@ -2360,7 +2367,7 @@ sub show_estim_window {
     })->grid(-column=>2, -row=>3, -sticky=>"nwse");
     $estim_window_frame -> Button (-text=>"HTML report", -font=>$font_normal, -background=>$button, -border=>$bbw, -activebackground=>$abutton, -command=> sub{
 	my $pirana_notes = $models_notes{$modelno}; 
-  	output_results_HTML($lstfile, \%setting, $pirana_notes, \%$run_reports);
+  	output_results_HTML($lstfile, \%setting, $pirana_notes, \%$run_reports, 0, $lstfile, 1);
 	start_command($software{browser}, '"file:///'.unix_path($cwd).'/pirana_sum_'.$_.'.html"');
     })->grid(-column=>3, -row=>3, -sticky=>"nwse");
     my $i = 1; my $j=1; my $max_i = 1;

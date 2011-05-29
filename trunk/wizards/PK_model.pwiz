@@ -51,7 +51,7 @@
 [/Q]
 
 [Q] [error_model] Error model:
-[O] [error_model,("Additve","Proportional","Combined additive & proportional","Exponential","Log-transform both sides")] (3) [/O]
+[O] [error_model,("Additive","Proportional","Combined additive & proportional","Exponential","Log-transform both sides")] (3) [/O]
 [/Q]
 
 [/S]
@@ -518,6 +518,16 @@ $DES
 ;----------------------------------	
 [/IF]
 
+[IF,error_model,Additive]
+$ERROR
+;----------------------------------
+IPRED = F
+IRES = DV-IPRED
+W = THETA(2)
+IF (W.EQ.0) W = 1
+IWRES = IRES/W
+Y= IPRED+W*ERR(1)
+[/IF]
 [IF,error_model,Combined additive & proportional]
 $ERROR
 ;----------------------------------
