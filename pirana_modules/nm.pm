@@ -1260,7 +1260,7 @@ sub extract_from_lst {
         $obs_rec = rm_spaces($'); 
     }
     if ($line =~ m/TOT. NO. OF INDIVIDUALS:/) {
-        $tot_id = rm_spaces($');
+        $tot_id = rm_spaces($'); 
     }
     if ($line =~ m/1NONLINEAR MIXED EFFECTS MODEL PROGRAM \(NONMEM\)/) {
         $nm_ver = rm_spaces($'); 
@@ -1302,11 +1302,16 @@ sub extract_from_lst {
 sub output_results_HTML {
 ### Purpose : Compile a HTML file that presents some run info and parameter estimates
 ### Compat  : W+
-  my ($file, $setting_ref, $pirana_notes, $include_html_ref) = @_;
+  my ($file, $setting_ref, $pirana_notes, $include_html_ref, $add_to, $mod0, $all_runs_ref, $models_descr_ref) = @_;
   my %setting = %$setting_ref;
   my %include_html = %$include_html_ref;
   my $run = $file;
   $run =~ s/\.$setting{ext_res}//;
+
+  my @all_runs = @$all_runs_ref;
+  my $final = 0;
+  if ($run eq @all_runs[(@all_runs-1)]) { $final = 1; }
+  my %models_descr = %$models_descr_ref;
 
 # get information from NM output file
   my $res_ref = extract_from_lst ($file);
@@ -1316,24 +1321,41 @@ sub output_results_HTML {
   my %mod = %$mod_ref;
 
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = @{localtime($res{resdat})};
-  my $html = "pirana_sum_".$file.".html";
+  my $html;
 
   ### Start HTML output
-  open (HTML,">".$html);
-  print HTML "<HTML><HEAD><STYLE>\n";
-  print HTML "TD {font-family:Verdana,arial; font-size:0.8em}\n";
-  print HTML ".stats {background-color: #F3F3F3}\n";
-  print HTML ".head1 {background-color: #6a6a6a; color: #FFFFFF}\n";
-  print HTML ".head2 {background-color: #909090; color: #FFFFFF}\n";
-  print HTML ".theta {background-color: #F3F3F3; text-align:left; font-size:0.7em}\n";
-  print HTML ".omega {background-color: #F3F3F3; text-align:right; font-size:0.7em}\n";
-  print HTML ".sigma {background-color: #F3F3F3; text-align:right; font-size:0.7em}\n";
-  print HTML ".matrix {background-color: #F3F3F3}\n";
-  print HTML "A {font-family:Verdana,arial; font-size:0.8em}\n";
-  print HTML "</STYLE></HEAD><BODY>&nbsp;<BR>\n";
+  $html = "pirana_temp/pirana_sum_".$mod0.".html";
+  if ($add_to == 0) {
+    unlink ($html);
+  }
+  open (HTML,">>".$html);
+  if ($add_to == 0) {
+    print HTML "<HTML><HEAD><STYLE>\n";
+    print HTML "TD {font-family:Verdana,arial; font-size:0.8em}\n";
+    print HTML ".stats {background-color: #F3F3F3}\n";
+    print HTML ".head1 {background-color: #6a6a6a; color: #FFFFFF}\n";
+    print HTML ".head2 {background-color: #909090; color: #FFFFFF}\n";
+    print HTML ".theta {background-color: #F3F3F3; text-align:left; font-size:0.7em}\n";
+    print HTML ".omega {background-color: #F3F3F3; text-align:right; font-size:0.7em}\n";
+    print HTML ".sigma {background-color: #F3F3F3; text-align:right; font-size:0.7em}\n";
+    print HTML ".matrix {background-color: #F3F3F3}\n";
+    print HTML "A {font-family:Verdana,arial; font-size:0.8em}\n";
+    print HTML "</STYLE></HEAD><BODY>&nbsp;<BR>\n";
+    if (@all_runs > 1) {
+      print HTML "<TABLE border=0 cellpadding=2 cellspacing=0 width=500>\n";
+      print HTML "<A name='top'></A>\n";
+      print HTML "<TR VALIGN='top'><TD width=120 bgcolor='#444444' colspan=1><B><FONT color='#FFFFFF'>Run(s):</FONT></B></TD><TD bgcolor='#444444' colspan=1><B><FONT color='#FFFFFF'>Description</FONT></B></TD></TR>\n";
+      foreach my $run_id (@all_runs) {
+        print HTML "<TR><TD><A href='#".$run_id."'>".$run_id."</A></TD><TD>".$models_descr{$run_id}."</TD></TR>\n";
+      }
+      print HTML "</TABLE><BR>&nbsp<BR>\n";
+    }
+  }
+
+  print HTML "<A name='".$mod{mod}."'></A>\n";
   print HTML "<TABLE border=0 cellpadding=2 cellspacing=0 CLASS='stats' width=600>\n";
-  print HTML "<TR><TD bgcolor='#550000' colspan=3><B><FONT color='#FFFFFF'>Run statistics:</FONT></B></TD></TR>\n";
-  print HTML "<TR><TD width=200>Run number</TD><TD><FONT FACE=verdana,arial size=2 color='darkred'><B>".$mod{mod}."</B></FONT></TD></TR>\n";
+  print HTML "<TR><TD bgcolor='#550000' colspan=1><B><FONT color='#FFFFFF'>Run statistics:</FONT></B></TD><TD bgcolor='#550000' colspan=2><B><FONT color='#FFFFFF'>".$mod{mod}."</FONT></B></TD><TD bgcolor='#550000' colspan=2 width=92><B><A href='#top'><FONT color='#FFFFFF'>Back to top</FONT></A></B></TD></TR>\n";
+#  print HTML "<TR><TD width=200>Run number</TD><TD><FONT FACE=verdana,arial size=2 color='darkred'><B>".$mod{mod}."</B></FONT></TD></TR>\n";
   print HTML "<TR><TD>Nonmem output file</TD><TD><A href='".$file."'>".$file."</A></TD><TD></TD></TR>\n";
   if ($include_html{basic_run_info} == 1 ) {
       print HTML "<TR><TD>Reference model</TD><TD><FONT FACE=verdana,arial size=2>".$mod{refmod}."</FONT></TD></TR>\n";
@@ -1378,7 +1400,7 @@ sub output_results_HTML {
       print HTML @mod_lines;
       print HTML "</TD></TD></TR>\n"
   }
-  print HTML "</TABLE>\n<P>\n";
+  print HTML "</TABLE>\n\n";
 
 # Estimation specific info and Parameter estimates
   if (($include_html{param_est_all} == 1) || ($include_html{param_est_last}==1) ) {
@@ -1409,14 +1431,18 @@ sub output_results_HTML {
 	  generate_HTML_run_specific_info ($meth, \%res, \%mod, $term_res{$meth}, $ofvs{$meth}, $est_times{$meth}, $bnd{$meth}, $grad_zero{$meth}, $cond_nr{$meth});
 	  generate_HTML_parameter_estimates (\%res, \%mod, $est{$meth}, $se_est{$meth}, $term_res{$meth});
       }
-  print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements. SAME blocks are not shown.<BR>";
+      print HTML "<font size=1 face=verdana,arial>* Correlations in omega are shown as the off-diagonal elements. SAME blocks are not shown.</FONT><BR>";
 #      print HTML "<font size=1 face=verdana,arial>* Random effects are shown as OM^2 and SI^2</FONT><BR>";
 #      print HTML "<font size=1 face=verdana,arial>** RSE on random effects are shown as RSE(OM^2) and RSE(SI^2). RSE(OM) can be calculated as RSE(OM^2)/2. </FONT><BR>";
   }
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = @{localtime()};
 #  print @{localtime()};
-  print HTML "<TABLE><TR><TD colspan=2><FONT FACE=verdana,arial size=0>Generated ".($year+1900)."-".($mon+1)."-".$mday.", ".$hour.":".$min.":".$sec." by Piraña</FONT></TD></TR></TABLE>\n";
-  print HTML "</BODY>";
+  print HTML "<BR>&nbsp<BR><HR SIZE=1><BR>\n";
+
+  if ($final == 1) {
+    print HTML "<TABLE><TR><TD colspan=2><FONT FACE=verdana,arial size=0>Generated ".($year+1900)."-".($mon+1)."-".$mday.", ".$hour.":".$min.":".$sec." by Piraña</FONT></TD></TR></TABLE>\n";
+    print HTML "</BODY>";
+  }
   close HTML;
 }
 
@@ -1740,7 +1766,7 @@ sub generate_HTML_parameter_estimates {
       $i++;
   }
   print HTML "</TABLE>\n";
-  print HTML "<BR>";
+#  print HTML "<BR>";
 }
 
 sub extract_from_model {
