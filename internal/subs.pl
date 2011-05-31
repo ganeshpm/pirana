@@ -1448,6 +1448,9 @@ sub copy_results_from_folder_command {
     }
     if ($test_dirs == 0 ) {
         @dirs = @ctl_show[$models_hlist -> selectionGet ()];
+	foreach (@dirs) {
+	    $_ =~ s/dir\-//g;
+	}
         copy_dir_res($cwd, \@dirs);
     } else {
         message ("Please select one or more valid folders.");
