@@ -51,7 +51,7 @@ sub create_menu_bar {
  pirana_debug ($debug_mode, "Declare MODEL -> PSN menu.");
   my $mbar_model_psn;
   if ($setting{use_psn}==1) {
-    $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -font=>$font,-image=>$gif{run}, -compound => 'left',-background=>$bgcol, -background=>$bgcol, -tearoff=>0);
+    $mbar_model_psn = $mbar_model -> cascade(-label => "PsN", -font=>$font,-image=>$gif{psn_logo}, -compound => 'left',-background=>$bgcol, -background=>$bgcol, -tearoff=>0);
     $mbar_model_psn -> command (-label=> " execute", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
      });
