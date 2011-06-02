@@ -34,17 +34,6 @@
       Required unless only the independent variable is specified without any
       binning options, then forbidden.
 
-      -boxcox_lambda=Y
-
-      Setting this variable indicates that data is Box-Cox transformed. 
-      Data will be transformed to normal scale for eventual prediction correction,
-      and retransformed to Box-Cox before analysis and output.
-      Option cannot be used with lnDV.
-
-      -confidence_interval=number
-
-      An integer between 1 and 99 specifying the confidence interval in percent.
-
       -dv=VARIABLE
 
       Name of dependent variable. Default is DV.

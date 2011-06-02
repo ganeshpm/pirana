@@ -88,11 +88,15 @@
     no effect if you also use the -clean option.
 
     -condition_number_limit='number'
-    An error will be raised in the output from sumo
+    An error will be raised in the output from -summarize
     if the condition number is greater than this number. 
 
+    -confidence_level='number'
+    Confidence level for confidence intervals (percentage value).
+    Valid only with -summarize.
+
     -correlation_limit='number'
-    All correlations above this number will be listed in the output from sumo.
+    All correlations above this number will be listed in the output from -summarize.
 
     -crash_restarts='integer'
     If a NONMEM outputfile is produced but PsN is unable to read it
@@ -176,6 +180,14 @@
     e.g. a computer crash or a NONMEM run deliberaterly killed, and restart
     those runs without changing initial parameter estimates.
 
+    -handle_maxevals
+    NONMEM only allows 9999 function evaluations. PsN can expand this
+    limit by adding an MSFO option to $ESTIMATION. Later when NONMEM
+    hits the max number of function evaluations allowed by NONMEM (9999) 
+    PsN will remove intial estimates from the modelfile and add $MSFI 
+    and restart NONMEM. This will be repeated until the number of function
+    evaluations specified with MAXEVALS in the modelfile has been reached.
+
     -handle_msfo
     Experimental feature for handling resumes using msfo and msfi files.
 
@@ -197,15 +209,15 @@
 
     -large_omega_cv_limit='number'
     Coefficients of variation larger than this number will produce
-    warnings in the output from sumo.
+    warnings in the output from -summarize.
 
     -large_sigma_cv_limit='number'
     Coefficients of variation larger than this number will produce
-    warnings in the output from sumo.
+    warnings in the output from -summarize.
 
     -large_theta_cv_limit='number'
     Coefficients of variation larger than this number will produce
-    warnings in the output from sumo.
+    warnings in the output from -summarize.
 
     -last_est_complete
       
@@ -261,14 +273,6 @@
     -max_runtime='integer'
     A limit in seconds on how long a run may go on before being aborted.
 
-    -maxevals=100000
-    NONMEM only allows 9999 function evaluations. PsN can expand this
-    limit by adding an MSFO option to $ESTIMATION. Later when NONMEM
-    hits the max number of function evaluations allowed by NONMEM (9999) 
-    PsN will remove intial estimates from the modelfile and add $MSFI 
-    and restart NONMEM. This will be repeated until the number of function
-    evaluations specified with option maxevals has been reached.
-
     -min_retries='integer'
     min_retries forces PsN to try
     several initial values for each estimate and selecting the best
@@ -312,11 +316,12 @@
 
     -near_bound_sign_digits='integer'
     If a parameter estimate is equal to a bound with this many
-    significant digits, a warning will be printed. Valid only with sumo.
+    significant digits, a warning will be printed in the
+    output from -summarize. Valid only with -summarize.
 
     -near_zero_boundary_limit='number'
     When the bound is zero, the check using -near_bound_sign_digits is not valid. 
-    Use this limit instead. Valid only with sumo.
+    Use this limit instead. Valid only with -summarize.
 
     -nice='integer'
     This option only has effect on unix like operating systems. It
@@ -396,7 +401,7 @@
     0S MATRIX ALGORITHMICALLY SINGULAR
 
     -precision='integer'
-    Precision in sumo output.
+    Precision in -summarize output.
 
     -predict_data='string'
     No help available.
@@ -517,13 +522,13 @@
 
     -sign_digits_off_diagonals='integer'
     The off-diagonal elements are checked against +-1 with this many
-    significant digits. Valid only in sumo.
+    significant digits. Valid only with -summarize.
 
-    -significant_digits_accept='number'
-    The -significant_digits_accept option is only valid together with -tweak_inits. 
-    Normally PsN tries new initial estimates if 
+    -significant_digits_rerun='number'
+    The -significant_digits_rerun option is only valid together with -tweak_inits. 
+    Normally PsN only tries new initial estimates if 
     'MINIMZATION SUCCESSFUL' is not found in the NONMEM output
-    file. With the -significant_digits_accept, PsN will only rerun if 
+    file. With the -significant_digits_rerun, PsN will rerun if 
     the resulting significant digits is lower than the value 
     specified with this option.
 
@@ -535,10 +540,6 @@
       -skip_data_parsing
 
       No help available for 'skip_data_parsing'
-
-      -stop_motion
-
-      No help available for 'stop_motion'
 
     -tail_output
     This option only works for execute under Windows.
