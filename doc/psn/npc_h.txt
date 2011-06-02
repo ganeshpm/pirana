@@ -5,7 +5,6 @@
 
 
 [ -h | -? ] [ --help ]
-    [ --confidence_interval='integer' ]
     [ --dv='string' ]
     [ --keep_estimation! ]
     [ --lst_file='string' ]

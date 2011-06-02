@@ -7,8 +7,6 @@
 [ -h | -? ] [ --help ]
     [ --bin_array='string' ]
     [ --bin_by_count='integer' ]
-    [ --boxcox_lambda='number' ]
-    [ --confidence_interval='integer' ]
     [ --dv='string' ]
     [ --idv='string' ]
     [ --keep_estimation! ]

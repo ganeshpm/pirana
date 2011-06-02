@@ -18,11 +18,6 @@
 
       The following options are valid:
 
-      -confidence_interval=number
-
-      An integer between 1 and 99 specifying the confidence interval in percent.
-      Default is 95.
-
       -dv=VARIABLE
 
       Name of dependent variable. Default is DV.

@@ -6076,38 +6076,55 @@ sub bind_tab_menu {
           } else {
             message("PDF Viewer application not found. Please check settings.")
           };
-       }],
-       [Button => " Convert CSV <--> TAB",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{convert},-compound=>"left", -state=>@tab_menu_enabled[2],-command => sub{
-	   my $tabsel = $tab_hlist -> selectionGet ();
-	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
-	   if ($^O =~ m/MSWin/i) {
-	       $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
-	   }
-	   csv_tab_window ($tab_file);
-       }],
-       [Button => " Delete file",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{trash},-compound=>"left", -state=>@tab_menu_enabled[3], -command => sub{
-	   my $tabsel = $tab_hlist -> selectionGet ();
-	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
-	   my $tab_id = @tabcsv_files[@$tabsel[0]];
-	   if ($^O =~ m/MSWin/i) {
-	       $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
-	   }
+       }]
+				     ]);
+ 
+  my $psn_data_menu = $tab_menu -> Cascade (-label => " PsN data functions", -background=>$bgcol, -font=>$font_normal, -image=>$gif{pdf_viewer}, -compound=>"left", -tearoff=>0 , -state=>"normal");
+  my @psn_data_commands = qw/data_stats create_subsets create_cont_data unwrap_data single_valued_columns/;
+  foreach my $psn_command (@psn_data_commands) {
+      $psn_data_menu -> command (
+	  -label => $psn_command, -background=>$bgcol, -font=>$font_normal, -command => sub {
+	      my $tabsel = $tab_hlist -> selectionGet ();
+	      my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+#	      run_command($psn_command . " " . $tab_file);
+	      psn_run_window ($tab_file, $psn_command, 1);
+	  });
+  }
+
+  $tab_menu -> Button (
+      -label => " Convert CSV <--> TAB",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{convert},-compound=>"left", -state=>@tab_menu_enabled[2],-command => sub{
+	  my $tabsel = $tab_hlist -> selectionGet ();
+	  my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+	  if ($^O =~ m/MSWin/i) {
+	      $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
+	  }
+	  csv_tab_window ($tab_file);
+      }
+      );
+  $tab_menu -> Button (
+      -label => " Delete file",  -background=>$bgcol,-font=>$font_normal, -image=>$gif{trash},-compound=>"left", -state=>@tab_menu_enabled[3], -command => sub{
+	  my $tabsel = $tab_hlist -> selectionGet ();
+	  my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
+	  my $tab_id = @tabcsv_files[@$tabsel[0]];
+	  if ($^O =~ m/MSWin/i) {
+	      $tab_file = win_path(@tabcsv_loc[@$tabsel[0]]);
+	  }
 	   my $delete = message_yesno ( "Do you really want to delete ".$tab_file."?", $mw, $bgcol, $font_normal);
-	   if( $delete ==1 ) {
-	       unless( unlink ( os_specific_path ($tab_file) )) {
-		   message("For some reason, ".$tab_id." could not be deleted.\nCheck file/folder permissions.");
-	       } else {
-		   db_remove_table_info ($tab_id, "pirana.dir");
-		   refresh_pirana($cwd, $filter,1)
-	       }
-	   };
-       }],
-       [Button => " Check dataset", -background=>$bgcol, -font=>$font_normal, -image=>$gif{check},-compound=>"left", -state=>@tab_menu_enabled[4], -command => sub{
+	  if( $delete ==1 ) {
+	      unless( unlink ( os_specific_path ($tab_file) )) {
+		  message("For some reason, ".$tab_id." could not be deleted.\nCheck file/folder permissions.");
+	      } else {
+		  db_remove_table_info ($tab_id, "pirana.dir");
+		  refresh_pirana($cwd, $filter,1)
+	      }
+	  };
+      });
+  $tab_menu -> Button (-label => " Check dataset", -background=>$bgcol, -font=>$font_normal, -image=>$gif{check},-compound=>"left", -state=>@tab_menu_enabled[4], -command => sub{
 	   my $tabsel = $tab_hlist -> selectionGet ();
 	   my $tab_file = unix_path(@tabcsv_loc[@$tabsel[0]]);
 	   my $html = check_out_dataset($tab_file);
 	   start_command ($software{browser}, '"file:///'.unix_path($cwd).'/'.$html.'"');
-        }],
+		       });
 ### Functionality removed temporarily, due to problems with Statistics::R
 #        [Button => " Load in PiranaR", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{pirana_r},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 # 	   my $scriptsel = $tab_hlist -> selectionGet ();
@@ -6144,7 +6161,6 @@ sub bind_tab_menu {
 	# 	table_info_window($tab_file);
 	#     }
         # }],
-    ]);
     $tab_menu -> separator ( -background=>$bgcol) ;
     $tab_menu -> command (-label=> " Close this menu", -font=>$font, -image=>$gif{close}, -compound=>'left', -background=>$bgcol, -command => sub{
        $tab_menu -> unpost();
@@ -6944,7 +6960,10 @@ sub ssh_notebook_tab {
 }
 
 sub psn_run_window {
-    (my $model, my $psn_option) = @_;
+    my ($model, $psn_option, $psn_type) = @_;
+    #psn_type: 0 = model
+    #          1 = dataset
+
     my @models = @$model;
     my $modelfile;
     foreach my $mod (@models) {
@@ -7041,7 +7060,12 @@ sub psn_run_window {
     }
 
     my $psn_background = 0;
-    my $psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+    my $psn_command_line;
+    if ($psn_type == 0) {
+	$psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+    } else {
+	$psn_command_line = $psn_option . " " . $model;
+    }
     my $dir = $dir_entry -> get();
     my ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
     my ($text_pre, $text_post) = update_psn_background($psn_background, \%ssh, $dir, \%setting);
@@ -7160,7 +7184,12 @@ sub psn_run_window {
 	    # update scm config file in run command if necessary
 	    if ($psn_option eq "scm") {
 		$psn_command_line = update_psn_run_command (\$psn_command_line, "-config_file", $scm_file, 1, \%ssh, \%clusters);				
-	    }	
+	    }
+	    if ($psn_type == 0) {
+		$psn_command_line = build_psn_run_command ($psn_option, $psn_parameters, $model, \%ssh, \%clusters, $psn_background);
+	    } else {
+		$psn_command_line = $psn_option . " " . $model;
+	    }    
             $psn_command_line_entry -> delete("1.0","end");
             $psn_command_line_entry =~ s/\n//g;
             $psn_command_line_entry -> insert("1.0", $psn_command_line);
@@ -7206,6 +7235,15 @@ sub psn_run_window {
 	    message ("Current folder not located on cluster, can't use SSH connect mode.\nPlease check settings.");
 	    $ssh{connect_ssh} = 0;
 	    $ssh_chosen = $local_run;
+	    # update NM installations
+	    my $psn_nm_versions_ref = get_psn_nm_versions(\%setting, \%software, \%ssh);
+	    %psn_nm_versions = %$psn_nm_versions_ref;
+	    # bit of a workaround to get "default" option as first option...
+	    my %psn_nm_versions_copy = %psn_nm_versions;
+	    delete ($psn_nm_versions_copy {"default"});
+	    my @psn_nm_installations = keys(%psn_nm_versions_copy);
+	    unshift (@psn_nm_installations, "default");
+	    $nm_versions_menu -> configure (-options => [@psn_nm_installations], -variable => \$nm_version_chosen,);
 	} else {
 	    save_ini ($home_dir."/ini/internal.ini", \%setting_internal, \%setting_internal_descr, $base_dir."/ini_defaults/internal.ini");
 	    ($ssh_add, $ssh_add2) = build_ssh_connection (\%ssh, $dir, \%setting);
