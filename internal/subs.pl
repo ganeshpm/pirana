@@ -5801,7 +5801,7 @@ sub frame_tab_show {
         }
       )->grid(-column => 3, -columnspan=>2, -row => 3, -rowspan=>1, -sticky=>'nswe', -ipadx=>0, -ipady=>0);
     $help->attach($tab_hlist, -msg => "Data files\n*\\ = in alternate directory");
-    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled);
+    my @tab_menu_enabled = qw(normal normal normal normal disabled normal normal disabled normal disabled normal);
     bind_tab_menu(\@tab_menu_enabled);
   
   our $show_data="tab";
@@ -5831,12 +5831,13 @@ sub tab_browse_entry_update {
     my $selected_file = shift;
     tab_dir($cwd);
     populate_tab_hlist($tab_hlist);
-    my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal);
-    if($selected_file eq "tab") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
-    if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled)};
-    if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled)};
-    if($selected_file eq "R") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled)};
-    if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal)};
+    my @tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal disabled);
+    if($selected_file eq "tab") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled normal)};
+    if($selected_file eq "dta") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled normal)};
+    if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled normal)};
+    if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled disabled)};
+    if($selected_file eq "R") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled disabled)};
+    if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal disabled)};
     bind_tab_menu(\@tab_menu_enabled);
 }
 
@@ -5850,7 +5851,7 @@ sub bind_models_menu {
   }
   my $models_menu_psn;
   if ($setting{use_psn}==1) {
-    $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
+    $models_menu_psn = $models_menu -> cascade (-label=>" PsN", -font=>$font,-compound => 'left',-image=>$gif{psn_logo}, -background=>$bgcol, -tearoff=>0);
     $models_menu_psn -> command (-label=> " execute",-font=>$font, -compound => 'left',-image=>$gif{run}, -background=>$bgcol, -command => sub{
        psn_command("execute");
     });
@@ -5904,7 +5905,7 @@ sub bind_models_menu {
     $models_menu -> command (-label=>" Model properties...",-font=>$font,-compound => 'left',-image=>$gif{edit_info}, -background=>$bgcol, -command => sub{
            properties_command ();
          });
-    my $models_menu_misc = $models_menu -> cascade (-label=> " Model changes", -font=>$font,-compound => 'left',-image=>$gif{run}, -background=>$bgcol, -tearoff=>0);
+    my $models_menu_misc = $models_menu -> cascade (-label=> " Model actions", -font=>$font,-compound => 'left',-image=>$gif{rename}, -background=>$bgcol, -tearoff=>0);
     $models_menu_misc -> command (-label=>" Edit model", -font=>$font,-image=>$gif{notepad}, -compound=>'left',  -background=>$bgcol, -command => sub{
            edit_model_command();
          });
@@ -6079,7 +6080,7 @@ sub bind_tab_menu {
        }]
 				     ]);
  
-  my $psn_data_menu = $tab_menu -> Cascade (-label => " PsN data functions", -background=>$bgcol, -font=>$font_normal, -image=>$gif{pdf_viewer}, -compound=>"left", -tearoff=>0 , -state=>"normal");
+  my $psn_data_menu = $tab_menu -> Cascade (-label => " PsN data functions", -background=>$bgcol, -font=>$font_normal, -image=>$gif{psn_logo}, -compound=>"left", -tearoff=>0 , -state=> @tab_menu_enabled[10]);
   my @psn_data_commands = qw/data_stats create_subsets create_cont_data unwrap_data single_valued_columns/;
   foreach my $psn_command (@psn_data_commands) {
       $psn_data_menu -> command (
