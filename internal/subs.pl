@@ -6990,7 +6990,7 @@ sub psn_run_window {
 
     # build notebook
     my $psn_run_frame = $psn_run_window -> Frame (-background=>$bgcol)-> grid(-ipadx=>8, -ipady=>8);
-    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>3, -columnspan=>3, -row=> 0, -sticky=>"nwe");
+    my $psn_help_buttons_frame = $psn_run_frame -> Frame(-background=>$bgcol) -> grid (-column=>4, -columnspan=>3, -row=> 0, -sticky=>"nwe");
     my $psn_run_text = $psn_run_frame -> Scrolled ("Text", -scrollbars=>'e', 
                                                    -width=>72, -height=>16, -highlightthickness => 0, -wrap=> "none",
                                                    -exportselection => 0, -border=>1, -relief=>'groove',
@@ -8073,9 +8073,9 @@ sub wfn_run_window {
 	$wfn_command_line .= " ".$setting{wfn_nmbs};
     }
     my $wfn_compiler_arg = $setting{wfn_param};
-    $wfn_run_frame -> Entry(-textvariable=> $model, -font=>$font, -border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>1, -column=>2, -sticky=>"nw");
-    $wfn_run_frame -> Entry(-textvariable=> $wfn_command_line, -font=>$font,-border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>2, -column=>2, -sticky=>"nw");
-    $wfn_run_frame -> Entry(-textvariable=> $wfn_compiler_arg, -font=>$font,-border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>3, -column=>2, -sticky=>"nw");
+    $wfn_run_frame -> Entry(-textvariable=> \$model, -font=>$font, -border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>1, -column=>2, -sticky=>"nw");
+    $wfn_run_frame -> Entry(-textvariable=> \$wfn_command_line, -font=>$font,-border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>2, -column=>2, -sticky=>"nw");
+    $wfn_run_frame -> Entry(-textvariable=> \$wfn_compiler_arg, -font=>$font,-border=>$bbw, -background=>"#FFFFFF") -> grid (-row=>3, -column=>2, -sticky=>"nw");
 
     # remove prior wfn run bat-files
 
@@ -8906,8 +8906,7 @@ sub update_inter_results_dialog {
   my $n_om = int(@om_struct); # number of omega blocks
   my $init = shift(@om_init);
   foreach(@om_struct) { if ($_ > 1) { $n_om = $n_om - ($_ - 1); } }
-  print int(@thetas);
-  if (int(@thetas) == 0) {$n_om == 0}; # don't print omegas if no thetas found
+  if (int(@thetas) == 0) {$n_om = 0}; # don't print omegas if no thetas found
   for ($k = 0; $k < $n_om ; $k++ ) {
       my $diag = @om_struct[$k];
       my $block_size = block_size($diag);
