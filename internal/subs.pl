@@ -6005,7 +6005,6 @@ sub bind_tab_menu {
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);   
 	   my $r_gui_command = get_R_gui_command (\%software);
-	   print $r_gui_command;
 	   my $r_script;
 	   my $script;
 	   unless (-d "pirana_temp") {mkdir "pirana_temp";}
@@ -6052,6 +6051,11 @@ sub bind_tab_menu {
 		       "main.menu()";
 		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
 		   text_to_file (\$script, $r_script);
+	       }
+	       if ($r_gui_command =~ m/rgui/) { # good old RGUI is used. do workaround to load file
+		   my $text = 'utils::file.edit("'.$r_script.'")'."\n";
+		   text_to_file (\$text, ".Rprofile");
+		   $r_script = "";
 	       }
 	       start_command($r_gui_command, $r_script);
 	   }
@@ -6315,7 +6319,6 @@ sub show_links {
       our $r_button = $frame_links -> Button(-image=>$gif{rgui}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
 	  chdir ($cwd);
 	  unlink ($cwd."/.Rprofile");
-	  print $r_start;
 	  start_command($r_start);
        })->grid(-row=>1,-column=>$i,-sticky=>'news');
       $i++;
