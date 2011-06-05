@@ -1933,24 +1933,23 @@ sub update_script_with_parameters {
 }
 
 sub open_script_in_Rgui {
-# or open in text editor on linux
     $scriptfile = shift;
     open (R, "<$scriptfile");
     my @lines = <R>;
-#    open (OUT, ">.Rprofile");
-#    print OUT "library(utils)\n";
-#    print OUT "library(grDevices)\n";
-#    print OUT "utils::file.edit('".$scriptfile."')\n";
-#    close (OUT);
     open (R_OUT, ">$scriptfile");
-#    print $scriptfile;
     foreach my $line (@lines) {
 	unless ($line =~ m/quit|PIRANA_OUT/) {
 	    print R_OUT $line;
 	}
     }
     close R_OUT;
+    unlink (".Rprofile");
     my $r_gui_command = get_R_gui_command (\%software);
+    if ($r_gui_command =~ m/rgui/i) { # good old RGUI is used. do workaround to load file
+	my $text = 'utils::file.edit("'.$scriptfile.'")'."\n";
+	text_to_file (\$text, ".Rprofile");
+	$scriptfile = "";
+    }
     unless ($r_gui_command eq "") {
 	start_command ($r_gui_command, $scriptfile);
     } else {
@@ -5936,7 +5935,11 @@ sub bind_models_menu {
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
 
     my $edit_script_text = " Output script to R GUI";
-    my $models_menu_scripts = create_scripts_menu ($models_menu, "rgui", 1, $base_dir."/scripts", $edit_script_text, 2);
+    my $icon = "r";
+    if ($software{r_gui} =~ m/rstudio/i) {
+	$icon = "rgui";
+    }
+    my $models_menu_scripts = create_scripts_menu ($models_menu, $icon, 1, $base_dir."/scripts", $edit_script_text, 2);
     create_scripts_menu ($models_menu_scripts, "", 1, $home_dir."/scripts", "My scripts");
   }
 
@@ -5969,6 +5972,10 @@ sub bind_models_menu {
 sub bind_tab_menu {
   my $tab_menu_enabled_ref = shift;
   my @tab_menu_enabled = @$tab_menu_enabled_ref;
+  my $icon = "r";
+  if ($software{r_gui} =~ m/rstudio/i) {
+      $icon = "rgui";
+  }
   our $tab_menu = $tab_hlist -> Menu(-tearoff => 0,-title=>'None', -background=>$bgcol, -menuitems=> [
         [Button => " Open in DataInspector", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{plots}, -compound=>"left", -state=>@tab_menu_enabled[6], -command => sub{
            my $tabsel = $tab_hlist -> selectionGet ();
@@ -5999,7 +6006,7 @@ sub bind_tab_menu {
  	     }
          } else {message("Spreadsheet application not found. Please check settings.")};
        }],
-       [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{rgui},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
+       [Button => "  Open in RGUI", -background=>$bgcol,-font=>$font_normal,  -image=>$gif{$icon},-compound=>"left", -state=>@tab_menu_enabled[5], -command => sub{
 	   my $scriptsel = $tab_hlist -> selectionGet ();
 	   my $script_file = unix_path(@tabcsv_loc[@$scriptsel[0]]);   
 	   my $r_gui_command = get_R_gui_command (\%software);
@@ -6050,7 +6057,7 @@ sub bind_tab_menu {
 		   $r_script = "pirana_temp/tmp_" . generate_random_string(5) . "\.R";
 		   text_to_file (\$script, $r_script);
 	       }
-	       if ($r_gui_command =~ m/rgui/) { # good old RGUI is used. do workaround to load file
+	       if ($r_gui_command =~ m/rgui/i) { # good old RGUI is used. do workaround to load file
 		   my $text = 'utils::file.edit("'.$r_script.'")'."\n";
 		   text_to_file (\$text, ".Rprofile");
 		   $r_script = "";
@@ -6314,7 +6321,11 @@ sub show_links {
 #  }
   my $r_start = get_R_gui_command (\%software);
   unless ($r_start eq "") {
-      our $r_button = $frame_links -> Button(-image=>$gif{rgui}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
+      my $icon = "r";
+      if ($r_start =~ m/rstudio/i) {
+	  $icon = "rgui";
+      }
+      our $r_button = $frame_links -> Button(-image=>$gif{$icon}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
 	  chdir ($cwd);
 	  unlink ($cwd."/.Rprofile");
 	  start_command($r_start);
