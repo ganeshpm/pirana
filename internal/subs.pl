@@ -8540,13 +8540,24 @@ sub show_inter_window {
 	    #chdir ("./".@info[0]);
 	    my ($sub_iter, $sub_ofv, $descr, $minimization_done, 
 		$gradients_ref, $all_gradients_ref, $all_ofv_ref, 
-		$all_iter_ref) = get_run_progress("", $cwd."/".$last_chosen);
+		$all_iter_ref) = get_run_progress("", $cwd."/".$last_chosen); # necessary for gradients
 	    #chdir ($wd);
 
 	    my $mod_ref;
 	    if (-e $wd."/".@info[0]."/psn.mod") {
 		$mod_ref = extract_from_model ($wd."/".@info[0]."/psn.mod", "psn", "all")
+	    } else {
+		if (@info[0] =~ m/nmfe/) {
+		    my @mod = dir ($wd."/".@info[0], "\.".$setting{ext_res});
+		    if (@mod[0] =~ m/nmprd4p.mod/) {
+			shift (@mod); 
+		    }
+		    my $mod_no = @mod[0];
+		    $mod_no =~ s//\.$setting{ext_res}/gi;
+		    $mod_ref = extract_from_model ($wd."/".@info[0]."/".@mod[0], $mod_no, "all")
+		}
 	    }
+	    #print %$mod_ref;
 	    update_inter_results_dialog ($wd."/".@info[0], $gradients_ref, $mod_ref);
    #          $gradients_plot -> clearDatasets;
    #          my $lines_ref = update_gradient_plot($sub_iter, $gradients_ref, $all_gradients_ref, $all_iter_ref);
@@ -8664,6 +8675,7 @@ sub inter_window_add_item {
       $align_right_style = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>$lightgreen, -font => $font_normal);
       $align_left_style = $models_hlist-> ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>$lightgreen, -font => $font_normal);
     }
+    $res_descr{$item} =~ s/[\r\n]//g;
     unless (($item =~ m/HASH/)||($grid -> infoExists($item))) {  # for some reason this sometimes is necessary.
         $grid->add($item);
         $grid->itemCreate($item, 0, -text => $res_runno{$item}, -style=>$align_right_style);
@@ -8824,9 +8836,11 @@ sub get_run_progress {
   @m = dir ($dir, $setting{ext_ctl});
   my $mod_ref;
   if ((@m == 1)||(@m[0] =~ m/psn/gi)) {
-    my $modelno = @m[0];
-    my $modelno =~ s/\.$setting{ext_ctl}//;
-    $mod_ref = extract_from_model (@m[0], $modelno,"")
+      my $modelfile = @m[0];
+      my $modelno = @m[0];
+      $modelno =~ s/\.$setting{ext_ctl}//;
+      if (-e "psn.mod") {$modelno = "psn"; $modelfile = "psn.mod" };
+      $mod_ref = extract_from_model ($modelfile, $modelno, "")
   }
   my %mod = %$mod_ref;
   return ($sub_iter, $sub_ofv, $mod{description}, $minimization_done, \@gradients, \@all_gradients, \@all_ofv, \@all_iter);
@@ -8866,13 +8880,13 @@ sub update_inter_results_dialog {
   my $th_header = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#cfcfcf', -font => $font_normal);
   my $th_left   = $models_hlist->ItemStyle( 'text', -anchor => 'nw',-padx => 5, -background=>'#ffffff', -font => $font_normal);
   my $th_right  = $models_hlist->ItemStyle( 'text', -anchor => 'ne',-padx => 5, -background=>'#ffffff', -font => $font_normal);
-  foreach (@thetas) {
+  foreach (@th_fix) {
       unless ($grid_inter -> infoExists($i)) {
 	  $grid_inter->add($i);
       }
       $grid_inter->itemCreate($i, 0, -text => "TH".$i, -style=>$th_header);
       $grid_inter->itemCreate($i, 1, -text => @th_descr[($i-1)], -style=>$th_left);
-      $grid_inter->itemCreate($i, 2, -text => $_, -style=>$th_right);
+      $grid_inter->itemCreate($i, 2, -text => @thetas[$i], -style=>$th_right);
       unless (@th_fix[($i-1)] eq "FIX") {
 	  my $style;
 	  if ($n_grad > 0) {
@@ -8976,8 +8990,8 @@ sub update_inter_results_dialog {
   my @si_descr = @{$mod{si_descr}};
   my @si_fix = @{$mod{si_fix}};
   my @si_init = @{$mod{si_init}};
-  foreach (@sigmas) {
-      my @sigma_curr = @{$_};
+  foreach (@si_fix) {
+      my @sigma_curr = @{$sigmas[($i-$n)]};
       my $si = @sigma_curr[@sigma_curr-1];
       unless ($grid_inter -> infoExists($i)) {
 	  $grid_inter->add($i);
