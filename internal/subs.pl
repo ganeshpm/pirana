@@ -4732,9 +4732,7 @@ sub read_curr_dir {
 	foreach (@ctl_descr) {   # filter
 	    $filter =~ s/[\*,\\,\/,\[,\]]//g;
 	    if (((@ctl_files[$i] =~ m/$filter/i) || ($models_notes{@ctl_files[$i]} =~ m/$filter/i) || ($models_descr{@ctl_files[$i]} =~ m/$filter/i)) || ($filter eq "")) {
-#		unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || (@ctl_files[$i] =~ m/nmprd4p/i) || (@ctl_files[$i] =~ m/pirana_temp/i) ) {
-#		unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || (@ctl_files[$i] =~ m/nmprd4p/i) ) {
-		unless (((@file_type[$i]<2)&&((@ctl_descr[$i] =~ m/\.dir/i)||(@ctl_descr[$i] =~ m/scm_dir/i)||(@ctl_descr[$i] =~ m/cdd_dir/i)||(@ctl_descr[$i] =~ m/mcmp_dir/i)||(@ctl_descr[$i] =~ m/modelfit_dir/i)||(@ctl_descr[$i] =~ m/npc_dir/i)||(@ctl_descr[$i] =~ m/bootstrap_dir/i)||(@ctl_descr[$i] =~ m/sse_dir/i)||(@ctl_descr[$i] =~ m/llp_dir/i))&&($psn_dir_filter==0))||((@file_type[$i]<2)&&(@ctl_descr[$i] =~ m/nmfe_/i)&&($nmfe_dir_filter==0)) || ((@ctl_files[$i] =~ m/nmprd4p/i)||(@ctl_descr[$i] =~ m/worker*/i)) ) {
+		unless ( ( ( @file_type[$i]<2) && ( (@ctl_descr[$i] =~ m/\.dir/i) || (@ctl_descr[$i] =~ m/scm_dir/i) || (@ctl_descr[$i] =~ m/cdd_dir/i) || (@ctl_descr[$i] =~ m/mcmp_dir/i) || (@ctl_descr[$i] =~ m/modelfit_dir/i) || (@ctl_descr[$i] =~ m/npc_dir/i) || (@ctl_descr[$i] =~ m/bootstrap_dir/i) || (@ctl_descr[$i] =~ m/sse_dir/i) || (@ctl_descr[$i] =~ m/llp_dir/i)) && ($psn_dir_filter==0) ) || ( (@file_type[$i]<2) && (@ctl_descr[$i] =~ m/nmfe_/i) && ($nmfe_dir_filter==0) ) || ( (@ctl_files[$i] =~ m/nmprd4p/i) || (@ctl_descr[$i] =~ m/worker*/i) ) ) {
 		    push (@ctl_descr_copy, @ctl_descr[$i]);
 		    push (@ctl_copy, @ctl_files[$i]);
 		    push (@file_type_copy, @file_type[$i]);
@@ -4828,6 +4826,7 @@ sub populate_models_hlist {
       $models_hlist -> add($i);
       my $ofv_diff;
       unless ((@file_type_copy[$i] < 2)&&(length(@ctl_descr_copy[$i]) == 0)) {
+#	  print @ctl_show[$i]. "  ".@file_type_copy[$i] ."\n";
         if (@file_type_copy[$i] < 2) {
           $runno = "<DIR>";
 	  $style = $dirstyle;
@@ -4835,7 +4834,7 @@ sub populate_models_hlist {
           $models_hlist -> itemCreate($i, 1, -text => $runno, -style=>$style);
           $models_hlist -> itemCreate($i, 2, -text => "", -style=>$style);
           $models_hlist -> itemCreate($i, 3, -text => @ctl_descr_copy[$i], -style=>$style );
-          for ($j=4; $j<=12; $j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}
+          for ($j=4; $j<=12; $j++) {$models_hlist -> itemCreate($i, $j, -text => " ", -style=>$dirstyle);}  
         } else {
            $runno = @ctl_show[$i];
 	   my $mod_background = "#FFFFFF";
@@ -4869,7 +4868,6 @@ sub populate_models_hlist {
 	   $runno_ref_text =~ s/run//i;
 	   my $method_temp = $models_method{$runno};
 	   my $dataset_temp = extract_file_name ($models_dataset{$runno});
-	   
 	   my $ofv_temp    = $models_ofv{$runno};
 	   my $dofv_temp   = $ofv_diff;
 	   my $succ_temp; my $cov_temp; my $bnd_temp; my $sig_temp;
