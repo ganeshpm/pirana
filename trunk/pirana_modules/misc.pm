@@ -26,7 +26,7 @@ sub sort_model_files {
     my @files1 =  @$files_ref;
     my @files;
     foreach (@files1) {
-	unless (($_ eq "\.")||($_ eq "\.\.")) {
+	unless ((substr($_,0,1) eq "\.")||($_ eq "\.\.")) {
 	    push (@files, $_);
 	}
     }
@@ -44,7 +44,7 @@ sub sort_model_files {
 	}
 	$num =~ s/run//g;
 	$num =~ s/$filter//g;
-	unless (($mod =~ m/\.org/)||($mod =~ m/\.temporary/)) {
+	unless (($mod =~ m/\.org/)||($mod =~ m/\.temporary/)||($mod =~ m/\.dir/)) { 
 	    if ($num =~ m/^\d/ ) { # only numerics left
 		push (@models_copy_num, $num);
 	    } else {
