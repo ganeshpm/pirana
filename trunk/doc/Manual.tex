@@ -18,7 +18,7 @@
 \title{\textbf{\textcolor{PiranaOrange}{Pira\~na}\scriptsize\\ and the
 Pira\~na cluster}\\ \vspace{15pt}
 \includegraphics[scale=0.12]{images/pirana_logo.jpg} \\ \vspace{15pt}
-\scriptsize Version 2.3.0 "Oahu"\\Installation guide and Manual \\
+\scriptsize Version 2.4.0 "Oahu"\\Installation guide and Manual \\
 \vspace{5pt} \scriptsize {\today} \\
 \date{}}
 \maketitle
@@ -26,30 +26,28 @@ Pira\~na cluster}\\ \vspace{15pt}
 \tableofcontents
 
 \chapter{Introduction} \textcolor{PiranaOrange}{Pira\~na} is a
-convenient graphical user interface to NONMEM, PsN and Wings for
-NONMEM. The major aim of the Pirana project is to supply both novice
-and expert pharmacometricians with a useful modeling environment, and
-making the modelling workflow more efficient. Development of Pira\~na
-and the
-PCluster was started at the end of 2006, and is ongoing.  \\
-\vspace{1pt}\\ Pira\~na can just be used for modeling on stand-alone
-computers, or to connect to cluster-systems like MOSIX or
-SGE. Moreover, Pira/~na offers an integrated cluster solution,
-PCluster, which is a no-cost solution for distributed NONMEM computing
-intended for small modeling groups, e.g. in hospital or academic settings. \\
+convenient graphical user interface for NONMEM and PsN. The major aim
+of the Pirana project is to supply both novice and expert
+pharmacometricians with a useful modeling environment, and making the
+modelling workflow more efficient. Development of Pira\~na and the
+PCluster was started in 2007, and is ongoing. As of version 2.4.0,
+Pirana is free of charge for academic institutions, while for non-academic
+use a commercial license is required. \\
 \vspace{1pt}\\ As efforts were made to make the use of Pira\~na
 intuitive, this manual is kept to a minimum, but should contain all
 the information you need to set-up and use this software. Also note
 that all buttons in Pira\~na display information about it's action
 when hovered over with the mouse pointer. Furthermore, the Pira\~na
-website at pirana.sf.net contains a FAQ and a mailinglist. If you're
+website at www.pirana-software.com contains a FAQ and a mailinglist. If you're
 still in the dark at some point, do not hesitate to contact us.
 
 \vspace{15pt}
 
-\noindent Ron Keizer\\ \scriptsize{\textcolor{Grey}{ronkeizer@gmail.com}} \normalsize
+\noindent Ron Keizer\\
+\scriptsize{\textcolor{Grey}{ron@pirana-software.com}} \normalsize (2007-2011)
 
-\noindent Coen van Hasselt\\ \scriptsize{\textcolor{Grey}{coenvanhasselt@gmail.com}} \normalsize
+\noindent Coen van Hasselt\\
+\scriptsize{\textcolor{Grey}{coen@pirana-software.com}} \normalsize (2010-2011)
 
 \pagebreak
 \chapter{Pira\~na}
@@ -68,36 +66,27 @@ optimal use of Pira\~na, while other software might be useful as well.
   since Pira\~na can also connect to other PC's/clusters that have
   NONMEM installed.
 
+\item[\textcolor{Blue}{PsN}] Strictly, Pira\~na does not require PsN
+  installed, although the PsN-toolkit is highly recommended. The latest
+  version of PsN can be obtained from
+  \textcolor{Grey}{http://psn.sourceforge.net/}.
+
+\item[\textcolor{Blue}{XPose}] This R-package for model diagnostics is
+  highly recommended and can be obtained from
+  \textcolor{Grey}{http://xpose.sourceforge.net}. XPose datasets can be selected and loaded in
+  R/XPose. Xpose scripts to automate creation of plots from within
+  Pira\~na are included.
+
 \item[\textcolor{Blue}{R}] This open-source software can be
 obtained from \textcolor{Grey}{http://www.r-project.org/}, and is highly
 recommended for optimal use of Pira\~na.
 
-\item[\textcolor{Blue}{Perl and PsN}] On Windows, an installation of
-  Perl is not required as Pira\~na is distributed as executable. For
-  the Linux and Mac versions, only perl-sourcefiles are supplied, so
-  an installation of Perl is required in that case. It is recommended
-  to obtain the latest version from ActiveState
-  (\textcolor{Grey}{http://www.activestate.com/}). Several additional
-  packages need to be installed as well, which is detailed in the
-  section "Installation procedure on Linux"
-
-\item[\textcolor{Blue}{PsN}] Strictly, Pira\~na does not require PsN
-installed, although the PsN-toolkit is highly recommended. The latest
-version of PsN can be obtained from
-\textcolor{Grey}{http://psn.sourceforge.net/}.
-
 \item[\textcolor{Blue}{WFN}] Not required. Pira\~na offers basic
   support for Wings for NONMEM. \textcolor{Grey}{http://wfn.sourceforge.net/}.
 
-\item[\textcolor{Blue}{XPose}] This R-package for model fit evaluation
-  can be obtained from
-  \textcolor{Grey}{http://xpose.sourceforge.net}. From the data-files
-  overview in Pira\~na, XPose datasets can be selected and loaded in
-  R/XPose. Xpose scripts to automate creation of plots from within Pira\~na
-  are included.
-
   \item[\textcolor{Blue}{NMQual}] Recommended for keeping an audit
-trail of NM installations and autamatically performing bug-fixes. NMQual
+trail of NM installations and autamatically performing
+bug-fixes. Pirana supports the use of NMQual NONMEM installations. NMQual
 also requires Perl and the module XML::XPath installed. More details
 can be found at the NMQual website
 (\textcolor{Grey}{http://www.metruminstitute.org}).
@@ -108,8 +97,10 @@ from the website (\textcolor{Grey}{http://pirana.sf.net}), and install
 to any location on your hard-drive, e.g. `C:$\backslash$Program
 files$\backslash$Pirana'. Before exploring Pira\~na's functions, you
 should first check if your preferences ('File $\rightarrow$
-Preferences...') and software integration ('File $\rightarrow$
-Software...') are set correctly. The most important settings are
+Settings $\rightarrow$ Preferences...') and software integration
+('File $\rightarrow$ Settings $\rightarrow$ Software locations...')
+are set correctly. If you want to make use of a cluster, also check the
+Cluster settings. The most important settings are
 detailed in the section `Preferences and software'. Pira\~na is tested
 on Windows XP, Windows Vista, and Windows7.
 
@@ -200,16 +191,13 @@ unknown reasons. OpenSSH may also be used.
 \subsection{Installation procedure on Mac OS X} On Mac, you should
 have the X11 environment and the Xcode tools installed, which are
 included as optional installs on the (Snow) Leopard install
-DVDs. Pirana was tested using ActiveState Perl 5.10.0, but should work
-with any Perl distribution. The same Perl libraries as mentioned under
-`Linux installation' should be installed from CPAN, and for which the same
-procedure can be followed.
+DVDs. Pirana for Mac is distributed as an executable, so no Perl is
+required. 
 
 \subsection{Preferences and Software} Although most preferences
 will be correct by default, it is recommended to check at
 least the settings detailed below.
 \begin{description}
-  \item[name\_researcher] Your name (no spaces allowed).
   \item[ext\_ctl] File-extension of NONMEM control streams/model
 files. Default is .mod
   \item[ext\_csv] File-extension of comma separated files. Default is
@@ -223,13 +211,13 @@ installed, may be disregarded as they are ignored by Pira\~na. The
 most important references are:
 \begin{description}
 \item[editor] The location of a code-editor, preferably with
-  syntax-highlighting. We recommended the use of Emacs and ESNM
+  syntax-highlighting. We recommended the use of Emacs
   (\textcolor{Grey}{http://esnm.sourceforge.com/}), PSPad
   (\textcolor{Grey}{http://www.pspad.com/}) or ConTEXT
   (\textcolor{Grey}{http://www.contexteditor.org/}). If none is
   entered, or a non-existing program is specified, Pira\~na will use
   its built-in NM-TRAN editor.
-\item[psn\_dir] The location of PsN-toolbox. Default is
+\item[psn\_dir] The location of PsN on your local computer (if installed). Default is
 C:/perl/site/lib/PsN\_x\_x\_x on Windows.
 \item[psn\_toolkit] This is the location of the PsN commands. (Default
 is C:/perl/bin on Windows, or /usr/bin/ on Linux). Also check
@@ -243,12 +231,16 @@ perl\_dir. If this folder is already in your PATH, you can leave it empty.
     e.g. Excel or Gnumeric.
 \end{description}
 
+Note: on Mac OSX you can both specify the application name
+(e.g. "Microsoft Excel"), or the actual location of the application
+(e.g. "/usr/local/bin/emacsclient").
+
 \pagebreak
 \section{Using Pira\~na}
 
 \subsubsection*{Basic functions} The Pira\~na window is divided in a
-large table on the left and a smaller one on the right. The main one
-on the left shows an overview models and results, while the right side
+large table on the left and a smaller one on the right. The main
+lists acts as a run record and a notebook. The right side
 shows either data files, R-scripts, XPose datasets or all files in the
 active folder. All buttons in Pira\~na's main screen are accompanied
 by a short description which is displayed if hovered above with the
@@ -271,20 +263,28 @@ editor. Models can be filtered using the `Filter' above the main
 overview table. This filters all models based on the columns: run
 number, description, and notes.\\
 
-New models can be created from scratch, from a template, or by duplicating
-an existing model. Some basic template models are included, but it is
-possible to build your own library with base models that you often
+New models can be created from scratch, from a template, by using the
+Wizards, or by duplicating an existing model. 
+
+\textbf{Templates}: Some basic template models are included, but it is possible
+to build your own library with base models that you often
 use. Templates can be added by copying a model file to
 \ttfamily{/templates }\normalfont in the Pira\~na directory. The
 template models should have the same file extension as your model
 files to be recognized as a template.
 
-Duplication of models can be performed easily by selecting the parent
-model and clicking `duplicate' from the context-menu (right click on the model).
-Final parameter estimates from the reference model can be updated in the new model,
-and also model-file numbers in \$TABLE and \$EST records. Some basic
-syntax rules should be adhered to, see Conventions and Methods at the
-end of this chapter.
+\textbf{Wizards}: Models can be created by using the PK model
+wizard. Choose the desired model type and estimation method, and a
+basic NONMEM model file will be created. Also note that you can create
+your own wizards. See section on Wizards for more info..
+
+\textbf{Duplication}: Duplication of models can be performed easily by
+selecting the parent model and clicking `duplicate' from the
+context-menu (right click on the model).  Final parameter estimates
+from the reference model can be updated in the new model, and also
+model-file numbers in \$TABLE and \$EST records. Some basic syntax
+rules should be adhered to ensure correct interpretation of final
+estimates, see Conventions and Methods at the end of this chapter.
 
 \begin{figure}[hbt] \centering
     \includegraphics[scale=0.4]{images/duplicate.png}
@@ -292,30 +292,33 @@ end of this chapter.
 \end{figure}
 
 \subsubsection*{Notes and colors}
-Pira\~na offers the option to store notes about models in a
-database. For this, in each active folder that is visited with
-Pira\~na, a small SQLite database is created (`pirana.dir') which is
-able to record model information. To add notes to a model, select the
-model and click the model properties from the menu, or the `(i)' icon
-from the dashboard on the bottom. Models and results can also be given
-a color, which is done by selecting the model and clicking on the
-desired color from the dashboard. The meaning of the color-coding is
-of course all up to you!
+Pira\~na offers a 'notebook' interface to your models and results. For
+each model / run you can add notes, and optionally apply a color (the
+meaning of the color-coding is of course all up to you). These notes
+and colors are stored in a database, saved in each folder. To add
+notes to a model, select the model and enter notes in the textbox
+below the model list. Models and results can be given a color by
+selecting the model and clicking on the desired color (next to the
+textbox)..
 
-\begin{figure}[hbt] \centering
-    \includegraphics[scale=0.4]{images/model_properties.png}
-    \caption{Model properties}
-\end{figure}
+\vspace{8pt}
+\noindent\scriptsize{\textcolor{Blue}{Note:} \textcolor{Grey}{In each active folder that
+    is visited with Pira\~na, a small SQLite database is created
+    (`pirana.dir') which is able to store information about models. So
+    if you archive your projects, make sure to include these files as
+    well.  }
 
-\subsubsection*{Projects} Pira\~na can handle multiple projects, which are shown in the blue bar above the active folder entry, and
-enables instant switching between them. To add a project to the list,
-browse to a folder by clicking on the folder-icon next to the location
-bar, or by clicking through the directory-listing in the model
-overview. Next, click the `save'-icon next to the
-`Project'-listbox, give your project a unique name and press the save
-button. Your project is now available from the listbox. To delete
-a project from the list, click the trash icon next to the project
-list. The green refresh-icon refreshes the view of the current directory.
+  \subsubsection*{Projects} Pira\~na can handle multiple projects,
+  which are shown in the blue bar above the active folder entry. This
+  allows you to quickly to the directory that is linked to the project. To add a project to the
+  list, browse to a folder by clicking on the folder-icon next to the
+  location bar, or by clicking through the directory-listing in the
+  model overview. Next, click the `save'-icon next to the
+  `Project'-listbox, give your project a unique name and press the
+  save button. Your project is now available from the listbox. To
+  delete a project from the list, click the trash icon next to the
+  project list. The green refresh-icon refreshes the view of the
+  current directory.
 
 \subsubsection*{Data files} The right table shows the data-files, R
 scripts, Xpose files, and other files, which are selected by clicking
@@ -351,17 +354,13 @@ point to can be changed in `File $\rightarrow$ Software'.
 
 \subsection*{Managing NONMEM installations} Existing NONMEM
 installations can be added to Pira\~na using `Manage installations'
-from the `NONMEM' menu. Here, both local and cluster (connected to through
-SSH) installations can be added and made available in Pira\~na.
-
-It may sometimes be necessary to increase (or decrease) internal
-variable sizes, after which NONMEM has to be re-compiled. Pira\~na can
-take care of this for you, but only for local regular (non-NMQual)
-installations of NONMEM. In the `Manage NONMEM installations' dialog,
-all settings found in the \ttfamily{SIZES} \normalfont file of the
-active NONMEM installation can be edited and saved here, and the
-installation can be re-compiled. The variables for NMQual NONMEM
-installations can be viewed but not edited.
+from the `NONMEM' menu. Here, both local (upper) and cluster (lower)
+installations can be added for use in Pira\~na. A 'smart search' tool
+is implemented for local NONMEM installations, which searches for
+NONMEM installations in the most common locations on your local
+drives. If you have installed NONMEM in a non-common location, or want
+to use NONMEM on a remote cluster, add the desired installation
+manually.
 
 \subsection{Running models}
 \subsubsection*{General}
@@ -373,14 +372,13 @@ for running the model, e.g. which NONMEM installation to use, and if
 models should be executed in separate folders or on a cluster system.
 
 \subsubsection{Using PsN}
-Models can also be run by one of the PsN-toolkit functions (execute:
-Control-E, vpc: Control-V, bootstrap: Control-B, etc.). The procedure
-is similar to described above, but now, a different dialog window is
-opened (shown below), which also shows the PsN-help info for the
-selected command.  The command line editor can be used to specify
-additional specifications to PsN. Pira\~na stores the last command for
-each of the toolkit functions, so you don't need to retype the bulk of
-your command-line each time you use it.
+Models can also be run by one of the PsN-toolkit functions. The
+procedure is similar to described above, but now, a different dialog
+window is opened (shown below), which also shows the PsN-help info for
+the selected command. The command line editor can be used to specify
+additional parameters to the PsN funtion. Pira\~na stores each
+executed PsN command, which are then conveniently available from the
+'History'.
 
 \begin{figure}[hbt] \centering
     \includegraphics[scale=0.4]{images/psn_dialog.png}
@@ -389,7 +387,7 @@ your command-line each time you use it.
 
 \subsubsection*{Using Wings for NONMEM} On Windows, Pira\~na is
 capable of invoking the WFN-commands \emph{nmgo} and \emph{nmbs}, for
-run execution and \emph{nmbs} for bootstrapping respectively. Since
+run execution and bootstrapping respectively. Since
 WFN does not support multiple model files to be processed by its
 commands, when multiple models are selected, only the first model file
 is executed. When the WFN method is selected, two parameter
@@ -422,14 +420,12 @@ preferences.
 \subsubsection*{Intermediate results} When running models through any
 of the available methods, the intermediate results (parameter
 estimates, objective function value (OFV), gradients) can be viewed by
-clicking on the "gauge"-icon (lower left button from the results
-buttons). This will open the window shown in the figure below, which
-shows the models that are currently running. By Clicking on a run
-intermediate data from INTER and OUTPUT files will be gather, and
-returned in the table and the plot. Note that some Fortran
-compilers (e.g. g77) do not support the real-time updating of these
-output files, and that for such NONMEM installations, this function
-will not work properly.
+clicking on the "gauge"-icon above the model notebook. This will open
+a window which shows the models that are currently running. By
+Clicking on a run intermediate data from INTER and OUTPUT files will
+be gather, and returned in the table and the plot. Make sure that you
+specify PRINT=1 and MSFO=xxxxx in the \$ESTIMATION block, to be able
+to obtain intermediate estimates.
 
 \begin{figure}[hbt] \centering
     \includegraphics[scale=0.3]{images/intermed.png}
@@ -512,6 +508,9 @@ to load. This may either be a PDF, or a common image format such as
 PNG, JPG, or GIF. Please have a look at the scripts included with
 Pira\~na for examples of how to get the most out of this
 functionality.
+
+
+\subsection{Wizards}
 
 
 \subsection{Other tools}

@@ -3588,7 +3588,9 @@ sub setup_ini_dir {
         check_ini_file ($home_dir."/ini/clusters/".$ini, $base_dir."/ini_defaults/ssh.ini");
     }
     foreach my $txt (@txt_comm) {
-	copy ($base_dir."/ini_defaults/".$txt, $home_dir."/ini/".$txt);
+	unless (-e $home_dir."/ini/".$txt) {
+	    copy ($base_dir."/ini_defaults/".$txt, $home_dir."/ini/".$txt);
+	}
     }
 };
 
@@ -6900,7 +6902,6 @@ sub nmfe_run_window {
 		exec_run_nmfe ($nmfe_run_command_out, "Starting compilation"); # do compilation
 		exec_run_pcluster ("nonmem.exe", "NM@Pcluster", \@new_dirs, \@files, "Submitting runs to PCluster");
 	    } else {
-#		print $nmfe_run_command;
 		exec_run_nmfe ($nmfe_run_command_out, "Starting run");
 	    }
 	    save_ini ($home_dir."/ini/settings.ini", \%setting, \%setting_descr, $base_dir."/ini_defaults/settings.ini");
