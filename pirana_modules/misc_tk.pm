@@ -9,7 +9,9 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(no_resize text_window message_yesno center_window);
-my $bgcol ="#ece9d8"; my $button="#dddac9"; my $abutton = "#cecbba";
+my $bgcol = "#ededed"; 
+my $button = "#dad7d3";
+my $abutton = "#c6c3c0";
 my $font_fixed = "Courier 9";
 
 sub no_resize {
