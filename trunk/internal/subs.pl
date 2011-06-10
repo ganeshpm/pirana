@@ -1912,6 +1912,7 @@ sub create_R_object_from_models {
 sub update_script_with_parameters {
     my ($file, $models_ref) = @_;
     my $model_text = create_R_object_from_models ($models_ref);
+    $model_text .= "\nsetwd('".unix_path($cwd)."')";
     open (SCR, "<".$file);
     my @lines = <SCR>;
     close (SCR);
