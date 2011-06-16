@@ -246,7 +246,7 @@ our $help = $mw->Balloon();
 
 #*** Load Icons (from http://sourceforge.net/projects/icon-collection **********
 pirana_debug ($debug_mode, "9. Loading icons to memory.");
-our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>1,-column=>1, -rowspan=>2, -columnspan=>2, -ipadx=>5,-ipady=>0,-sticky=>'nws');
+our $frame_dir = $mw -> Frame(-background=>$bgcol) -> grid(-row=>1,-column=>1, -rowspan=>2, -columnspan=>2, -ipadx=>0,-ipady=>0,-sticky=>'nws');
 chdir ($base_dir."/images");
 my @images = <*.gif>;
 chdir ($cwd);
