@@ -3625,7 +3625,6 @@ sub renew_pirana {
 ### Compat  : W+L+
     if($frame2) {$frame2->gridForget()};
     if($run_frame) {$run_frame -> gridForget()};
-    if ($frame_links) {$frame_links -> gridForget()};
     if ($frame_status) {$frame_status -> gridForget()};
     frame_models_show(1);
     show_run_frame();
@@ -3657,7 +3656,6 @@ sub refresh_pirana {
   }
   $dir_entry -> configure(-textvariable=>$cwd);
   $dir_entry -> update;
-#  if ($frame_links) {$frame_links -> destroy()};
   read_curr_dir (@_[0], $filter, 1);
   status ("Reading table files...");
   tab_dir(@_[0]);
@@ -4724,7 +4722,7 @@ sub read_curr_dir {
     }
 
     # Filter
-    if (($filter eq "")&&($psn_dir_filter==1)&&(($nmfe_dir_filter==1))) {
+    if (($filter eq "")&&($psn_dir_filter==1)) {
 	@ctl_descr_copy = @ctl_descr;
 	@ctl_copy = @ctl_files;
 	@file_type_copy = @file_type;
@@ -4734,7 +4732,7 @@ sub read_curr_dir {
 	foreach (@ctl_descr) {   # filter
 	    $filter =~ s/[\*,\\,\/,\[,\]]//g;
 	    if (((@ctl_files[$i] =~ m/$filter/i) || ($models_notes{@ctl_files[$i]} =~ m/$filter/i) || ($models_descr{@ctl_files[$i]} =~ m/$filter/i)) || ($filter eq "")) {
-		unless ( ( ( @file_type[$i]<2) && ( (@ctl_descr[$i] =~ m/\.dir/i) || (@ctl_descr[$i] =~ m/scm_dir/i) || (@ctl_descr[$i] =~ m/cdd_dir/i) || (@ctl_descr[$i] =~ m/mcmp_dir/i) || (@ctl_descr[$i] =~ m/modelfit_dir/i) || (@ctl_descr[$i] =~ m/npc_dir/i) || (@ctl_descr[$i] =~ m/bootstrap_dir/i) || (@ctl_descr[$i] =~ m/sse_dir/i) || (@ctl_descr[$i] =~ m/llp_dir/i)) && ($psn_dir_filter==0) ) || ( (@file_type[$i]<2) && (@ctl_descr[$i] =~ m/nmfe_/i) && ($nmfe_dir_filter==0) ) || ( (@ctl_files[$i] =~ m/nmprd4p/i) || (@ctl_descr[$i] =~ m/worker*/i) ) ) {
+		unless ( ( ( @file_type[$i]<2) && ( (@ctl_descr[$i] =~ m/\.dir/i) || (@ctl_descr[$i] =~ m/scm/i) || (@ctl_descr[$i] =~ m/cdd/i) || (@ctl_descr[$i] =~ m/mcmp/i) || (@ctl_descr[$i] =~ m/modelfit/i) || (@ctl_descr[$i] =~ m/run/i) || (@ctl_descr[$i] =~ m/npc/i) || (@ctl_descr[$i] =~ m/bootstrap/i) || (@ctl_descr[$i] =~ m/sse/i) || (@ctl_descr[$i] =~ m/llp/i)) && ($psn_dir_filter==0) ) || ( (@file_type[$i]<2) && (@ctl_descr[$i] =~ m/nmfe_/i) && ($psn_dir_filter==0) ) || ( (@ctl_files[$i] =~ m/nmprd4p/i) || (@ctl_descr[$i] =~ m/worker*/i) ) ) {
 		    push (@ctl_descr_copy, @ctl_descr[$i]);
 		    push (@ctl_copy, @ctl_files[$i]);
 		    push (@file_type_copy, @file_type[$i]);
@@ -6273,17 +6271,20 @@ sub nm_help_filter_keywords {
 
 sub show_links {
   my $links_height = 24;
-  our $frame_command = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>7, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wnes');
-  our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>2, -ipadx=>'0',-ipady=>'0',-sticky=>'wns');
+  our $frame_command = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>2, -columnspan=>1, -rowspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'nes');
+  our $frame_links = $mw  -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'nes');
+#  our $frame_command = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>3, -columnspan=>1, -rowspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wns');
 
   our $missing = 0;
-  $frame_command -> Label(-text=>'    Cmd:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>1, -column=>1, -sticky => 'wns');
+  $frame_command -> Label(-text=>'    Cmd:', -font=>$font_normal, -background=>$bgcol)->grid(-row=>1, -column=>1, -sticky => 'ws');
+  $frame_command -> Label(-text=>"     ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>10, -columnspan=>1, -sticky=>'ws');
+
   if ($os =~ m/MSWin/i) {
     $frame_command -> Label(-text=>'', -font=>'Arial 1', -width=>40, -background=>$bgcol)->grid(-row=>1, -column=>15, -sticky => 'ens');
   }
   # Filter
   our $filter = "";
-  $frame_command -> Label(-text=>"   Filter:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -sticky=>'ew');
+  $frame_command -> Label(-text=>"   Filter:", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -sticky=>'ews');
   $filter_entry = $frame_command -> Entry(-width=>12, -textvariable=>\$filter, -background=>$white, -border=>2, -relief=>'groove' )
     -> grid(-row=>1,-column=>6,-columnspan=>2, -sticky => 'we',-ipadx=>1);
   $filter_entry -> bind('<Any-KeyPress>' => sub {
@@ -6291,14 +6292,18 @@ sub show_links {
      read_curr_dir($cwd, $filter, 0);
   });
   $help->attach($filter_entry, -msg => "Filter model files");
-
-  our $tab_browse_entry = $frame_links -> BrowseEntry(-background => $white, -font=>$font_normal,
-						-selectbackground=>'#606060', #-highlightthickness =>0,
-						-arrowimage => $gif{down}, -border=>1, -relief=>"groove", -width=>20,
+  my %autofind;
+  $autofind{-enable} = 1;
+  $autofind{-complete} = 1;
+#  $autofind{-select} = 0;
+  our $tab_browse_entry = $mw -> JComboBox(-background => $white, -font=>$font_normal, -mode=>"editable", -autofind=> \%autofind,
+#					   -validate=>"match",
+					   -selectbackground=>'#A0A0A0', -highlightthickness =>0,
+						-arrowimage => $gif{down}, -borderwidth=>2, -relief=>"groove", -width=>20,
 						-choices => [ qw/tab csv R * pdf phi ext cov cor pnm xpose sdtab mod lst org/ ],
-						-variable => \$show_data, -browsecmd => sub{ 
+						-textvariable => \$show_data, -browsecmd => sub{ 
 						    tab_browse_entry_update($show_data);  
-  }) -> grid(-row=>2, -column=>1, -columnspan => 10, -sticky=>"nwse");
+  }) -> grid(-row=>2, -column=>3, -columnspan => 10, -sticky=>"swe");
   $tab_browse_entry -> bind('<Return>', sub{
     tab_browse_entry_update($show_data);  
   });
@@ -6308,9 +6313,11 @@ sub show_links {
   $software{tty} =~ m/\.exe/i;
   my $pos = length $`;
   if (-e $software{calc}) {
-    our $calc_button = $frame_links -> Button(-image=>$gif{calc}, -border=>$bbw,-width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
-    start_command($software{calc});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news');
+    our $calc_button = $frame_links -> Button(
+	-image=>$gif{calc}, -border=>$bbw,-width=>20,-height=>$links_height, -border=>$bbw,
+	-background=>$button,-activebackground=>$abutton,-command=> sub{
+	    start_command($software{calc});
+	})->grid(-row=>2,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($calc_button, -msg => "Open system calculator");
   }
@@ -6318,7 +6325,7 @@ sub show_links {
 #  if (-e substr($software{tty}, 0, $pos+4)) {
     our $putty_button = $frame_links -> Button(-image=>$gif{putty},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
       start_command(substr($software{tty}, 0, $pos+4), substr($software{tty},$pos+5, length($software{tty})-($pos+4)));
-    }) ->grid(-row=>1,-column=>$i,-sticky=>'news');
+    }) ->grid(-row=>2,-column=>$i,-sticky=>'news');
     $help->attach($putty_button, -msg => $software_descr{tty});
     $i++;
 #  }
@@ -6332,7 +6339,7 @@ sub show_links {
 	  chdir ($cwd);
 	  unlink ($cwd."/.Rprofile");
 	  start_command($r_start);
-       })->grid(-row=>1,-column=>$i,-sticky=>'news');
+       })->grid(-row=>2,-column=>$i,-sticky=>'news');
       $i++;
       $help->attach($r_button, -msg => "Open the R-GUI / R command line");
   }
@@ -6341,7 +6348,7 @@ sub show_links {
     $splus_button = $frame_links -> Button(-image=>$gif{splus}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     chdir ($cwd);
     start_command($software{splus});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news');
+    })->grid(-row=>2,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($splus_button, -msg => "Open S-Plus");
   }
@@ -6349,47 +6356,47 @@ sub show_links {
     $sas_button = $frame_links -> Button(-image=>$gif{sas}, -width=>20, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     chdir ($cwd);
     start_command($software{sas});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news');
+    })->grid(-row=>2,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($sas_button, -msg => "Open SAS");
   }
   if (-e $software{spreadsheet}) {
     our $spreadsheet_button = $frame_links -> Button(-image=>$gif{spreadsheet},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
     start_command($software{spreadsheet});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news');
+    })->grid(-row=>2,-column=>$i,-sticky=>'news');
     $i++;
     $help->attach($spreadsheet_button, -msg => "Open spreadsheet application");
   }
   if (-e $software{editor}) {
     our $notepad_button = $frame_links -> Button(-image=>$gif{notepad},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     start_command($software{editor});
-    }) ->grid(-row=>1,-column=>$i,-sticky=>'news');
+    }) ->grid(-row=>2,-column=>$i,-sticky=>'news');
     $help->attach($notepad_button, -msg => "Open text-editor");
     $i++;
   }
   if (-e $software{madonna}) {
     $madonna_button = $frame_links -> Button(-image=>$gif{madonna}, -height=>$links_height, -border=>$bbw, -background=>$button,-activebackground=>$abutton,-command=> sub{
       start_command($software{madonna});
-    })->grid(-row=>1,-column=>$i,-sticky=>'news');
+    })->grid(-row=>2,-column=>$i,-sticky=>'news');
     $help->attach($madonna_button, -msg => "Start Berkeley Madonna");
     $i++;
   }
   if (-e $software{extra1}) {
     our $extra1_button = $frame_links -> Button(-image=>$gif{extra1},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     start_command($software{extra1});
-    }) ->grid(-row=>1,-column=>$i,-sticky=>'news');
+    }) ->grid(-row=>2,-column=>$i,-sticky=>'news');
     $help->attach($extra1_button, -msg => $software_descr{extra1});
     $i++;
   }
   if (-e $software{extra2}) {
     our $extra2_button = $frame_links -> Button(-image=>$gif{extra2},-border=>$bbw, -width=>20,-height=>$links_height, -border=>$bbw,-background=>$button,-activebackground=>$abutton,-command=> sub{
     start_command($software{extra2});
-    }) ->grid(-row=>1,-column=>$i,-sticky=>'news');
+    }) ->grid(-row=>2,-column=>$i,-sticky=>'news');
     $help->attach($extra2_button, -msg => $software_descr{extra2});
     $i++;
   }
 
-  #$frame_links -> Label(-text=>"Command: ",-font => $font_normal)
+  #$frame_command -> Label(-text=>"Command: ",-font => $font_normal)
   #  ->grid(-row=>2,-column=>1,-sticky=>'nse');
   $command_entry = $frame_command -> Entry(-textvariable=>\$run_command, -border=>2, -relief=>"groove", -width=>24, -font => $font_normal,-background=>$white)
    ->grid(-row=>1,-columnspan=>1,-column=>2,-sticky=>'we');  #i-3
@@ -7578,8 +7585,8 @@ sub frame_models_show {
   $mw -> gridColumnconfigure(1, -weight => 1, -minsize=>400);
   $mw -> gridColumnconfigure(2, -weight => 100, -minsize=>530);
   $mw -> gridColumnconfigure(3, -weight => 1, -minsize=> $tab_width);
-  $mw -> gridRowconfigure(1, -weight => 1, -minsize=>40);
-  $mw -> gridRowconfigure(2, -weight => 1, -minsize=>0);
+  $mw -> gridRowconfigure(1, -weight => 1, -minsize=>20);
+  $mw -> gridRowconfigure(2, -weight => 1, -minsize=>20);
   $mw -> gridRowconfigure(3, -weight => 100, -minsize=>400);
   $mw -> gridRowconfigure(4, -weight => 1, -minsize=>20);
 
@@ -7695,25 +7702,22 @@ sub frame_models_show {
   });
   $models_hlist -> update();
 
-   our $frame_links = $mw -> Frame(-background=>$bgcol) ->grid(-row=>1, -column=>2, -columnspan=>1, -ipadx=>'0',-ipady=>'0',-sticky=>'wn');
-   $show_buttons = $frame_dir -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'wns');
-   our $psn_dir_filter = 0;
-   $show_buttons -> Label(-text=>"  Show folders: ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'ws');
-   $show_buttons -> Label(-text=>"    ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>4, -columnspan=>1, -sticky=>'es');
-  $filter_psn_button = $show_buttons ->Checkbutton(-text=>"PsN   ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
+#   my $frame_command = $mw -> Frame(-background=>"#000000") ->grid(-row=>1, -column=>3, -columnspan=>4, -ipadx=>'0',-ipady=>'0',-sticky=>'wne');
+#   my $show_buttons = $frame_dir -> Frame(-background=>"#880000") ->grid(-row=>2,-column=>7,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nes');
+  my $show_buttons = $mw -> Frame(-background=>$bgcol) ->grid(-row=>2,-column=>2,-rowspan=>1,-ipadx=>'0', -ipady=>'0',-sticky=>'nes');
+  our $psn_dir_filter = 0;
+  $show_buttons -> Label(-text=>"   ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>1, -columnspan=>1, -sticky=>'ws');
+  $show_buttons -> Label(-text=>"          ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>3, -columnspan=>1, -sticky=>'es');
+  $filter_psn_button = $show_buttons ->Checkbutton(-text=>"PsN / nmfe folders  ", -background=>$bgcol, -font=>$font_normal, -variable=>\$psn_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
      read_curr_dir($cwd, $filter, 1);
      status();
-  })->grid(-row=>1,-column=>2,-sticky=>'ws', -ipady=>0, -ipadx=>0);
+  })->grid(-row=>1,-column=>2,-sticky=>'wn', -ipady=>0, -ipadx=>0);
   $help->attach($filter_psn_button, -msg => "Filter out PsN-generated directories");
-  our $nmfe_dir_filter = 0;
-  $filter_nmfe_button = $show_buttons ->Checkbutton(-text=>"nmfe",-background=>$bgcol, -font=>$font_normal, -variable=>\$nmfe_dir_filter, -selectcolor=>$selectcol, -activebackground=>$bgcol, -command=>sub{
-     read_curr_dir($cwd, $filter, 1);
-     status();
-  })->grid(-row=>1,-column=>3,-sticky=>'ws', -ipady=>0, -ipadx=>0);
-  $help->attach($filter_nmfe_button, -msg => "Filter out nmfe run directories");
 
-  our $show_buttons_sub = $show_buttons -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>5,-rowspan=>2,-ipadx=>'0', -ipady=>'0',-sticky=>'nw');
-  our $condensed_view_button = $show_buttons_sub -> Button (
+  my $show_buttons_sub = $show_buttons -> Frame(-background=>$bgcol) ->grid(-row=>1,-column=>4,-rowspan=>2,-ipadx=>'0', -ipady=>'0',-sticky=>'ne');
+  $show_buttons_sub -> Label(-text=>"     ", -font=>$font_normal, -background=>$bgcol)->grid (-row=>1,-column=>10, -columnspan=>1, -sticky=>'ws');
+  
+  my $condensed_view_button = $show_buttons_sub -> Button (
        -image=>$gif{binocular}, -background => $button, -border=>$bbw, -activebackground=>$abutton,
        -width=>26, -height=>22,
        -command=>sub{
@@ -8233,7 +8237,7 @@ sub project_optionmenu {
     if ($project_optionmenu) {$project_optionmenu -> destroy();}
     our $project_optionmenu = $frame_dir -> Optionmenu(-options => [sort (@projects)], -width=>38, -border=>$bbw,
         -variable => \$active_project,-background=>$darkblue, -activebackground=>$darkblue2, -font=>$font_bold, -foreground=>$white, -activeforeground=>$white)
-     -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky=>'we');
+     -> grid(-row=>1,-column=>2,-columnspan=>1, -sticky=>'wens');
      $frame_dir -> update();
      $project_optionmenu -> configure (-command=>sub{
         $cwd = $project_dir{$active_project};
@@ -8251,8 +8255,8 @@ sub project_optionmenu {
 sub project_buttons_show {
 ### Purpose : Show the buttons for saving/editing/info of the projects
 ### Compat  : W+L?
-  $frame_dir -> Label(-text=>'Project:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>1,-column=>1, -sticky => 'e');
-  $frame_dir -> Label(-text=>'Folder:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>2,-column=>1, -sticky => 'e');
+  $frame_dir -> Label(-text=>'Project:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>1,-column=>1, -sticky => 'ens');
+  $frame_dir -> Label(-text=>'Folder:',-font => $font_normal, -background=>$bgcol)-> grid(-row=>2,-column=>1, -sticky => 'ens');
 #  $frame_dir -> Label(-text=>'   ', -background=>$bgcol)-> grid(-row=>3,-column=>1, -sticky => 'we');
   $dir_entry = $frame_dir -> Entry(-width=>44, -textvariable=>\$cwd, -border=>2, -relief=>'groove', -background=>$white,-font=>$font_normal)
     -> grid(-row=>2,-column=>2, -sticky => 'wens',-columnspan=>4);
