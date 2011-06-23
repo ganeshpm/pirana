@@ -5835,7 +5835,7 @@ sub tab_browse_entry_update {
     if($selected_file eq "csv") {@tab_menu_enabled = qw(normal normal normal normal normal normal normal disabled normal disabled normal)};
     if($selected_file eq "xpose") {@tab_menu_enabled = qw(disabled disabled disabled disabled disabled normal disabled disabled normal disabled disabled)};
     if($selected_file eq "R") {@tab_menu_enabled = qw(disabled normal disabled normal disabled normal disabled disabled normal disabled disabled)};
-    if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled disabled disabled normal normal disabled)};
+    if($selected_file eq "*") {@tab_menu_enabled = qw(normal normal disabled normal disabled disabled normal disabled normal normal disabled)};
     bind_tab_menu(\@tab_menu_enabled);
 }
 
