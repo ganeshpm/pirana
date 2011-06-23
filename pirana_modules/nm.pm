@@ -1038,17 +1038,18 @@ sub duplicate_model {
   } else {
       @ctl_new = @ctl_lines;
   }
-  if ($new_ctl_descr ne "") { print CTL_OUT "; Model desc: ".$new_ctl_descr."\n"; }
-  if ($new_ctl_ref ne "") { print CTL_OUT "; Ref. model: ".$new_ctl_ref."\n"; }
-  print CTL_OUT "; Duplicated from: ".$file."\n";
-  if (@ctl_new[0] =~ m/Model desc/i) {shift @ctl_new};
-  if (@ctl_new[0] =~ m/Ref\. model/i) {shift @ctl_new};
-  unless ($^O =~ m/MSWin/) {
-      foreach (@ctl_new) {
+  if ($new_ctl_ref ne "") { print CTL_OUT ";; 1. Based on: ".$new_ctl_ref."\n"; }
+  if ($new_ctl_descr ne "") { print CTL_OUT ";; 2. Description: ".$new_ctl_descr."\n"; }
+  my @ctl_new2;
+  foreach (@ctl_new) {
+      unless ($^O =~ m/MSWin/) {
 	  $_ =~ s/\r\n$/\n/;
       }  
+      unless ($_ =~ m/(Model desc|1\. Based on|Ref\. model|2. Description)/i) {
+	  push (@ctl_new2, $_)
+      };
   }
-  print CTL_OUT @ctl_new;
+  print CTL_OUT @ctl_new2;
   close CTL_OUT;
 }
 
